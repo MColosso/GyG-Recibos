@@ -1,0 +1,30 @@
+Instalación de módulos requeridos
+---------------------------------
+
+pip install pdf2image
+pip install pandas
+pip install numpy
+pip install xlrd
+pip install openpyxl
+pip install yagmail
+pip install datetime
+pip install python-dateutil
+
+pip install reportlab	<-- Error: command 'C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\BIN\\cl.exe' failed with exit status 2	--> resumenes_de_pago.py
+:: pip install email	<-- ???
+:::pip install whatsapp	<-- ???
+pip install selenium
+pip install win32con	<-- Error: No matching distribution found for win32con	--> envia_recibos.py
+pip install win32gui	<-- Error: No module named 'win32.distutils.command'	--> envia_recibos.py
+
+También se requieren los siguientes módulos que se encuentran en la librería estándar de Python:
+datetime, dateutil, locale, numbers, os, PIL, re, shutil, sys, time, tkinter, warnings
+
+
+Ajustar C:\Users\MColosso\AppData\Local\Programs\Python\Python38-32\Lib\site-packages\openpyxl\styles\fonts.py, línea 42
+
+    family = NestedMinMax(min=0, max=35, allow_none=True)	# <-- anteriormente: max=14
+
+---
+
+You can build C and C++ applications on the command line by using tools that are included in Visual Studio. The Microsoft C++ (MSVC) compiler toolset is also downloadable as a standalone package from the Visual Studio downloads page. It's part of the Build Tools for Visual Studio package. You can choose to download only the tools you need for C++ development.
