@@ -12,6 +12,8 @@
     -   
 
     HISTORICO
+    -   Corregir: En el resumen de cuotas, no se muestra el año final cuando es diferente al
+        año inicial (23/02/2020)
     -   Corregir: Se muestra el monto de la cuota en lugar de la tasa en el párrafo iniciado
         con "A partir del 1° de Septiembre 2019[...]" (21/10/2019)
     -   Ajustar el resumen_de_cuotas() para mostrar las cuotas en VEB o USD (15/10/2019)
@@ -94,7 +96,8 @@ class Cuota:
             final_linea  = '</li>' if formato == fmtHtml and lista else EOL if lista else ''
             final = '.' if rango_final and not lista else ''
             texto = ', y ' if rango_final and not lista and más_de_un_elemento else ''
-            año_final = '' if fechas[idx_inicial].year == año_anterior else ' %Y'
+#            año_final = '' if fechas[idx_inicial].year == año_anterior else ' %Y'
+            año_final = '' if fechas[idx_final].year == año_anterior else ' %Y'
             if idx_inicial == idx_final:
                 texto += f"{inicio_linea}" + \
                          f"{cuota}" + \
@@ -170,7 +173,10 @@ class Cuota:
                 txtCuotasMensuales += separador + \
                               "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
                               "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \
-                             f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar."
+                             f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar." + EOL + \
+                              "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
+                              "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
+                              "con la tasa de la semana en curso."
 
             txtCuotasMensuales += EOL * 2
 

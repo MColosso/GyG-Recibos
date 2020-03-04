@@ -9,7 +9,16 @@
         de nombre en la rutina principal
     -   
 
+
     HISTORICO
+    -   Corregir inconsistencia en 'no_participa_desde()': Al seleccionar una fecha de referencia
+        anterior a la última colaboración efectuada, se muestra esta última, y no la última desde
+        la fehcha indicada:
+             Ej. Cartelera Virtual al 31 de agosto de 2019                            <-- ago. 2019
+                  - Rivero, Güigüe 88-40. Tiene colaboraciones pendientes desde octubre 2018. Último
+                    pago: 04 dic 2019, Bs. 20.000, correspondiente a Noviembre 2019   <-- nov. 2019
+          -> Corregido: Al abrir la hoja de cálculo de pagos, se ignoran los pagos posteriores a
+             la fecha de referencia (24/02/2020)
     -   En la cartelera de COLABORADORES, colocar el monto y último mes cancelado
           -> Cambia "Muestra los saldos de colaboradores" a "Muestra el último pago de
              colaboradores"
@@ -288,11 +297,14 @@ def no_participa_desde(r):
                 sep1 = ' de '
         elif r['Categoría'] == 'Colaboración':
             ultimo_pago = df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']].tail(1).squeeze()
+            #
+            #    <-- Verificar, adicionalmente, si df_pagos['Fecha'] < "Fecha de referencia"
             u_fecha = ultimo_pago['Fecha'].strftime('%d %b %Y')
 #            u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
             u_concepto = re.search(r'.*([,:] )(.*)$', str(ultimo_pago.Concepto)).group(2)   # Busca ', ' (como en 'Cancelación Vigilancia, ') o
                                                                                             # ': ' (como en 'Vigilancia: ') y toma el resto del
                                                                                             # string
+            u_concepto = re.sub('mes(es)* de', 'correspondiente a', u_concepto)             # Cambia 'mes[es] de' por 'correspondiente a'
             deuda_actual = ultimo_pago['Monto']
             sep1, sep2 = f'. Último pago: {u_fecha}, ', f', {u_concepto}'
         else:
@@ -498,6 +510,10 @@ pie_cuota_completa = cuotas_obj.resumen_de_cuotas('Vecino genérico', fecha_refe
 df_pagos = read_excel(excel_workbook, sheet_name=excel_pagos)
 df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
 df_pagos = df_pagos[['Beneficiario', 'Fecha', 'Monto', 'Concepto']]
+
+df_pagos = df_pagos[df_pagos['Fecha'] <= f_ref_último_día]          # Ignora los pagos posteriores
+                                                                    # a la fecha de referencia
+
 meses_cancelados = df_pagos['Concepto'].apply(lambda x: separa_meses(x, as_string=True))
 df_pagos.insert(column='Meses', value=meses_cancelados, loc=df_pagos.shape[1])
 
