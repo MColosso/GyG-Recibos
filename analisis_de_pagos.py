@@ -637,9 +637,9 @@ def distribución_de_pagos():
         total = sum(resultado[1:])
         lista_resultados.append(resultado)
 
-        print(f"  {f_ref}: {edit(total)} [" + \
+        print(f"  {f_ref}: {edit(total, width=10)} [" + \
               f"{edit(resultado[1])} ({edit_pct(resultado[1], total)}), " + \
-              f"{edit(resultado[2])} ({edit_pct(resultado[2], total)}), " + \
+              f"{edit(resultado[2], width=10)} ({edit_pct(resultado[2], total)}), " + \
               f"{edit(resultado[3])} ({edit_pct(resultado[3], total)})"   + "]")
 
     return lista_resultados

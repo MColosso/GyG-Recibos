@@ -5,7 +5,7 @@
 
 """
     PENDIENTE POR HACER
-    - 
+    -   Incluir una opción para omitir o no los saldos de los vecinos que tienen cuenta
 
     HISTORICO
     -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
@@ -298,6 +298,10 @@ solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'no', toma_op
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
 
+# Selecciona si se muestra la columna de saldos a favor
+muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_opciones_por_defecto)
+
+
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
 fecha_referencia = datetime(año, mes, 1)
@@ -378,13 +382,17 @@ if ordenado:
 print(f"Creando archivo de saldos '{nombre_análisis.format(datetime(año, mes, 1))}'...")
 print('')
 
-mensaje = '{:<20} | {:<14} | {:<13} | {:>9} | {:>9} | {}\n'
+mensaje_con_saldo = '{:<20} | {:<14} | {:<13} | {:>9} | {:>9} | {}\n'
+mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>9} | {}\n'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-análisis = f"GyG RESUMEN DE SALDOS al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n"
-análisis += "Vecino               | Dirección      | Categoría     |     Deuda |     Saldo | Período\n"
-análisis += espacios(94, '-') + '\n'
+análisis = f"GyG RESUMEN DE SALDOS al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
+            "Vecino               | Dirección      | Categoría     |" + \
+           ("     Deuda | En cuenta |" if muestra_saldos else " Pendiente |") + \
+            " Período\n"
+
+análisis += espacios(94 if muestra_saldos else 82, '-') + '\n'
 
 # SALDOS
 dirección_anterior = None
@@ -398,11 +406,18 @@ for index, r in df_resumen.iterrows():
         if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
             análisis += '\n'
             dirección_anterior = get_street(r['Dirección'])
-        análisis += mensaje.format(
-                trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
-                trunca_texto(edita_dirección(r['Dirección']), 14),
-                trunca_texto(edita_categoría(r['Categoría']), 13),
-                info_deuda, info_saldo, info_pago)
+        if muestra_saldos:
+            análisis += mensaje_con_saldo.format(
+                    trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
+                    trunca_texto(edita_dirección(r['Dirección']), 14),
+                    trunca_texto(edita_categoría(r['Categoría']), 13),
+                    info_deuda, info_saldo, info_pago)
+        else:
+            análisis += mensaje_sin_saldo.format(
+                    trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
+                    trunca_texto(edita_dirección(r['Dirección']), 14),
+                    trunca_texto(edita_categoría(r['Categoría']), 13),
+                    info_deuda, info_pago)
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)
 filename = os.path.join(attach_path, 'Apple', nombre_análisis.format(datetime(año, mes, 1)))
