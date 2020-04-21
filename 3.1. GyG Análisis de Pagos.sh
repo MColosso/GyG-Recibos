@@ -4,7 +4,7 @@
 # a sus beneficiarios
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "3.1 GyG Analisis de Pagos"
 echo "-------------------------"

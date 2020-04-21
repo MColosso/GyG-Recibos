@@ -4,7 +4,7 @@
 # en el período indicado
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "4.1 GyG Resumenes de Pago"
 echo "-------------------------"

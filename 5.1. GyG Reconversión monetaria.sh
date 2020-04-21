@@ -4,7 +4,7 @@
 # aplicado el factor de reconversión especificado
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "5.1 GyG Reconversión Monetaria"
 echo "------------------------------"

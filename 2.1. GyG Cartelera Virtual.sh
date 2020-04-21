@@ -4,7 +4,7 @@
 # enviarlos posteriormente a las listas de difusión de WhatsApp
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "2.1 GyG Cartelera Virtual"
 echo "-------------------------"

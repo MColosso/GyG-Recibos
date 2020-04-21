@@ -7,7 +7,7 @@
 #    Ejemplo: "python saldos_pendientes.py --solo_deudores"
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "3.3 GyG Saldos pendientes"
 echo "-------------------------"

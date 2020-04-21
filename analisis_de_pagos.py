@@ -94,7 +94,7 @@ from GyG_cuotas import *
 from GyG_utilitarios import *
 from pandas import DataFrame, read_excel, isnull, notnull, to_numeric
 from numpy import mean, std, NaN
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta        # , date
 from dateutil.relativedelta import relativedelta
 from pyparsing import Word, Regex, Literal, OneOrMore, ParseException
 import re
@@ -632,7 +632,7 @@ def distribución_de_pagos():
 
     lista_resultados = list()
     for offset in reversed(range(nMeses_resumen)):
-        f_ref = f"{date(año, mes, 1) - relativedelta(months=offset) + relativedelta(day=1):%m-%Y}"
+        f_ref = f"{datetime(año, mes, 1) - relativedelta(months=offset) + relativedelta(day=1):%m-%Y}"
         resultado = análisis_de_pagos(f_ref)
         total = sum(resultado[1:])
         lista_resultados.append(resultado)
@@ -746,8 +746,8 @@ hoy = datetime.now().day
 
 # Ajusta las columnas F.Desde y F.Hasta en aquellos en los que estén vacíos:
 # 01/01/2016 y 01/mes/año+1
-df_resumen.loc[df_resumen[isnull(df_resumen['F.Desde'])].index, 'F.Desde'] = date(2016, 1, 1)
-df_resumen.loc[df_resumen[isnull(df_resumen['F.Hasta'])].index, 'F.Hasta'] = date(año + 1, mes, 1)
+df_resumen.loc[df_resumen[isnull(df_resumen['F.Desde'])].index, 'F.Desde'] = datetime(2016, 1, 1)
+df_resumen.loc[df_resumen[isnull(df_resumen['F.Hasta'])].index, 'F.Hasta'] = datetime(año + 1, mes, 1)
 
 # Elimina aquellos vecinos que compraron (o se iniciaron) en fecha posterior
 # a la fecha de análisis

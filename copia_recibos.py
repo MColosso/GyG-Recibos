@@ -1,4 +1,17 @@
+# COPIA RECIBOS DE PAGO
+#
+# Copia los recibos de pago indicados a la carpeta 'Vigilancia/Temporales' para ser enviados posteriormente
+# vía WhatsApp
 
+"""
+    POR HACER
+    -   
+
+    HISTORICO
+    -   Validar si el recibo existe antes de copiarlo; en caso contrario, generar mensaje de error (20/04/2020)
+    -   Versión inicial (25/10/2019)
+
+"""
 
 
 import GyG_constantes
@@ -73,16 +86,19 @@ while True:
     input_filename  = filename.format(recibo=nro_recibo)
     output_ext      = os.path.splitext(input_filename)[1]
     output_filename = output_file.format(Beneficiario=beneficiario, Recibo=codRecibo, Ext=output_ext)
+    file_to_copy    = os.path.join(input_path, input_filename)
 
-    try:
-        copyfile(os.path.join(input_path, input_filename), os.path.join(output_path, output_filename))
-    except:
-        error_msg  = str(sys.exc_info()[1])
-        if sys.platform.startswith('win'):
-            error_msg  = error_msg.replace('\\', '/')
-        print(f'*** Error copiando {output_filename}: {error_msg}')
-        continue
+    if os.path.exists(file_to_copy):
+        try:
+            copyfile(file_to_copy, os.path.join(output_path, output_filename))
+        except:
+            error_msg  = str(sys.exc_info()[1])
+            if sys.platform.startswith('win'):
+                error_msg  = error_msg.replace('\\', '/')
+            print(f'*** Error copiando {output_filename}: {error_msg}')
+            continue
 
-    print(f'   -> Copiado "{output_filename}"')
-
+        print(f'   -> Copiado "{output_filename}"')
+    else:
+        print(f"*** Error: El recibo {nro_recibo:05d} probablemente fue eliminado previamente. Regenérelo e intente nuevamente.")
 print()

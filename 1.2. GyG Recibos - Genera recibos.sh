@@ -9,7 +9,7 @@
 #              en la carpeta "Imágenes" en el directorio actual.
 
 
-cd $HOME/Dropbox/"GyG Recibos"/ > nul
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "1.2 GyG Recibos - Genera recibos"
 echo "--------------------------------"
