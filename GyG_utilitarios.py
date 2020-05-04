@@ -108,7 +108,7 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):
                     "Setecientos", "Ochocientos", "Novecientos")
 
         if número == 0:
-            resultado = 'cero'
+            resultado = 'Cero'
         elif número <= 29:
             resultado = UNIDADES[número]
         elif número <= 100:
@@ -156,3 +156,120 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):
         return letra
     else:
         return f'ERROR: El número {edita_número(número, num_decimals=2)} excede los límites admitidos.'
+
+
+def genera_recibo(r):
+    """ genera_recibo(r)
+        Recibe como parámetro con las siguientes claves:
+          . 'Nro. Recibo',  'Fecha',    'Beneficiario',
+          . 'Dirección',    'Monto',    'Concepto0,
+          . 'Categoría'
+    """
+
+    # Librerías
+    import GyG_constantes
+    from PIL import Image, ImageFont, ImageDraw, ImageEnhance
+    from math import ceil
+    import sys
+    import os
+
+    # Define textos
+    input_file  = GyG_constantes.plantilla_recibos     # './imagenes/plantilla_recibos.png'
+    output_file = GyG_constantes.img_recibo            # 'GyG Recibo_{recibo:05d}.png'
+    output_path = GyG_constantes.ruta_recibos          # './GyG Recibos/Recibos de Pago'
+
+    # Fuentes
+    calibri             = os.path.join(GyG_constantes.rec_fuentes, 'calibri.ttf')
+    calibri_italic      = os.path.join(GyG_constantes.rec_fuentes, 'calibrii.ttf')
+    calibri_bold        = os.path.join(GyG_constantes.rec_fuentes, 'calibrib.ttf')
+    calibri_bold_italic = os.path.join(GyG_constantes.rec_fuentes, 'calibriz.ttf')
+    stencil             = os.path.join(GyG_constantes.rec_fuentes, 'STENCIL.TTF')
+
+
+    def anchura_de_texto(text, font):
+        return recibo.textsize(text=text, font=font)[0]
+
+    def altura_de_texto(text, font):
+        return recibo.textsize(text=text, font=font)[1]
+
+    def justifica_derecha(texto, anchura, font):
+        return anchura - anchura_de_texto(text=texto, font=font)
+
+    def justifica_centro(texto, anchura, font):
+        return int(ceil((anchura - anchura_de_texto(text=texto, font=font)) / 2.0))
+
+    def multilineas(texto, anchura, font):
+        words = texto.split()
+        for x in reversed(range(len(words))):
+            texto_inicial = ' '.join(words[:x+1])
+            texto_final   = ' '.join(words[x+1:])
+            if recibo.textsize(text=texto_inicial, font=font)[0] <= anchura:
+                break
+        return texto_inicial + ('\n' + texto_final if len(texto_final) > 0 else '')
+
+    try:
+        plantilla = Image.open(input_file)
+#        plantilla = plantilla.convert('RGBA')
+        cx, cy = plantilla.size[0] // 2, plantilla.size[1] // 2
+    except:
+        error_msg  = str(sys.exc_info()[1])
+        if sys.platform.startswith('win'):
+            error_msg  = error_msg.replace('\\', '/')
+        print(f"*** Error cargando plantilla {input_file}: {error_msg}")
+        return False
+    recibo = ImageDraw.Draw(plantilla)
+
+    font = ImageFont.truetype(font=calibri_bold, size=15)
+    recibo.text(xy=(620,  64), text='{:05d}'.format(r['Nro. Recibo']), font=font, fill='black')
+
+    font = ImageFont.truetype(font=calibri_bold, size=18)
+    monto = edita_número(r['Monto'])
+    if anchura_de_texto(monto, font) > 90:
+        texto = 'Por Bs. ' + monto
+        recibo.text(xy=(498 + justifica_centro(texto, 670-498+1, font) + 1, 91), text=texto, font=font, fill='black')
+    else:
+        recibo.text(xy=(515, 91), text='Por Bs. ', font=font, fill='black')
+        recibo.text(xy=(571 + justifica_derecha(monto, 90, font),  91), text=monto, font=font, fill='black')
+
+    font = ImageFont.truetype(font=calibri_italic, size=15)
+    recibo.text(xy=(195, 169), text=r['Beneficiario'] + ', ' + r['Dirección'], font=font, fill='black')
+
+    font = ImageFont.truetype(font=calibri_italic, size=15)
+    posicion = (195, 199)
+    monto_en_letras = multilineas(MontoEnLetras(r['Monto']), 480, font)
+    text_size = recibo.textsize(text=monto_en_letras, font=font)
+    recibo.rectangle((posicion[0]-2, posicion[1]-2, posicion[0]+text_size[0]+2, posicion[1]+text_size[1]+2),
+                     fill=(189, 215, 238))
+    recibo.text(xy=posicion, text=monto_en_letras, font=font, fill='black')
+
+    font = ImageFont.truetype(font=calibri_bold_italic, size=15)
+    recibo.text(xy=(195, 230), text=multilineas(r['Concepto'], 480, font), font=font, fill='black')
+
+    font = ImageFont.truetype(font=calibri, size=14)
+    fecha = f"{r['Fecha']:%d de %B de %Y}"
+    recibo.text(xy=(121, 292), text=fecha, font=font, fill='black')
+
+    if r['Categoría'] in GyG_constantes.sellos:
+        font = ImageFont.truetype(font=stencil, size=60)
+        ancho, alto = recibo.textsize(text=r['Categoría'].capitalize(), font=font)
+        tx, ty = cx - ancho // 2, cy - alto // 2
+        angulo = 30
+        transparente = (0, 0, 0, 0)
+        opacidad = 0.5
+        img_anulado = Image.new('RGBA', plantilla.size, color=transparente)
+        anulado = ImageDraw.Draw(img_anulado)
+        anulado.text(xy=(tx, ty), text=r['Categoría'].capitalize(), font=font, fill='red', align='center')
+        img_anulado = img_anulado.rotate(angulo, center=(cx, cy), fillcolor=transparente)
+        en = ImageEnhance.Brightness(img_anulado)
+        mask = en.enhance(1.0 - opacidad)
+        plantilla.paste(img_anulado, mask=mask)
+
+    try:
+        plantilla.save(os.path.join(output_path, output_file.format(recibo=r['Nro. Recibo'])))
+        return True
+    except:
+        error_msg  = str(sys.exc_info()[1])
+        if sys.platform.startswith('win'):
+            error_msg  = error_msg.replace('\\', '/')
+        print(f"*** Error guardando recibo {output_file.format(recibo=r['Nro. Recibo'])}: {error_msg}")
+        return False

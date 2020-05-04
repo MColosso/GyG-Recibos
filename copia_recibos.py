@@ -15,6 +15,7 @@
 
 
 import GyG_constantes
+from GyG_utilitarios import input_si_no, genera_recibo
 import sys, os
 
 # Define textos
@@ -88,7 +89,24 @@ while True:
     output_filename = output_file.format(Beneficiario=beneficiario, Recibo=codRecibo, Ext=output_ext)
     file_to_copy    = os.path.join(input_path, input_filename)
 
-    if os.path.exists(file_to_copy):
+    try_copy = True
+    if not os.path.exists(file_to_copy):
+        print(f"*** Error: El recibo {nro_recibo:05d} probablemente fue eliminado previamente.")
+        if input_si_no('¿Se regenera e intenta nuevamente?', 'Sí'):
+            recibo_a_generar = {
+                'Nro. Recibo':  r['Nro. Recibo'],
+                'Fecha':        r['Fecha'],
+                'Beneficiario': r['Beneficiario'],
+                'Dirección':    r['Dirección'],
+                'Monto':        r['Monto'],
+                'Concepto':     r['Concepto'],
+                'Categoría':    r['Categoría']
+            }
+            genera_recibo(recibo_a_generar)
+        else:
+            try_copy = False
+
+    if try_copy:
         try:
             copyfile(file_to_copy, os.path.join(output_path, output_filename))
         except:
@@ -99,6 +117,5 @@ while True:
             continue
 
         print(f'   -> Copiado "{output_filename}"')
-    else:
-        print(f"*** Error: El recibo {nro_recibo:05d} probablemente fue eliminado previamente. Regenérelo e intente nuevamente.")
+
 print()

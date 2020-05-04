@@ -57,7 +57,7 @@ ruta_recibos                = '../GyG Archivos/Recibos de Pago'
                               # 'C:/Users/MColosso/Google Drive/GyG Recibos/Recibos/'
                               # Carpeta de recibos de pago
 
-ruta_imagen_recibos         = '../Vigilancia/Temporales/'
+ruta_imagen_recibos         = '../GyG Archivos/Temporales/'
                               # 'C:/Users/MColosso/Dropbox/Vigilancia/Temporales/'
                               # Carpeta de recibos de pago como imágenes (.jpg | .png)
 

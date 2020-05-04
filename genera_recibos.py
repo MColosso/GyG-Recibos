@@ -7,6 +7,8 @@
     -   
 
     HISTORICO
+    -   Utiliza la versión unificada de 'genera_recibo()' en GyG_utilitarios, en la cual se ajustó
+        el despliegue de montos "grandes" (27/04/2020)
     -   Unificar los archivos 'genera_recibos.py' y 'genera_recibos_seleccionados', separando
         la fuente de los recibos a generar en base a un indicador en la línea de comandos
         (09/12/2019)
@@ -70,83 +72,83 @@ if len(sys.argv) > 1:
 #def edita_número(number, num_decimals=2):
 #    return locale.format_string(f'%.{num_decimals}f', number, grouping=True, monetary=True)
 
-def convierte_recibo(r):
+# def convierte_recibo(r):
 
-    def justifica_derecha(texto, anchura, font):
-        return anchura - recibo.textsize(text=texto, font=font)[0]
+#     def justifica_derecha(texto, anchura, font):
+#         return anchura - recibo.textsize(text=texto, font=font)[0]
 
-    def multilineas(texto, anchura, font):
-        words = texto.split()
-        for x in reversed(range(len(words))):
-            texto_inicial = ' '.join(words[:x+1])
-            texto_final   = ' '.join(words[x+1:])
-            if recibo.textsize(text=texto_inicial, font=font)[0] <= anchura:
-                break
-        return texto_inicial + ('\n' + texto_final if len(texto_final) > 0 else '')
+#     def multilineas(texto, anchura, font):
+#         words = texto.split()
+#         for x in reversed(range(len(words))):
+#             texto_inicial = ' '.join(words[:x+1])
+#             texto_final   = ' '.join(words[x+1:])
+#             if recibo.textsize(text=texto_inicial, font=font)[0] <= anchura:
+#                 break
+#         return texto_inicial + ('\n' + texto_final if len(texto_final) > 0 else '')
 
-    try:
-        plantilla = Image.open(input_file)
-#        plantilla = plantilla.convert('RGBA')
-        cx, cy = plantilla.size[0] // 2, plantilla.size[1] // 2
-    except:
-        error_msg  = str(sys.exc_info()[1])
-        if sys.platform.startswith('win'):
-            error_msg  = error_msg.replace('\\', '/')
-        print(f"*** Error cargando plantilla {input_file}: {error_msg}")
-        return False
-    recibo = ImageDraw.Draw(plantilla)
+#     try:
+#         plantilla = Image.open(input_file)
+# #        plantilla = plantilla.convert('RGBA')
+#         cx, cy = plantilla.size[0] // 2, plantilla.size[1] // 2
+#     except:
+#         error_msg  = str(sys.exc_info()[1])
+#         if sys.platform.startswith('win'):
+#             error_msg  = error_msg.replace('\\', '/')
+#         print(f"*** Error cargando plantilla {input_file}: {error_msg}")
+#         return False
+#     recibo = ImageDraw.Draw(plantilla)
 
-    font = ImageFont.truetype(font=calibri_bold, size=15)
-    recibo.text(xy=(620,  64), text='{:05d}'.format(r['Nro. Recibo']), font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri_bold, size=15)
+#     recibo.text(xy=(620,  64), text='{:05d}'.format(r['Nro. Recibo']), font=font, fill='black')
 
-    font = ImageFont.truetype(font=calibri_bold, size=18)
-#    monto = '{:,.2f}'.format(r['Monto']).replace(',', 'x').replace('.', ',').replace('x', '.')
-    monto = edita_número(r['Monto'])
-    recibo.text(xy=(571 + justifica_derecha(monto, 90, font),  91), text=monto, font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri_bold, size=18)
+# #    monto = '{:,.2f}'.format(r['Monto']).replace(',', 'x').replace('.', ',').replace('x', '.')
+#     monto = edita_número(r['Monto'])
+#     recibo.text(xy=(571 + justifica_derecha(monto, 90, font),  91), text=monto, font=font, fill='black')
 
-    font = ImageFont.truetype(font=calibri_italic, size=15)
-    recibo.text(xy=(195, 169), text=r['Beneficiario'] + ', ' + r['Dirección'], font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri_italic, size=15)
+#     recibo.text(xy=(195, 169), text=r['Beneficiario'] + ', ' + r['Dirección'], font=font, fill='black')
 
-    font = ImageFont.truetype(font=calibri_italic, size=15)
-    posicion = (195, 199)
-    monto_en_letras = MontoEnLetras(r['Monto'])
-    text_size = recibo.textsize(text=monto_en_letras, font=font)
-    recibo.rectangle((posicion[0]-2, posicion[1]-2, posicion[0]+text_size[0]+2, posicion[1]+text_size[1]+2),
-                     fill=(189, 215, 238))
-    recibo.text(xy=posicion, text=monto_en_letras, font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri_italic, size=15)
+#     posicion = (195, 199)
+#     monto_en_letras = MontoEnLetras(r['Monto'])
+#     text_size = recibo.textsize(text=monto_en_letras, font=font)
+#     recibo.rectangle((posicion[0]-2, posicion[1]-2, posicion[0]+text_size[0]+2, posicion[1]+text_size[1]+2),
+#                      fill=(189, 215, 238))
+#     recibo.text(xy=posicion, text=monto_en_letras, font=font, fill='black')
 
-    font = ImageFont.truetype(font=calibri_bold_italic, size=15)
-    recibo.text(xy=(195, 230), text=multilineas(r['Concepto'], 480, font), font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri_bold_italic, size=15)
+#     recibo.text(xy=(195, 230), text=multilineas(r['Concepto'], 480, font), font=font, fill='black')
 
-    font = ImageFont.truetype(font=calibri, size=14)
-#    fecha = '{:%d de %B de %Y}'.format(r['Fecha'])
-    fecha = f"{r['Fecha']:%d de %B de %Y}"
-    recibo.text(xy=(121, 292), text=fecha, font=font, fill='black')
+#     font = ImageFont.truetype(font=calibri, size=14)
+# #    fecha = '{:%d de %B de %Y}'.format(r['Fecha'])
+#     fecha = f"{r['Fecha']:%d de %B de %Y}"
+#     recibo.text(xy=(121, 292), text=fecha, font=font, fill='black')
 
-    if r['Categoría'] in GyG_constantes.sellos:
-        font = ImageFont.truetype(font=stencil, size=60)
-        ancho, alto = recibo.textsize(text=r['Categoría'].capitalize(), font=font)
-        tx, ty = cx - ancho // 2, cy - alto // 2
-        angulo = 30
-        transparente = (0, 0, 0, 0)
-        opacidad = 0.5
-        img_anulado = Image.new('RGBA', plantilla.size, color=transparente)
-        anulado = ImageDraw.Draw(img_anulado)
-        anulado.text(xy=(tx, ty), text=r['Categoría'].capitalize(), font=font, fill='red', align='center')
-        img_anulado = img_anulado.rotate(angulo, center=(cx, cy), fillcolor=transparente)
-        en = ImageEnhance.Brightness(img_anulado)
-        mask = en.enhance(1.0 - opacidad)
-        plantilla.paste(img_anulado, mask=mask)
+#     if r['Categoría'] in GyG_constantes.sellos:
+#         font = ImageFont.truetype(font=stencil, size=60)
+#         ancho, alto = recibo.textsize(text=r['Categoría'].capitalize(), font=font)
+#         tx, ty = cx - ancho // 2, cy - alto // 2
+#         angulo = 30
+#         transparente = (0, 0, 0, 0)
+#         opacidad = 0.5
+#         img_anulado = Image.new('RGBA', plantilla.size, color=transparente)
+#         anulado = ImageDraw.Draw(img_anulado)
+#         anulado.text(xy=(tx, ty), text=r['Categoría'].capitalize(), font=font, fill='red', align='center')
+#         img_anulado = img_anulado.rotate(angulo, center=(cx, cy), fillcolor=transparente)
+#         en = ImageEnhance.Brightness(img_anulado)
+#         mask = en.enhance(1.0 - opacidad)
+#         plantilla.paste(img_anulado, mask=mask)
 
-    try:
-        plantilla.save(os.path.join(output_path, output_file.format(recibo=r['Nro. Recibo'])))
-        return True
-    except:
-        error_msg  = str(sys.exc_info()[1])
-        if sys.platform.startswith('win'):
-            error_msg  = error_msg.replace('\\', '/')
-        print(f"*** Error guardando recibo {output_file.format(recibo=r['Nro. Recibo'])}: {error_msg}")
-        return False
+#     try:
+#         plantilla.save(os.path.join(output_path, output_file.format(recibo=r['Nro. Recibo'])))
+#         return True
+#     except:
+#         error_msg  = str(sys.exc_info()[1])
+#         if sys.platform.startswith('win'):
+#             error_msg  = error_msg.replace('\\', '/')
+#         print(f"*** Error guardando recibo {output_file.format(recibo=r['Nro. Recibo'])}: {error_msg}")
+#         return False
 
 
 def parse_range(str_range, min_value, max_value):
@@ -293,7 +295,7 @@ recibos_convertidos = 0
 for index, r in df.iterrows():
     print('.', end='')   # Imprime un punto en la pantalla por cada mensaje
     sys.stdout.flush()   # Flush output to the screen
-    if convierte_recibo(r):
+    if genera_recibo(r):
         recibos_convertidos += 1
 
 print()

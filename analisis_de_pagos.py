@@ -6,16 +6,19 @@
     POR HACER
     -   Agrupar en "mangos bajitos", "alto impacto" y el resto, para facilitar la gestión de cobranza
         (¿cómo poder establecer esta clasificación...?)
-    -   En agunos casos se ubicó a un vecino en una categoría particular, a fin de que se mostrase perma-
-        nentemente en ese segmento de la Cartelera Virtual. Para estos casos, no mostrar una propuesta
+    -   En agunos casos se ubicó a un vecino en una categoría particular, a fin de que se mostrase per-
+        manentemente en ese segmento de la Cartelera Virtual. Para estos casos, no mostrar una propuesta
         de cambio de categoría
-    -   ¿Hay vecinos cuyo comportamiento de pagos es similar al de otros? Ello pudiera ayudar para influen-
-        ciar sobre algunos de ellos para lograr un cambio en el grupo
+    -   ¿Hay vecinos cuyo comportamiento de pagos es similar al de otros? Ello pudiera ayudar para in-
+        fluenciar sobre algunos de ellos para lograr un cambio en el grupo
     -   Agregar al resumen:
           . Para aquellos vecinos que pagan la cuota completa, indicar los meses que están por debajo de
             la cuota (incluye meses no cancelados que quedaron "encerrados" entre otros)
+    -   
+
 
     HISTORICO
+    -   En el resumen de pagos se muestra adicionalmente el promedio de los 5 meses anteriores (24/04/2020)
     -   Se corrigió un error de datos que generaba que, en la rutina 'meses_último_pago()', el último pago
         estuviese vacío ('-'): El texto del 'Concepto' en la hoja 'Vigilancia' contenía un nombre de mes
         errado ('Febero' en lugar de 'Febrero'). Al ajustar todos los meses errados, ya no se presentó
@@ -118,7 +121,7 @@ excel_worksheet_cuotas  = GyG_constantes.pagos_ws_cuotas               # 'CUOTA'
 excel_worksheet_saldos  = GyG_constantes.pagos_ws_saldos               # 'Saldos'
 
 nMeses                  = 3  # Meses a analizar para propuestas de cambio de categoría
-nMeses_resumen          = 5  # Meses a mostrar en el cuadro resumen al inicio del análisis
+nMeses_resumen          = 6  # Meses a mostrar en el cuadro resumen al inicio del análisis
 
 
 # Gramática de expresiones aritméticas
@@ -409,6 +412,7 @@ def genera_resumen():
                    espacios(6) + 'recibidos  |  Ant.   Mes   Pos.\n'
     análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
     dist_idx = 0
+    df_tabla = DataFrame(columns=[i for i in range(11)])    # 11 columnas a mostrar
     for idx in range(last_col - nMeses_resumen + 1, last_col + 1):
         mes = format(columns[idx], '%b%Y')   #.capitalize()
         num_pagos = pagos_mensuales[idx]
@@ -428,18 +432,33 @@ def genera_resumen():
             cuota = 0
             num_pagos_eqv = 0
             # pct = 0
-        cuota = edita_número(cuota, num_decimals=0)
-        num_pagos_eqv = edita_número(num_pagos_eqv, num_decimals=1)
+        cuota_ed = edita_número(cuota, num_decimals=0)
+        num_pagos_eqv_ed = edita_número(num_pagos_eqv, num_decimals=1)
         total = sum(distribución[dist_idx][1:])
         dist_num_pagos = distribución[dist_idx][0]
         dist_tot_pagos = edita_número(total, num_decimals=0)
         dist_pct_ant   = edita_número(distribución[dist_idx][1] / total * 100, num_decimals=1) + '%'
         dist_pct_mes   = edita_número(distribución[dist_idx][2] / total * 100, num_decimals=1) + '%'
         dist_pct_pos   = edita_número(distribución[dist_idx][3] / total * 100, num_decimals=1) + '%'
-        análisis    += f'  {mes:8}{num_pagos:>5}{tot_pagos:>13}{promedio:>9}{cuota:>9}' + \
-                       f'{num_pagos_100_pct:>6}{num_pagos_eqv:>8}' + \
+        análisis    += f'  {mes:8}{num_pagos:>5}{tot_pagos:>13}{promedio:>9}{cuota_ed:>9}' + \
+                       f'{num_pagos_100_pct:>6}{num_pagos_eqv_ed:>8}' + \
                        f'{dist_num_pagos:>6}{dist_tot_pagos:>11}' + \
                        f'{dist_pct_ant:>7}{dist_pct_mes:>7}{dist_pct_pos:>7}\n'
+        df_tabla.loc[dist_idx] = [num_pagos,        totales_mensuales[idx],  round(totales_mensuales[idx] / pagos_mensuales[idx], -1), \
+                                  cuota,            num_pagos_100_pct,       num_pagos_eqv, \
+                                  dist_num_pagos,   total,                   distribución[dist_idx][1] / total * 100, \
+                                  distribución[dist_idx][2] / total * 100,   distribución[dist_idx][3] / total * 100]
+        if dist_idx == nMeses_resumen - 2:
+            df_prom = list(df_tabla.mean())
+            análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
+            análisis += f'  {"   prom.":8}' + \
+                        f'{edita_número(round(df_prom[ 0], 0), num_decimals=0):>5}{edita_número(round(df_prom[1], 0), num_decimals=0):>13}' + \
+                        f'{edita_número(round(df_prom[ 2], 0), num_decimals=0):>9}{edita_número(round(df_prom[3], 0), num_decimals=0):>9}' + \
+                        f'{edita_número(round(df_prom[ 4], 0), num_decimals=0):>6}{edita_número(round(df_prom[5], 1), num_decimals=1):>8}' + \
+                        f'{edita_número(round(df_prom[ 6], 0), num_decimals=0):>6}{edita_número(round(df_prom[7], 0), num_decimals=0):>11}' + \
+                        f'{edita_número(round(df_prom[ 8], 1), num_decimals=1)+"%":>7}{edita_número(round(df_prom[9], 1), num_decimals=1)+"%":>7}' + \
+                        f'{edita_número(round(df_prom[10], 1), num_decimals=1)+"%":>7}\n'
+            análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
         dist_idx += 1
 
     análisis += '\n  (*) A partir de septiembre 2019 se muestran los promedios de las cuotas semanales'
