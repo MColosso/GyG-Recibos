@@ -301,7 +301,6 @@ ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_def
 # Selecciona si se muestra la columna de saldos a favor
 muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_opciones_por_defecto)
 
-
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
 fecha_referencia = datetime(año, mes, 1)

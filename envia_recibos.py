@@ -7,8 +7,12 @@
     PENDIENTE POR HACER
     -   Enviar como anexos archivos .png (en lugar de .pdf), si estuviesen presentes; ello implica
         que no se generará el archivo .png al enviar por WhatsApp, si estuviese presente.
+    -   Unificar la opción para la generación de recibos de pago: rutina convierte_en_imagenes(anexos)
+        línea 377
 
     HISTORICO
+    -   Definir una opción para copiar a Temporales los archivos a ser enviados por WhatsApp
+        (19/05/2020)
     -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro de
         la carpeta actual para compatibilidad entre Windows y macOS (21/10/2019)
     -   Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas)
@@ -58,6 +62,7 @@
 # Control de salidas
 SEND_EMAIL    =  True
 SEND_WHATSAPP =  False
+COPY_FILE     =  True
 
 crop_image    =  True
 tipo_imagen   = '.png'
@@ -67,6 +72,7 @@ print('Cargando librerías...')
 import GyG_constantes
 from GyG_cuotas import *
 from GyG_utilitarios import *
+from copia_recibos import copia_recibo
 from pandas import read_excel, isnull, notnull
 import re
 from datetime import datetime, date
@@ -168,6 +174,11 @@ def date_to_str(date):
     Meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     return '{dd} de {mm} de {yyyy}'.format(dd=date.day, mm=Meses[date.month-1], yyyy=date.year)
+
+def copia_archivos_a_Temporal(anexos):
+    for anexo in anexos:
+        r = df.loc[anexo]
+        copia_recibo(r)
 
 def decode_email_o_celular(email_o_celular):
     # return [str.strip(x) for x in re.split('\|', email_o_celular)]
@@ -405,9 +416,15 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
     if email_o_celular == None:
         logfile.write('-> Enviar recibo{} {} a {}\n'.format('s' if len(sub_lista) > 1 else '',
                                                             anexos, beneficiario))
+        if COPY_FILE:
+            copia_archivos_a_Temporal(sub_lista)
         return
     es_correo  = isinstance(email_o_celular, list) or is_email(email_o_celular)
     es_celular = (not isinstance(email_o_celular, list)) and is_phone(email_o_celular)
+    if not es_correo:
+        if COPY_FILE:
+            copia_archivos_a_Temporal(sub_lista)
+
     if es_correo:
         if not SEND_EMAIL:
             message = '-> E-Mail:   Enviar recibo{s} {filename} a {beneficiario} ({email})\n'

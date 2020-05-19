@@ -171,9 +171,13 @@ class Cuota:
                 str_tasa = locale.format_string(f'%.2f', tasa, grouping=True, monetary=True).replace(',00', '')
                 separador = "" if (len(fechas) == 0) or lista else EOL * 2
                 txtCuotasMensuales += separador + \
-                              "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
+                              "Las cuotas pendientes por cancelar hasta Agosto 2019 se pagarán según los montos fijos " + \
                               "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
-                              "con la tasa de la semana en curso."
+                              "en base a la cuota vigente."
+
+                             #  "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
+                             #  "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
+                             #  "con la tasa de la semana en curso."
 
                              #  "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
                              #  "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \

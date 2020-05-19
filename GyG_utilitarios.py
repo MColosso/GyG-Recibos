@@ -1,6 +1,20 @@
 # GyG Utilitarios
 #
 # Rutinas utilitarias utilizadas en varios módulos
+#  . input_mes_y_año(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
+#  . input_si_no(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
+#  . input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
+#  . edita_número(number, num_decimals=2)
+#  . trunca_texto(texto, max_width)
+#  . espacios(width=1, char=' ')
+#  . MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False)
+#  . genera_recibo(r)
+#      'r' es un diccionario, dataframe o serie con las siguientes claves:
+#        . 'Nro. Recibo',  'Fecha',     'Beneficiario',  'Dirección',
+#        . 'Monto',        'Concepto',  'Categoría'
+#
+
+
 
 from re import match
 from datetime import datetime, timedelta

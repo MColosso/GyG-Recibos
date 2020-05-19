@@ -8,6 +8,11 @@
     -   
 
     HISTORICO
+    -   Ajustado el nombre de la curva 'Promedio 5 últimos meses' a 'Promedio de dic/2019 a abr/2020'
+        en la gráfica 1 (Gestión de Cobranzas)
+        (15/05/2020)
+    -   Corregido el error en la gráfica de Cuotas Equivalentes en la opción horizontal donde se
+        mostraban distribuciones y textos erroneos en las barras (12/05/2020)
     -   Ajustadas las gráficas Pagos 100% Equivalentes y Cuotas Equivalentes para que puedan ser
         desplegadas como barras horizontales (01/05/2020)
     -   Dado que los pagos de meses atrasados se hece en base a la última cuota, la gráfica de Cuotas
@@ -56,6 +61,7 @@ from scipy import stats
 from numpy import mean
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+# import swifter        # .swifter.progress_bar(False).apply()
 
 import sys
 import os
@@ -77,7 +83,7 @@ num_meses_cuotas_equivalentes = 12      # Nro de meses a mostrar en gráfica 'Cu
 
 PUNTO_DE_EQUILIBRIO           = 55      # Cantidad de familias usadas en el cálculo de la cuota
 
-FORMATO_MES         = '%b. %Y'          # <mes abreviado> '.' <año>
+FORMATO_MES         = '%b %Y'           # <mes abreviado> '.' <año>
 
 CALENDAR_ICON       = os.path.join(GyG_constantes.rec_imágenes, '62925-spiral-calendar-icon.png')
 CALENDAR_SIZE       = (16, 16)
@@ -132,11 +138,16 @@ def grafica_1():
         num_meses_gestion_cobranzas = int(values['_g1_nro_meses_'])
         print(f'  - {grafica_nombre}...')
 
-    # Obtiene los datos de las pestañas 'Vigilancia' y 'RESUMEN VIGILANCIA' de la hoja de cálculo '1.1. GyG Recibos.xlsm'
+    # Define las fechas de referencia
     dia_de_referencia = fecha_de_referencia.day
     mes_actual = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1)
     fecha_inicial = fecha_de_referencia - relativedelta(months=num_meses_gestion_cobranzas)
     mes_inicial = datetime(fecha_inicial.year, fecha_inicial.month, 1)
+    # --------------------
+    mes_final = mes_actual - relativedelta(months=1)
+    str_mes_inicial = mes_inicial.strftime('%b'+('/%Y' if mes_inicial.year != mes_final.year else ''))
+    str_mes_final = mes_final.strftime('%b/%Y')
+    # --------------------
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los estimados del servicio de vigilancia')
     ws_estimados_mensuales = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
@@ -174,7 +185,8 @@ def grafica_1():
     # Normalizar los montos dividiéndolo por el estimado del mes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Normaliza los pagos de vigilancia en base al estimado ' + \
                                                                      'de pago del mes')
-    ws_vigilancia['Monto_normalizado'] = ws_vigilancia.apply(lambda ws: ws['Monto'] / ws_estimados_mensuales[ws['Mes']], axis=1)
+    ws_vigilancia['Monto_normalizado'] = ws_vigilancia.apply(
+                                            lambda ws: ws['Monto'] / ws_estimados_mensuales[ws['Mes']], axis=1)
 
     # Genera columnas a graficar
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los datos del mes actual')
@@ -225,7 +237,8 @@ def grafica_1():
                 x = ws_meses_anteriores['Día'],
                 y = ws_meses_anteriores['Acumulado'],
                 mode = 'lines',
-                name = f"Promedio {num_meses_gestion_cobranzas} últimos meses",
+                # name = f"Promedio {num_meses_gestion_cobranzas} últimos meses",
+                name = f"Promedio de {str_mes_inicial} a {str_mes_final}",
                 line = dict(
                             width = 3,
                             color = 'blue',
@@ -247,7 +260,7 @@ def grafica_1():
 
     data = [trace_mes_actual, trace_prom_5_ultimos_meses, trace_pago_vigilantes, trace_regresion]
 
-    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b. %Y")
+    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
     comentario = f"Recaudado: Bs. {edita_número(total_recaudado, num_decimals=0)} " + \
                  f"({edita_número(pct_del_estimado, num_decimals=0)}% del estimado)"
 
@@ -345,7 +358,7 @@ def gráfica_2():
     promedios = [promedio for _ in meses]
     pto_equilibrio = [PUNTO_DE_EQUILIBRIO for _ in meses]
 
-    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b. %Y")
+    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
 
 
     # 100% Equivalentes
@@ -403,13 +416,13 @@ def gráfica_2():
                 plot_bgcolor = 'white',
             )
 
-#    subtítulo = 'al ' + celda('A36').strftime("%d %b. %Y")
+#    subtítulo = 'al ' + celda('A36').strftime("%d %b %Y")
 #    comentario = celda('B18')
 
     fig = go.Figure(data = data, layout = layout)
 
     if g2_show:
-        print(f'    . Desplegando imagen...')
+        print(f"    . Desplegando imagen {'vertical' if VERTICAL_BARS else 'horizontal'}...")
         fig.show()
 
     if g2_save:
@@ -450,8 +463,10 @@ def gráfica_2():
 #     ws_vigilancia = ws_vigilancia[['Mes', 'Beneficiario', 'Fecha', 'Monto']]
 
 #     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
-#     ws_vigilancia['Cuota'] = ws_vigilancia.apply(lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
-#     ws_vigilancia['Pagos eqv'] = ws_vigilancia.apply(lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
+#     ws_vigilancia['Cuota'] = ws_vigilancia.apply(
+#                                   lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
+#     ws_vigilancia['Pagos eqv'] = ws_vigilancia.apply(
+#                                   lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
 
 #     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totalizando Pagos Equivalentes por Mes...')
 #     ws_vigilancia = pivot_table(ws_vigilancia, values=['Pagos eqv'], index=['Mes'], aggfunc=sum).reset_index()
@@ -464,7 +479,7 @@ def gráfica_2():
 #     promedios = [promedio for _ in meses]
 #     pto_equilibrio = [PUNTO_DE_EQUILIBRIO for _ in meses]
 
-#     subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b. %Y")
+#     subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
 
 
 #     # 100% Equivalentes
@@ -521,7 +536,7 @@ def gráfica_2():
 #                 plot_bgcolor = 'white',
 #             )
 
-# #    subtítulo = 'al ' + celda('A36').strftime("%d %b. %Y")
+# #    subtítulo = 'al ' + celda('A36').strftime("%d %b %Y")
 # #    comentario = celda('B18')
 
 #     fig = go.Figure(data = data, layout = layout)
@@ -703,12 +718,6 @@ def distribución_de_pagos():
 
         return (num_pagos, total_meses_anteriores, total_mes_actual, total_meses_siguientes)
 
-# --------------------------------------------
-    import cProfile
-    p = cProfile.Profile()
-    p.enable()
-# --------------------------------------------
-
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Calcula cómo se distribuyen los pagos por mes')
 
     # Lee la hoja con el resumen de pagos. Usa la libreria OpenPyXL para preservar
@@ -780,12 +789,6 @@ def distribución_de_pagos():
 
     if VERBOSE: print()
 
-# ----------------------------------------------
-    p.disable()
-    p.print_stats()
-    p.dump_stats("results.prof")
-# ----------------------------------------------
-
     return lista_resultados
 
 
@@ -844,34 +847,41 @@ def gráfica_3():
     ws_vigilancia = ws_vigilancia[['Mes', 'Beneficiario', 'Fecha', 'Monto']]
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
-    ws_vigilancia['Cuota'] = ws_vigilancia.apply(lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
-    ws_vigilancia['Pagos eqv'] = ws_vigilancia.apply(lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
+    ws_vigilancia['Cuota'] = ws_vigilancia.apply(
+                                    lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
+    ws_vigilancia['Pagos eqv'] = ws_vigilancia.apply(
+                                    lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totalizando Pagos Equivalentes por Mes...')
     ws_vigilancia = pivot_table(ws_vigilancia, values=['Pagos eqv'], index=['Mes'], aggfunc=sum).reset_index()
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los rangos de la imagen')
-    meses  = ws_vigilancia['Mes'].to_list()
+    meses = ws_vigilancia['Mes'].to_list()
+    pagos_100pct_equivalentes = ws_vigilancia['Pagos eqv'].to_list()
     if VERTICAL_BARS:
         meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
-        pagos_100pct_equivalentes = ws_vigilancia['Pagos eqv'].to_list()
         promedio = int(round(mean(pagos_100pct_equivalentes[:-1]), ndigits=0))
     else:
         meses_ed = [mes.strftime(FORMATO_MES) for mes in reversed(meses)]
-        pagos_100pct_equivalentes = ws_vigilancia['Pagos eqv'].to_list()
         pagos_100pct_equivalentes.reverse()
+        pctMesAnt.reverse()
+        pctMesAct.reverse()
+        pctMesSig.reverse()
         promedio = int(round(mean(pagos_100pct_equivalentes[1:]), ndigits=0))
-    bar_mesAnt = [num_pagos * pctMesAnt[i] for i, num_pagos in enumerate(pagos_100pct_equivalentes)]
-    bar_mesAct = [num_pagos * pctMesAct[i] for i, num_pagos in enumerate(pagos_100pct_equivalentes)]
-    bar_mesSig = [num_pagos * pctMesSig[i] for i, num_pagos in enumerate(pagos_100pct_equivalentes)]
+    bar_mesAnt = [num_pagos * pctMesAnt[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
+    bar_mesAct = [num_pagos * pctMesAct[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
+    bar_mesSig = [num_pagos * pctMesSig[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
     sep_1, sep_2 = ('<br />', '') if VERTICAL_BARS else (' pagos (', ')')
-    str_pctMesAct = [f"{int(round(numPagos * pctMesAct[i], 0))}{sep_1}{edita_número(pctMesAct[i] * 100, num_decimals=1)}%{sep_2}" \
-                        for i, numPagos in enumerate(pagos_100pct_equivalentes)]
+    iterator = enumerate(pagos_100pct_equivalentes) if VERTICAL_BARS \
+                    else reversed(list(enumerate(pagos_100pct_equivalentes)))
+    str_pctMesAct = [f"{int(round(numPagos * pctMesAct[idx], 0))}{sep_1}" + \
+                     f"{edita_número(pctMesAct[idx] * 100, num_decimals=1)}%{sep_2}" \
+                            for idx, numPagos in iterator]
     promedios = [promedio for _ in meses]
     pto_equilibrio = [PUNTO_DE_EQUILIBRIO for _ in meses]
 
     título =    'Pagos recibidos en el mes equivalentes a cuotas completas'
-    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b. %Y")
+    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
 
 
     fig = go.Figure()
@@ -883,7 +893,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesAnt,
                         y = bar_mesAnt if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesAnt,
+                        text = str_pctMesAnt if VERTICAL_BARS else [text for text in reversed(str_pctMesAnt)],
                         textposition = "inside",
                         marker_color = '#4475cd',            # '#5485dd',
                         legendgroup = 'bar',
@@ -894,7 +904,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesAct,
                         y = bar_mesAct if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesAct,
+                        text = str_pctMesAct if VERTICAL_BARS else [text for text in reversed(str_pctMesAct)],
                         textposition = "inside",
                         marker_color = 'cornflowerblue',     # '#6495ed',
                         legendgroup = 'bar',
@@ -905,7 +915,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesSig,
                         y = bar_mesSig if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesSig,
+                        text = str_pctMesSig if VERTICAL_BARS else [text for text in reversed(str_pctMesSig)],
                         textposition = "inside",
                         marker_color = '#84b5ff',           # '#74a5fd',
                         legendgroup = 'bar',
@@ -967,7 +977,7 @@ def gráfica_3():
                     ))
 
     if g3_show:
-        print(f'    . Desplegando imagen...')
+        print(f"    . Desplegando imagen {'vertical' if VERTICAL_BARS else 'horizontal'}...")
         fig.show()
 
     if g3_save:
@@ -1051,7 +1061,7 @@ else:
                                            close_when_date_chosen=True)],
                         [sg.Radio("", size=(2, 1), 
                                   group_id='fechas', key='_fecha_mes_anterior_'),
-                         sg.Text(f"Gráficas del mes anterior:  {mes_anterior.strftime('%b. %Y')}", size=(30, 1)),
+                         sg.Text(f"Gráficas del mes anterior:  {mes_anterior.strftime('%b %Y')}", size=(30, 1)),
                          sg.Text("", size=(36, 1))],    # espaciador
                     ]
     ANCHURA_NOMBRE_GRAFICO = 28
@@ -1086,37 +1096,37 @@ else:
     window = sg.Window('GyG Gráficas', layout)
 
     # Event Loop to process "events"
-#    while True:             
-    event, values = window.read()
+    while True:             
+        event, values = window.read()
 
-    # from pprint import pprint
-    # pprint(values)
-    
-    if event in (None, 'Finaliza'):
-        pass    # break
-    elif event == 'Genera gráficas':
-        if values['_fecha_manual_']:
-            fecha_de_referencia = datetime.strptime(values['_fecha_referencia_'], '%d-%m-%Y')
-        else:
-            fecha_de_referencia = mes_anterior
+        # from pprint import pprint
+        # pprint(values)
+        
+        if event in (None, 'Finaliza'):
+            break
+        elif event == 'Genera gráficas':
+            if values['_fecha_manual_']:
+                fecha_de_referencia = datetime.strptime(values['_fecha_referencia_'], '%d-%m-%Y')
+            else:
+                fecha_de_referencia = mes_anterior
 
-        mes_actual = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1)
+            mes_actual = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1)
 
-        g1 = values['_g1_']
-        g1_show = values['_g1_show_']
-        g1_save = values['_g1_save_']
+            g1 = values['_g1_']
+            g1_show = values['_g1_show_']
+            g1_save = values['_g1_save_']
 
-        g2 = values['_g2_']
-        g2_show = values['_g2_show_']
-        g2_save = values['_g2_save_']
-        g2_horizontal = values['_g2_horizontal_']
+            g2 = values['_g2_']
+            g2_show = values['_g2_show_']
+            g2_save = values['_g2_save_']
+            g2_horizontal = values['_g2_horizontal_']
 
-        g3 = values['_g3_']
-        g3_show = values['_g3_show_']
-        g3_save = values['_g3_save_']
-        g3_horizontal = values['_g3_horizontal_']
+            g3 = values['_g3_']
+            g3_show = values['_g3_show_']
+            g3_save = values['_g3_save_']
+            g3_horizontal = values['_g3_horizontal_']
 
-        genera_gráficas()
+            genera_gráficas()
 
     window.close()
 

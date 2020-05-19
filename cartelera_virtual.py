@@ -8,9 +8,10 @@
         de la columna "2016" en la hoja de Excel a "=fecha(2016;1;1)" y eliminar el cambio
         de nombre en la rutina principal
     -   
-
-
+    
     HISTORICO
+    -   Si el mes seleccionado corresponde al mes actual, colocar la fecha de hoy como fecha de
+        referencia (17/05/2020)
     -   Corregir inconsistencia en 'no_participa_desde()': Al seleccionar una fecha de referencia
         anterior a la última colaboración efectuada, se muestra esta última, y no la última desde
         la fehcha indicada:
@@ -210,7 +211,7 @@ def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
     else:
         return None
 
-#a_evaluar = ['Yuraima Rodríguez', 'Familia Il Grande Franceschi', 'Familia Santos Carrillo']
+# a_evaluar = ['Familia Martínez Boada', ]
 
 def no_participa_desde(r):
     """
@@ -218,8 +219,8 @@ def no_participa_desde(r):
         (evalúa desde el mes y año indicado, hasta el 2016)
     """
 
-#    if r['Beneficiario'] in a_evaluar: print(f"\nBeneficiario: {r['Beneficiario']}\n{'-'*(len('Beneficiario: ')+len(r['Beneficiario']))}")
-#    if r['Beneficiario'] in a_evaluar: print(f"  (0): f_desde: {columns.index(r['F.Desde'])} ({columns[columns.index(r['F.Desde'])]}), last_col: {last_col} ({columns[last_col]})")
+    # if r['Beneficiario'] in a_evaluar: print(f"\nBeneficiario: {r['Beneficiario']}\n{'-'*(len('Beneficiario: ')+len(r['Beneficiario']))}")
+    # if r['Beneficiario'] in a_evaluar: print(f"  (0): f_desde: {columns.index(r['F.Desde'])} ({columns[columns.index(r['F.Desde'])]}), last_col: {last_col} ({columns[last_col]})")
 
     x = last_col       # <-------- 'x' es la primera columna vacía
     ultimo_mes_con_pagos = None
@@ -229,7 +230,7 @@ def no_participa_desde(r):
     f_desde = columns.index(r['F.Desde'])
 
     for idx in reversed(range(f_desde, last_col+1)):
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1): idx: {idx}, cuota: {cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx])}, r.iloc[idx]: {r.iloc[idx]}")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1): idx: {idx}, cuota: {cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx])}, r.iloc[idx]: {r.iloc[idx]}")
         if notnull(r.iloc[idx]):
             ultimo_mes_con_pagos = idx
             break
@@ -241,23 +242,23 @@ def no_participa_desde(r):
     else:
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
         fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
-#    if r['Beneficiario'] in a_evaluar: print(f"  (1a): cuotas_pendientes: {cuotas_pendientes:,.2f}, this_col: {this_col}, fecha_txt: {fecha_txt}")
+    # if r['Beneficiario'] in a_evaluar: print(f"  (1a): cuotas_pendientes: {cuotas_pendientes:,.2f}, this_col: {this_col}, fecha_txt: {fecha_txt}")
 
     # Determina el saldo del último mes
     if ultimo_mes_con_pagos == None:
         saldo_ultimo_mes = 0.00
     elif r.iloc[ultimo_mes_con_pagos] == 'ü':       # 'check'
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1c): x = {ultimo_mes_con_pagos}, columns[x] = {columns[ultimo_mes_con_pagos]} - DEUDA SALDADA")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1c): x = {ultimo_mes_con_pagos}, columns[x] = {columns[ultimo_mes_con_pagos]} - DEUDA SALDADA")
         saldo_ultimo_mes = 0.00           # La mensualidad está saldada por completo
     else:
         f_ultimo_pago = fecha_ultimo_pago(r['Beneficiario'], columns[ultimo_mes_con_pagos].strftime('%m-%Y'))
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1b): fecha_ultimo_pago({r['Beneficiario']}, {columns[ultimo_mes_con_pagos].strftime('%m-%Y')}) = {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1c): Fecha último pago: {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1b): fecha_ultimo_pago({r['Beneficiario']}, {columns[ultimo_mes_con_pagos].strftime('%m-%Y')}) = {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1c): Fecha último pago: {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
         if (f_ultimo_pago == None) or (r['Categoría'] == 'Colaboración'):
             saldo_ultimo_mes = 0.00   # Probablemente es un vecino que nunca ha pagado
         else:
             cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], f_ultimo_pago)
-#            if r['Beneficiario'] in a_evaluar: print(f"  (3): Beneficiario: {r['Beneficiario']}, cuota actual: {cuota_actual}, pago: {r[columns[ultimo_mes_con_pagos]]}")
+            # if r['Beneficiario'] in a_evaluar: print(f"  (3): Beneficiario: {r['Beneficiario']}, cuota actual: {cuota_actual}, pago: {r[columns[ultimo_mes_con_pagos]]}")
             saldo_ultimo_mes = cuota_actual - r[columns[ultimo_mes_con_pagos]]
             # Si el monto cancelado no cubre la cuota del período, recalcula el saldo del ultimo mes en base
             # a la última cuota
@@ -276,7 +277,7 @@ def no_participa_desde(r):
         ultimo_mes_con_pagos += 1
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
         fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
-#    if r['Beneficiario'] in a_evaluar: print(f"  (9): x: {ultimo_mes_con_pagos}, last_col: {last_col}, r[{fecha_referencia}]: {r[fecha_referencia]}, deuda: {saldo_ultimo_mes}")
+    # if r['Beneficiario'] in a_evaluar: print(f"  (9): x: {ultimo_mes_con_pagos}, last_col: {last_col}, r[{fecha_referencia}]: {r[fecha_referencia]}, deuda: {saldo_ultimo_mes}")
     if deuda_actual != 0.00:
         if saldo_ultimo_mes != 0.00:
             info_deuda = 'Tiene una diferencia pendiente en ' + fecha_txt
@@ -300,10 +301,12 @@ def no_participa_desde(r):
             #
             #    <-- Verificar, adicionalmente, si df_pagos['Fecha'] < "Fecha de referencia"
             u_fecha = ultimo_pago['Fecha'].strftime('%d %b %Y')
-#            u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
+            # u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
             u_concepto = re.search(r'.*([,:] )(.*)$', str(ultimo_pago.Concepto)).group(2)   # Busca ', ' (como en 'Cancelación Vigilancia, ') o
                                                                                             # ': ' (como en 'Vigilancia: ') y toma el resto del
                                                                                             # string
+            # if r['Beneficiario'] in a_evaluar: print(f"  (9c): Concepto: {ultimo_pago.Concepto}, concepto editado: {u_concepto}")
+
             u_concepto = re.sub('mes(es)* de', 'correspondiente a', u_concepto)             # Cambia 'mes[es] de' por 'correspondiente a'
             deuda_actual = ultimo_pago['Monto']
             sep1, sep2 = f'. Último pago: {u_fecha}, ', f', {u_concepto}'
@@ -311,7 +314,7 @@ def no_participa_desde(r):
             sep1, sep2 = (' (', ')')
         info_deuda += f"{sep1}Bs. {edita_número(deuda_actual, num_decimals=2).replace(',00', '')}{sep2}"
 
-#    if r['Beneficiario'] in a_evaluar: print(f" (10): info_deuda: {info_deuda}")
+    # if r['Beneficiario'] in a_evaluar: print(f" (10): info_deuda: {info_deuda}")
 
     return info_deuda
 
@@ -471,6 +474,9 @@ año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
 fecha_referencia = datetime(año, mes, 1)
 f_ref_último_día = fecha_referencia + relativedelta(months=1) + relativedelta(days=-1)
+# Si estamos en el mismo mes, mostrar la fecha de hoy
+if (fecha_referencia.year == hoy.year) and (fecha_referencia.month == hoy.month):
+    f_ref_último_día = hoy
 
 # Abre la hoja de cálculo de Recibos de Pago
 print()

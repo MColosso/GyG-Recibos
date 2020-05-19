@@ -8,11 +8,11 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.8 GyG - Genera los recibos solicitados"
+echo "1.7 GyG - Genera los recibos solicitados"
 echo "----------------------------------------"
 echo ""
 echo "Ejemplos de recibos individuales o rangos a generar:"
-echo "   12     Recibo 00012"
+echo "   12     Recibo  00012"
 echo "   1-5    Recibos 00001 hasta 00005"
 echo "   -8     Recibos 00001 hasta 00008"
 echo "   12-    Recibos 00012 hasta último recibo existente"

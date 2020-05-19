@@ -79,7 +79,7 @@ ruta_cartelera_virtual      = '../GyG Archivos/Cartelera Virtual'
 ruta_graficas               = '../GyG Archivos/Graficas'
                               # Carpeta de carteleras_virtuales
 
-ruta_relacion_ingresos       = '../GyG Archivos/Relación de Ingresos'
+ruta_relacion_ingresos       = '../GyG Archivos/Relación de Ingresos'
                               # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
                               # Carpeta de carteleras_virtuales
 
