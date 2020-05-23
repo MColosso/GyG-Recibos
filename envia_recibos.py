@@ -8,7 +8,10 @@
     -   Enviar como anexos archivos .png (en lugar de .pdf), si estuviesen presentes; ello implica
         que no se generará el archivo .png al enviar por WhatsApp, si estuviese presente.
     -   Unificar la opción para la generación de recibos de pago: rutina convierte_en_imagenes(anexos)
-        línea 377
+        con la utilizada en 'genera_recibos.py'
+         -> Esta opción se habilitó para facilitar su envío por WhatsApp cuando los recibos de pago se
+            generaban en formato PDF. Actualmente, todos ellos se generan como imágenes, por lo que ya
+            no es necesaria -> Opción eliminada (20/05/2020)
 
     HISTORICO
     -   Definir una opción para copiar a Temporales los archivos a ser enviados por WhatsApp
@@ -24,7 +27,7 @@
     -   Los correos con los recibos de pagos por anticipado no muestran el monto de las nuevas cuotas
         (si estuvieran definidas). (Corregido 01/07/2019)
     -   Enviar una imagen del Recibo de Pago por WhatsApp en lugar del archivo .pdf generado
-        (23/06/2019)
+        (23/06/2019) -> Opción eliminada (20/05/2020)
     -   CORREGIR: Cambiar referencias de "df['Archivo']" a "df['Nro. Recibo']" para evitar problemas
         de numerarión manual (corregido 21/06/2019)
     -   CORREGIR: Las cuotas mostradas para los colegios y otros inmuebles especiales son las
@@ -374,40 +377,40 @@ def sendWhatsApp(message_to, message, attachments=[]):
 # def envia_archivo(attachment, email_o_celular, beneficiario, fecha, shared_link, concepto):
 def envia_archivo(beneficiario, email_o_celular, sub_lista):
 
-    def convierte_en_imagenes(anexos):
+    # def convierte_en_imagenes(anexos):
 
-        img_anexos = list()
-        for anexo in anexos:
-            img_anexo = os.path.join(os.path.dirname(anexo),
-                                     os.path.basename(anexo).split('.')[0] + tipo_imagen)
+    #     img_anexos = list()
+    #     for anexo in anexos:
+    #         img_anexo = os.path.join(os.path.dirname(anexo),
+    #                                  os.path.basename(anexo).split('.')[0] + tipo_imagen)
 
-            if not os.path.lexists(img_anexo):
-                try:
-                    pages = convert_from_path(anexo)
-                except:
-                    error_msg  = str(sys.exc_info()[1])
-                    if sys.platform.startswith('win'):
-                        error_msg  = error_msg.replace('\\', '/')
-                    print(f'*** Error convirtiendo {os.path.basename(anexo)}: {error_msg}')
-                    continue
+    #         if not os.path.lexists(img_anexo):
+    #             try:
+    #                 pages = convert_from_path(anexo)
+    #             except:
+    #                 error_msg  = str(sys.exc_info()[1])
+    #                 if sys.platform.startswith('win'):
+    #                     error_msg  = error_msg.replace('\\', '/')
+    #                 print(f'*** Error convirtiendo {os.path.basename(anexo)}: {error_msg}')
+    #                 continue
 
-                try:
-                    pages[0].save(img_anexo)
-                except:
-                    error_msg  = str(sys.exc_info()[1])
-                    if sys.platform.startswith('win'):
-                        error_msg  = error_msg.replace('\\', '/')
-                    print(f'*** Error generando {img_anexo}: {error_msg}')
-                    continue
+    #             try:
+    #                 pages[0].save(img_anexo)
+    #             except:
+    #                 error_msg  = str(sys.exc_info()[1])
+    #                 if sys.platform.startswith('win'):
+    #                     error_msg  = error_msg.replace('\\', '/')
+    #                 print(f'*** Error generando {img_anexo}: {error_msg}')
+    #                 continue
 
-                if crop_image:
-                    img_recibo = Image.open(img_anexo)
-                    img_recibo = img_recibo.resize(size=(712, 363), box=(108, 84, 1570, 825), resample=Image.HAMMING)
-                    img_recibo.save(img_anexo)
+    #             if crop_image:
+    #                 img_recibo = Image.open(img_anexo)
+    #                 img_recibo = img_recibo.resize(size=(712, 363), box=(108, 84, 1570, 825), resample=Image.HAMMING)
+    #                 img_recibo.save(img_anexo)
 
-            img_anexos.append(img_anexo)
+    #         img_anexos.append(img_anexo)
 
-        return img_anexos
+    #     return img_anexos
 
 
     anexos = [recibo_fmt.format(recibo=df.loc[i, 'Nro. Recibo']) for i in sub_lista]
@@ -467,7 +470,7 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
                                              beneficiario=beneficiario,
                                              mensaje=error_msg))
     elif es_celular:
-        img_anexos = convierte_en_imagenes([attachment_name(df.loc[idx, 'Nro. Recibo']) for idx in sub_lista])
+        # img_anexos = convierte_en_imagenes([attachment_name(df.loc[idx, 'Nro. Recibo']) for idx in sub_lista])
         if not SEND_WHATSAPP:
             message = '-> WhatsApp: Enviar recibo{s} {filename} a {beneficiario} ({phone})\n'
             logfile.write(message.format(s='s' if len(sub_lista) > 1 else '',
@@ -484,8 +487,10 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
             message_to = beneficiario
             message = wa_message
 #            attachment = attachment.replace('/', '\\')  # Convertir Slashes en Backslashes (estándar de Windows)
+            # archivo_enviado, error_msg = sendWhatsApp(message_to, message,
+            #                                           attachments=img_anexos)
             archivo_enviado, error_msg = sendWhatsApp(message_to, message,
-                                                      attachments=img_anexos)
+                                                      attachments=sub_lista)
             if archivo_enviado:
                 message = 'Ok Recibo{s} {filename} enviado{s} a {beneficiario} ({phone}) vía WhatsApp\n'
                 logfile.write(message.format(s='s' if len(sub_lista) > 1 else '',

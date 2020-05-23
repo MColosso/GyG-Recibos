@@ -175,13 +175,13 @@ class Cuota:
                               "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
                               "en base a la cuota vigente."
 
-                             #  "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
-                             #  "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
-                             #  "con la tasa de la semana en curso."
-
                              #  "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
                              #  "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \
                              # f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar." + EOL + \
+
+                             #  "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
+                             #  "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
+                             #  "con la tasa de la semana en curso."
 
             txtCuotasMensuales += EOL * 2
 

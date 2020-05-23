@@ -495,7 +495,7 @@ def genera_propuesta_categoría():
     df = df[notnull(df['Beneficiario'])]
     df = df[df['Beneficiario'] != 'CUOTAS MENSUALES']
     df = df[notnull(df['Categoría'])]
-    df['Propuesta'] = df_resumen.swifter.progress_bar(True).apply(genera_propuesta, axis=1)
+    df['Propuesta'] = df_resumen.swifter.progress_bar(False).apply(genera_propuesta, axis=1)
     df = df[notnull(df['Propuesta'])]
     return df
 
@@ -641,7 +641,7 @@ def distribución_de_pagos():
     df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
     df_pagos.sort_values(by=['Beneficiario', 'Fecha'], inplace=True)
     #df_pagos.dropna(subset=['Fecha'], inplace=True)
-    df_pagos['Fecha'] = df_pagos['Fecha'].swifter.progress_bar(True).apply(lambda x: f'{x:%m-%Y}')
+    df_pagos['Fecha'] = df_pagos['Fecha'].swifter.progress_bar(False).apply(lambda x: f'{x:%m-%Y}')
 
 
     def edit(valor, width=9, decimals=0):
@@ -783,7 +783,7 @@ df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 df_pagos = read_excel(excel_workbook, sheet_name=excel_worksheet_detalle)
 
 # Genera una columna con el resumen de los meses cancelados en cada pago
-meses_cancelados = df_pagos['Concepto'].swifter.progress_bar(True).apply(lambda x: separa_meses(x, as_string=True))
+meses_cancelados = df_pagos['Concepto'].swifter.progress_bar(False).apply(lambda x: separa_meses(x, as_string=True))
 df_pagos.insert(column='Meses', value=meses_cancelados, loc=df_pagos.shape[1])
 
 # Elimina los registros que no no corresponden a pago de vigilancia
@@ -822,8 +822,8 @@ if ordenado:
 
 # Inserta las columnas 'Promedio' y 'Variación' con el día promedio de pago y su
 # desviación estándar
-prom  = df_resumen.swifter.progress_bar(True).apply(dia_promedio, axis=1)
-desv  = df_resumen.swifter.progress_bar(True).apply(desviación, axis=1)
+prom  = df_resumen.swifter.progress_bar(False).apply(dia_promedio, axis=1)
+desv  = df_resumen.swifter.progress_bar(False).apply(desviación, axis=1)
 df_resumen.insert(column='Promedio',  value=prom, loc=df_resumen.shape[1])
 df_resumen.insert(column='Variación', value=desv, loc=df_resumen.shape[1])
 

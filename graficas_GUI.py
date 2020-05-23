@@ -5,7 +5,11 @@
 
 """
     POR HACER
-    -   
+    -   La gráfica 'Pagos recibidos en el mes equivalentes a cuotas completas' no está tomando en cuenta
+        el día del análisis en meses anteriores al actual.
+         -> En distribución_de_pagos() y gráfica_3() se filtraron aquellos pagos posteriores a la fecha
+            de referencia
+
 
     HISTORICO
     -   Ajustado el nombre de la curva 'Promedio 5 últimos meses' a 'Promedio de dic/2019 a abr/2020'
@@ -89,7 +93,7 @@ CALENDAR_ICON       = os.path.join(GyG_constantes.rec_imágenes, '62925-spiral-c
 CALENDAR_SIZE       = (16, 16)
 CALENDAR_SUBSAMPLE  = 8
 
-VERBOSE             = False                         # Muestra mensajes adicionales
+VERBOSE             = True                         # Muestra mensajes adicionales
 
 toma_opciones_por_defecto = False
 if len(sys.argv) > 1:
@@ -755,11 +759,13 @@ def distribución_de_pagos():
     df_resumen.columns = new_cols
 
     # Lee la hoja con el detalle de los pagos recibidos, elimina aquellos cuya Referen-
-    # cia no corresponda al pago de Vigilancia y estandariza la fecha de pago
+    # cia no corresponda al pago de Vigilancia, descarta aquellos posteriores a la fecha
+    # de referencia y estandariza la fecha de pago
     df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
     #df_pagos = df_pagos[df_pagos['Categoría'] == 'Vigilancia']
     df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
     df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
+    df_pagos = df_pagos[df_pagos['Fecha'] <= fecha_de_referencia]
     df_pagos.sort_values(by=['Beneficiario', 'Fecha'], inplace=True)
     #df_pagos.dropna(subset=['Fecha'], inplace=True)
     df_pagos['Fecha'] = df_pagos['Fecha'].apply(lambda x: f'{x:%m-%Y}')
@@ -845,6 +851,7 @@ def gráfica_3():
                                   (ws_vigilancia['Mes'] <= mes_actual) & \
                                   (ws_vigilancia['Mes'] >= mes_inicial)]
     ws_vigilancia = ws_vigilancia[['Mes', 'Beneficiario', 'Fecha', 'Monto']]
+    ws_vigilancia = ws_vigilancia[ws_vigilancia['Fecha'] <= fecha_de_referencia]
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
     ws_vigilancia['Cuota'] = ws_vigilancia.apply(
