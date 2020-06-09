@@ -44,5 +44,15 @@ echo "------------------------------------"
 
 python3 ./resumen_saldos.py --toma_opciones_por_defecto
 
+
+# GyG Propuestas de cambio de categoría ----------------------------
+
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
+echo ""
+echo "7.4 GyG Propuestas de cambio de categoría"
+echo "-----------------------------------------"
+
+python3 ./cambios_de_categoria.py --toma_opciones_por_defecto
+
 echo ""
 echo "Proceso terminado . . . "

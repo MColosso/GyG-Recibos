@@ -1,14 +1,31 @@
 # GyG GRAFICAS
 #
-# Genera las gráficas de 'Gestión de Cobranzas', 'Pagos 100% Equivalentes', 'Pagos recibidos en el
-# mes equivalentes a cuotas completas', y 'Cuotas Recibidas en el Mes' en base a la última información
-# cargada en la hoja de cálculo.
+# Genera las gráficas de:
+#   - Gestión de Cobranzas,
+#   - Pagos 100% Equivalentes,
+#   - Pagos recibidos en el mes equivalentes a cuotas completas,
+#   - Cuotas Recibidas en el Mes, y
+#   - Cuotas por oportunidad de pago
+# en base a la última información cargada en la hoja de cálculo.
 
 """
     POR HACER
     -   
 
     HISTORICO
+    -   En algunas gráficas se muestran pagos recibidos, y en otras, cuotas completas, lo que genera
+        una diferencia en la información mostrada (hay vecinos que colaboran con un monto inferior a
+        la cuota, y otros, un monto superior). Ajustar para manejar un único criterio: cuotas comple-
+        tas.
+        (05/06/2020)
+    -   El Total de Cuotas y las Cuotas Mes Actual pueden solaparse -> separar...
+         -> Se separaron las leyendas de las diferentes curvas de la gráfica 'Cuotas por oportunidad
+            de pago' en caso de que estén solapadas (03/06/2020)
+    -   Se ajustaron las gráficas 'Pagos 100% Equivalentes' y 'Pagos recibidos en el mes equivalentes
+        a cuotas completas' utilizando "fig.update_yaxes(autorange='reversed')" en lugar de invertir
+        manualmente el eje Y (31/05/2020)
+    -   Gráfica lineal con pagos recibidos distribuidos según el período al cual apliquen: meses
+        anteriores, pagos del mes actual y anticipo de meses subsiguientes... (30/05/2020)
     -   Mostrar el número de pagos recibidos directamente sobre la gráfica y no como un comentario
         aparte.
          -> Se actualizaron las gráficas 'Gestión de Cobranzas' y 'Cuotas Recibidas en el Mes' con las
@@ -64,6 +81,7 @@
 print('Cargando librerías...')
 import GyG_constantes
 from GyG_utilitarios import *
+from GyG_cuotas import Cuota
 import PySimpleGUI as sg
 
 # import plotly
@@ -87,7 +105,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 # Define algunas constantes
 excel_workbook      = GyG_constantes.pagos_wb_estandar     # '1.1. GyG Recibos.xlsm'
-excel_ws_cobranzas  = GyG_constantes.pagos_ws_cobranzas
+# excel_ws_cobranzas  = GyG_constantes.pagos_ws_cobranzas
 excel_ws_vigilancia = GyG_constantes.pagos_ws_vigilancia
 excel_ws_resumen    = GyG_constantes.pagos_ws_resumen
 
@@ -101,6 +119,9 @@ FORMATO_MES         = '%b %Y'           # <mes abreviado> '.' <año>
 CALENDAR_ICON       = os.path.join(GyG_constantes.rec_imágenes, '62925-spiral-calendar-icon.png')
 CALENDAR_SIZE       = (16, 16)
 CALENDAR_SUBSAMPLE  = 8
+
+TITULO_GRAFICA      = '<span style="font-size: 18px"><b>{}</b></span><br>' + \
+                      '<span style="font-size: 14px"><i>{}</i></span>'
 
 VERBOSE             = False             # Muestra mensajes adicionales
 
@@ -138,6 +159,8 @@ def genera_gráficas():
         gráfica_3()     # Cuotas Equivalentes (montos recibidos en el mes)
     if g4:
         gráfica_4()     # Cuotas recibidas
+    if g5:
+        gráfica_5()     # Cuotas recibidas por tipo
 
 def gráfica_1():
     global num_meses_gestion_cobranzas
@@ -166,20 +189,16 @@ def gráfica_1():
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los estimados del servicio de vigilancia')
     ws_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
-    ws_cuotas_mensuales = ws_resumen[(ws_resumen['Beneficiario'] == 'CUOTAS MENSUALES')]
+    # ws_cuotas_mensuales = ws_resumen[(ws_resumen['Beneficiario'] == 'CUOTAS MENSUALES')]
     ws_pago_estimado = ws_resumen[(ws_resumen['Beneficiario'] == \
                                                     'PAGO ESTIMADO DE VIGILANCIA (Vigilantes, Pasivos y Consumibles)')]
 
 
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos realizados')
-    ws_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
-
     # Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_gestion_cobranzas atrás
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Filtra los pagos realizados por Categoría y Fecha')
-    ws_vigilancia = ws_vigilancia[(ws_vigilancia['Categoría'] == 'Vigilancia') & \
-                                  (ws_vigilancia['Fecha'] <= fecha_de_referencia) & \
-                                  (ws_vigilancia['Fecha'] >= mes_inicial)]
-    ws_vigilancia = ws_vigilancia[['Mes', 'Día', 'Monto', 'Fecha']]
+    ws_vigilancia = df_vigilancia[(df_vigilancia['Fecha'] <= fecha_de_referencia) & \
+                                  (df_vigilancia['Fecha'] >= mes_inicial)]
+    # ws_vigilancia = ws_vigilancia[['Mes', 'Día', 'Monto', 'Fecha']]
 
     # Valida que los datos estén completos y agrega registros en cero para los datos faltantes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Valida la completitud de valores en el período ' + \
@@ -193,24 +212,22 @@ def gráfica_1():
 
     ws_vigilancia = ws_vigilancia.append(a_agregar, ignore_index=True)
 
-    # Totaliza los pagos de vigilancia por día y mes
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza los pagos de vigilancia por día y mes')
-    ws_vigilancia = pivot_table(ws_vigilancia, values='Monto', index=['Día', 'Mes'], aggfunc=sum)   # , fill_value=0
-    ws_vigilancia = ws_vigilancia.reset_index() 
-
     # Normalizar los montos dividiéndolo por el estimado del mes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Normaliza los pagos de vigilancia en base al estimado ' + \
                                                                      'de pago del mes')
     ws_vigilancia['Monto_normalizado'] = ws_vigilancia.apply(
                                             lambda ws: ws['Monto'] / ws_pago_estimado[ws['Mes']], axis=1)
-    ws_vigilancia['_Cuotas_'] = ws_vigilancia.apply(
-                                            lambda ws: ws['Monto'] / ws_cuotas_mensuales[ws['Mes']], axis=1)
+
+    # Totaliza los pagos de vigilancia por día y mes
+    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza los pagos de vigilancia por día y mes')
+    ws_vigilancia = pivot_table(ws_vigilancia, values=['Monto', 'Monto_normalizado', 'Num. Cuotas'], index=['Día', 'Mes'], aggfunc=sum)
+    ws_vigilancia = ws_vigilancia.reset_index() 
 
     # Genera columnas a graficar
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los datos del mes actual')
     ws_mes_actual = ws_vigilancia[ws_vigilancia['Mes'] == mes_actual].copy().reset_index()
     ws_mes_actual['Acumulado'] = ws_mes_actual['Monto_normalizado'].cumsum()
-    ws_mes_actual['Cuotas'] = ws_mes_actual['_Cuotas_'].cumsum()
+    ws_mes_actual['Cuotas'] = ws_mes_actual['Num. Cuotas'].cumsum()
     total_recaudado = ws_mes_actual['Monto'].sum()
     pct_del_estimado = total_recaudado / ws_pago_estimado[mes_actual] * 100
 
@@ -220,9 +237,9 @@ def gráfica_1():
     ws_meses_anteriores = ws_meses_anteriores.reset_index()
     ws_meses_anteriores['Acumulado'] = ws_meses_anteriores['Monto_normalizado'].cumsum()
     ws_cuotas_anteriores = ws_vigilancia[ws_vigilancia['Mes'] < mes_actual]
-    ws_cuotas_anteriores = pivot_table(ws_cuotas_anteriores, values='_Cuotas_', index=['Día'], fill_value=0)
+    ws_cuotas_anteriores = pivot_table(ws_cuotas_anteriores, values='Num. Cuotas', index=['Día'], fill_value=0)
     ws_cuotas_anteriores = ws_cuotas_anteriores.reset_index()
-    ws_meses_anteriores['Cuotas'] = ws_cuotas_anteriores['_Cuotas_'].cumsum()
+    ws_meses_anteriores['Cuotas'] = ws_cuotas_anteriores['Num. Cuotas'].cumsum()
 
 
     # Mes actual
@@ -283,15 +300,14 @@ def gráfica_1():
 
     data = [trace_mes_actual, trace_prom_5_ultimos_meses, trace_pago_vigilantes, trace_regresion]
 
-    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
+    título = 'Gestión de Cobranzas'
+    subtítulo = 'en base al estimado de pagos, al ' + fecha_de_referencia.strftime("%d %b %Y")
     comentario = f"Recaudado: Bs. {edita_número(total_recaudado, num_decimals=0)} " + \
                  f"({edita_número(pct_del_estimado, num_decimals=0)}% del estimado)"
     día = fecha_de_referencia.day
 
     layout = go.Layout(
-                title = dict(
-                            text = f'<b>Gestión de Cobranzas</b><br>{subtítulo}',
-                        ),
+                title = TITULO_GRAFICA.format(título, subtítulo),
                 width = 1000,
                 height = 600,
                 xaxis = dict(
@@ -347,7 +363,8 @@ def gráfica_1():
         ax = delta_x,
         ay = -dy if actual_ge_anteriores else dy,
         showarrow = True,
-        arrowhead = 3,
+        arrowhead = 3, arrowsize = 1.5,
+        standoff = 3,
     )
     delta_x = -dx if not actual_ge_anteriores else dx
     if ultimo_indice == 0:
@@ -363,7 +380,8 @@ def gráfica_1():
         ax = delta_x,
         ay = -dy if not actual_ge_anteriores else dy,
         showarrow = True,
-        arrowhead = 3,
+        arrowhead = 3, arrowsize = 1.5,
+        standoff = 3,
     )
 
     if g1_show:
@@ -398,36 +416,24 @@ def gráfica_2():
     dia_de_referencia = fecha_de_referencia.day
     mes_actual = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1)
 
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los estimados del servicio de vigilancia ' + \
-                                                                     'y total de pagos por mes')
-    ws_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
-    ws_cuotas_mensuales =  ws_resumen[(ws_resumen['Beneficiario'] == 'CUOTAS MENSUALES')]
-    ws_totales_mensuales = ws_resumen[(ws_resumen['Dirección']    == 'TOTAL')]
-
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los rangos de la imagen')
     meses = [mes_actual - relativedelta(months=mes) for mes in reversed(range(num_meses_cuotas_equivalentes +1))]
-    if VERTICAL_BARS:
-        meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
-        pagos_100pct_equivalentes = [int(round(float(ws_totales_mensuales[mes]) / float(ws_cuotas_mensuales[mes]), ndigits=0)) \
-                                        for mes in meses]
-        promedio = int(round(mean(pagos_100pct_equivalentes[:-1]), ndigits=0))
-    else:
-        meses_ed = [mes.strftime(FORMATO_MES) for mes in reversed(meses)]
-        pagos_100pct_equivalentes = [int(round(float(ws_totales_mensuales[mes]) / float(ws_cuotas_mensuales[mes]), ndigits=0)) \
-                                        for mes in reversed(meses)]
-        promedio = int(round(mean(pagos_100pct_equivalentes[1:]), ndigits=0))
+    meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
+    pagos_100pct_equivalentes = [df_num_cuotas.loc[mes].values[0] for mes in meses]
+    promedio = int(round(mean(pagos_100pct_equivalentes[:-1]), ndigits=0))
     promedios = [promedio for _ in meses]
     pto_equilibrio = [PUNTO_DE_EQUILIBRIO for _ in meses]
 
-    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
 
+    título =    'Pagos 100% Equivalentes'
+    subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
 
     # 100% Equivalentes
     trace_100pct_equiv = go.Bar(
                 x = meses_ed if VERTICAL_BARS else pagos_100pct_equivalentes,
                 y = pagos_100pct_equivalentes if VERTICAL_BARS else meses_ed,
                 orientation = 'v' if VERTICAL_BARS else 'h',
-                name = 'Pagos 100% eqv.',
+                name = 'Cuotas completas',
                 text = [f"{y:.0f}" for y in pagos_100pct_equivalentes],
                 textposition = "outside",
                 marker_color = 'cornflowerblue',        # '#5b9bd5',
@@ -441,8 +447,8 @@ def gráfica_2():
                 x = meses_ed if VERTICAL_BARS else promedios,
                 y = promedios if VERTICAL_BARS else meses_ed,
                 mode = 'lines',
-                name = f"Promedio últimos {num_meses_cuotas_equivalentes} meses = {promedio}; " + \
-                       f"actual = {pagos_100pct_equivalentes[-1 if VERTICAL_BARS else 0]}",
+                name = f"Promedio de los {num_meses_cuotas_equivalentes} meses anteriores = {promedio}; " + \
+                       f"actual = {pagos_100pct_equivalentes[-1]}",
                 line = dict(
                             color = '#ed7d31',          # 'orange',
                             width = 2,
@@ -454,9 +460,9 @@ def gráfica_2():
                 x = meses_ed if VERTICAL_BARS else pto_equilibrio,
                 y = pto_equilibrio if VERTICAL_BARS else meses_ed,
                 mode = 'lines',
-                name = f"Punto de equilibrio = {pto_equilibrio[0]} pagos 100% eqv.",
+                name = f"Punto de equilibrio = {pto_equilibrio[0]} cuotas completas",
                 line = dict(
-                            color = 'yellow',           # '#ffc000',
+                            color = 'red',           # '#ffc000',
                             dash = 'dash',
                             width = 2,
                         ),
@@ -465,7 +471,7 @@ def gráfica_2():
     data = [trace_100pct_equiv, trace_prom_12_ultimos_meses, trace_punto_equilibrio]
 
     layout = dict(
-                title = f'<b>Pagos 100% Equivalentes</b><br>{subtítulo}',
+                title = TITULO_GRAFICA.format(título, subtítulo),
                 width = 1000,
                 height = 600,
                 legend = dict(
@@ -477,10 +483,10 @@ def gráfica_2():
                 plot_bgcolor = 'white',
             )
 
-#    subtítulo = 'al ' + celda('A36').strftime("%d %b %Y")
-#    comentario = celda('B18')
-
     fig = go.Figure(data = data, layout = layout)
+
+    if not VERTICAL_BARS:
+        fig.update_yaxes(autorange='reversed')
 
     if g2_show:
         print(f"    . Desplegando imagen {'vertical' if VERTICAL_BARS else 'horizontal'}...")
@@ -576,7 +582,7 @@ def gráfica_2():
 #                 mode = 'lines',
 #                 name = f"Punto de equilibrio = {pto_equilibrio[0]} pagos 100% eqv.",
 #                 line = dict(
-#                             color = 'yellow',           # '#ffc000',
+#                             color = 'red',           # '#ffc000',
 #                             dash = 'dash',
 #                             width = 2,
 #                         ),
@@ -613,7 +619,7 @@ def gráfica_2():
 #             f.write(img_bytes)
 
 
-def distribución_de_pagos():
+def distribución_de_pagos(corte_al_dia_de_referencia=False):
     from openpyxl import load_workbook
     from pyparsing import Word, Regex, Literal, OneOrMore, ParseException
     import warnings
@@ -755,8 +761,6 @@ def distribución_de_pagos():
                     pago_mes = r[mes].values[0]
                 except:
                     print(f"\n*** ERROR: {str(sys.exc_info()[1])} (Beneficiario: {pago['Beneficiario']}, mes: {mes})")
-#                    print(f"DEBUG: df_resumen['Beneficiario']=\n{df_resumen['Beneficiario']}, {beneficiario=}")
-#                    print(f"DEBUG: r=\n{r}")
                     sys.exit()
                 if pago_mes == None:
                     monto = 0
@@ -777,9 +781,15 @@ def distribución_de_pagos():
                 else:   # mes == fecha_referencia
                     total_mes_actual += monto
 
-        return (num_pagos, total_meses_anteriores, total_mes_actual, total_meses_siguientes)
+        return [num_pagos, total_meses_anteriores, total_mes_actual, total_meses_siguientes]
+
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Calcula cómo se distribuyen los pagos por mes')
+
+    fecha_inicial = fecha_de_referencia - relativedelta(months=num_meses_cuotas_equivalentes)
+    mes_inicial = datetime(fecha_inicial.year, fecha_inicial.month, 1)
+
+    cuotas_obj = Cuota(excel_workbook)
 
     # Lee la hoja con el resumen de pagos. Usa la libreria OpenPyXL para preservar
     # las fórmulas en las columnas y genera un dataframe de Pandas como resultado
@@ -818,13 +828,28 @@ def distribución_de_pagos():
     # Lee la hoja con el detalle de los pagos recibidos, elimina aquellos cuya Referen-
     # cia no corresponda al pago de Vigilancia, descarta aquellos posteriores a la fecha
     # de referencia y estandariza la fecha de pago
-    df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
-    #df_pagos = df_pagos[df_pagos['Categoría'] == 'Vigilancia']
-    df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
-    df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
-    df_pagos = df_pagos[df_pagos['Fecha'] <= fecha_de_referencia]
-    df_pagos.sort_values(by=['Beneficiario', 'Fecha'], inplace=True)
-    #df_pagos.dropna(subset=['Fecha'], inplace=True)
+
+    # df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
+    # #df_pagos = df_pagos[df_pagos['Categoría'] == 'Vigilancia']
+    # df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
+    # df_pagos = df_pagos[df_pagos['Fecha'] >= mes_inicial]
+    # if corte_al_dia_de_referencia:
+    #     df_pagos = df_pagos[df_pagos['Día'] <= fecha_de_referencia.day]
+    # df_pagos = df_pagos[['Beneficiario', 'Fecha', 'Monto', 'Concepto', 'Mes']]
+    # df_pagos = df_pagos[df_pagos['Fecha'] <= fecha_de_referencia]
+    # df_pagos['Cuota'] = df_pagos.apply(
+    #                             lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
+    # df_pagos['Pagos eqv'] = df_pagos.apply(
+    #                             lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
+    # # df_pagos.sort_values(by=['Beneficiario', 'Fecha'], inplace=True)
+    # total_cuotas = pivot_table(df_pagos, values=['Pagos eqv'], index=['Mes'], aggfunc=sum).values.tolist()
+    # total_cuotas = [int(x[0]) for x in total_cuotas]
+
+    df_pagos = df_vigilancia[(df_vigilancia['Fecha'] <= fecha_de_referencia) & \
+                             (df_vigilancia['Fecha'] >= mes_inicial)].copy()
+    ws_cant_pagos = df_num_cuotas[(df_num_cuotas.index <= fecha_de_referencia) & \
+                                  (df_num_cuotas.index >= mes_inicial)]
+    total_cuotas = ws_cant_pagos['Num. Cuotas'].to_list()
     df_pagos['Fecha'] = df_pagos['Fecha'].apply(lambda x: f'{x:%m-%Y}')
 
 
@@ -836,19 +861,26 @@ def distribución_de_pagos():
         return edit(valor/total*100, width-1, decimals) + '%'
 
 
+    if VERBOSE:
+        print()
+        print('   Fecha    Total Bs. Pag. Cuota   Meses anteriores           Mes actual           Anticipos')
+        print('  -------  ---------- ---- -----  ------------------ -------------------- -------------------')
+
     lista_resultados = list()
-    if VERBOSE: print()
+    idx_total_cuotas = 0
     for offset in reversed(range(num_meses_cuotas_equivalentes+1)):
         f_ref = f"{mes_actual - relativedelta(months=offset) + relativedelta(day=1):%m-%Y}"
         resultado = análisis_de_pagos(f_ref)
         total = sum(resultado[1:])
+        resultado.append(total_cuotas[idx_total_cuotas])
         lista_resultados.append(resultado)
+        idx_total_cuotas += 1
 
         if VERBOSE:
-            print(f"  {f_ref}: {edit(total, width=10)} [" + \
-                  f"{edit(resultado[1])} ({edit_pct(resultado[1], total)}), " + \
-                  f"{edit(resultado[2], width=10)} ({edit_pct(resultado[2], total)}), " + \
-                  f"{edit(resultado[3])} ({edit_pct(resultado[3], total)})"   + "]")
+            print(f"  {f_ref}: {edit(total, width=10)} ({resultado[0]:>3}, {resultado[4]:>3})  " + \
+                  f"{edit(resultado[1])} ({edit_pct(resultado[1], total, width=6)})  " + \
+                  f"{edit(resultado[2], width=10)} ({edit_pct(resultado[2], total, width=6)})  " + \
+                  f"{edit(resultado[3])} ({edit_pct(resultado[3], total, width=6)})")
 
     if VERBOSE: print()
 
@@ -884,7 +916,7 @@ def gráfica_3():
     str_pctMesAnt = list()
     str_pctMesAct = list()
     str_pctMesSig = list()
-    for nPagos, mesAnt, mesAct, mesSig  in distribución:
+    for nPagos, mesAnt, mesAct, mesSig, nCuotas in distribución:
         total_mes = mesAnt + mesAct + mesSig
         if total_mes == 0.00:
             pctMesAnt.append(pMesAnt := 0.00)
@@ -898,48 +930,20 @@ def gráfica_3():
         str_pctMesAct.append(edita_número(pMesAct * 100, num_decimals=1) + '%')
         str_pctMesSig.append(edita_número(pMesSig * 100, num_decimals=1) + '%')
 
-    cuotas_obj = Cuota(excel_workbook)
-
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos por mes del período seleccionado')
-    ws_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
-
-    # Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_cuotas_equivalentes atrás
-    ws_vigilancia = ws_vigilancia[(ws_vigilancia['Categoría'] == 'Vigilancia')  & \
-                                  (ws_vigilancia['Fecha'] <= fecha_de_referencia) & \
-                                  (ws_vigilancia['Fecha'] >= mes_inicial)]
-    ws_vigilancia = ws_vigilancia[['Mes', 'Beneficiario', 'Fecha', 'Monto']]
-
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
-    ws_vigilancia['Cuota'] = ws_vigilancia.apply(
-                                    lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
-    ws_vigilancia['Pagos eqv'] = ws_vigilancia.apply(
-                                    lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
-
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totalizando Pagos Equivalentes por Mes...')
-    ws_vigilancia = pivot_table(ws_vigilancia, values=['Pagos eqv'], index=['Mes'], aggfunc=sum).reset_index()
-
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los rangos de la imagen')
-    meses = ws_vigilancia['Mes'].to_list()
-    pagos_100pct_equivalentes = ws_vigilancia['Pagos eqv'].to_list()
-    if VERTICAL_BARS:
-        meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
-        promedio = int(round(mean(pagos_100pct_equivalentes[:-1]), ndigits=0))
-    else:
-        meses_ed = [mes.strftime(FORMATO_MES) for mes in reversed(meses)]
-        pagos_100pct_equivalentes.reverse()
-        pctMesAnt.reverse()
-        pctMesAct.reverse()
-        pctMesSig.reverse()
-        promedio = int(round(mean(pagos_100pct_equivalentes[1:]), ndigits=0))
+    ws_cant_pagos = df_num_cuotas[(mes_inicial <= df_num_cuotas.index) & \
+                                  (df_num_cuotas.index <= fecha_de_referencia)]
+    meses = ws_cant_pagos.index.to_list()
+    pagos_100pct_equivalentes = ws_cant_pagos['Num. Cuotas'].to_list()
+    meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
+    promedio = int(round(mean(pagos_100pct_equivalentes[:-1]), ndigits=0))
     bar_mesAnt = [num_pagos * pctMesAnt[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
     bar_mesAct = [num_pagos * pctMesAct[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
     bar_mesSig = [num_pagos * pctMesSig[idx] for idx, num_pagos in enumerate(pagos_100pct_equivalentes)]
-    sep_1, sep_2 = ('<br />', '') if VERTICAL_BARS else (' pagos (', ')')
-    iterator = enumerate(pagos_100pct_equivalentes) if VERTICAL_BARS \
-                    else reversed(list(enumerate(pagos_100pct_equivalentes)))
+    sep_1, sep_2 = ('<br />', '') if VERTICAL_BARS else (' cuotas (', ')')
     str_pctMesAct = [f"{int(round(numPagos * pctMesAct[idx], 0))}{sep_1}" + \
                      f"{edita_número(pctMesAct[idx] * 100, num_decimals=1)}%{sep_2}" \
-                            for idx, numPagos in iterator]
+                            for idx, numPagos in enumerate(pagos_100pct_equivalentes)]
     promedios = [promedio for _ in meses]
     pto_equilibrio = [PUNTO_DE_EQUILIBRIO for _ in meses]
 
@@ -956,7 +960,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesAnt,
                         y = bar_mesAnt if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesAnt if VERTICAL_BARS else [text for text in reversed(str_pctMesAnt)],
+                        text = str_pctMesAnt,
                         textposition = "inside",
                         marker_color = '#4475cd',            # '#5485dd',
                         legendgroup = 'bar',
@@ -967,7 +971,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesAct,
                         y = bar_mesAct if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesAct if VERTICAL_BARS else [text for text in reversed(str_pctMesAct)],
+                        text = str_pctMesAct,
                         textposition = "inside",
                         marker_color = 'cornflowerblue',     # '#6495ed',
                         legendgroup = 'bar',
@@ -978,7 +982,7 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else bar_mesSig,
                         y = bar_mesSig if VERTICAL_BARS else meses_ed,
                         orientation = 'v' if VERTICAL_BARS else 'h',
-                        text = str_pctMesSig if VERTICAL_BARS else [text for text in reversed(str_pctMesSig)],
+                        text = str_pctMesSig,
                         textposition = "inside",
                         marker_color = '#84b5ff',           # '#74a5fd',
                         legendgroup = 'bar',
@@ -995,7 +999,7 @@ def gráfica_3():
                         showlegend=False,
                     ))
     fig.update_layout(
-                    title = f'<b>{título}</b><br>{subtítulo}',
+                    title = TITULO_GRAFICA.format(título, subtítulo),
                     width = 1000,
                     height = 600,
                     legend = dict(
@@ -1030,14 +1034,17 @@ def gráfica_3():
                         x = meses_ed if VERTICAL_BARS else promedios,
                         y = promedios if VERTICAL_BARS else meses_ed,
                         mode = 'lines',
-                        name = f"Promedio últimos {num_meses_cuotas_equivalentes} meses = {promedio}; " + \
-                               f"actual = {int(round(pagos_100pct_equivalentes[-1 if VERTICAL_BARS else 0], 0))}",
+                        name = f"Promedio de los {num_meses_cuotas_equivalentes} meses anteriores = {promedio}; " + \
+                               f"actual = {int(round(pagos_100pct_equivalentes[-1], 0))}",
                         line = dict(
                                     color = 'blue',         # '#ed7d31',          # 'orange',
                                     width = 2,
                                 ),
                        legendgroup = 'lines',
                     ))
+
+    if not VERTICAL_BARS:
+        fig.update_yaxes(autorange='reversed')
 
     if g3_show:
         print(f"    . Desplegando imagen {'vertical' if VERTICAL_BARS else 'horizontal'}...")
@@ -1075,20 +1082,10 @@ def gráfica_4():
     str_mes_final = mes_final.strftime('%b/%Y')
     # --------------------
 
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee las cuotas mensuales')
-    ws_cuotas_mensuales = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
-    ws_cuotas_mensuales = ws_cuotas_mensuales[(ws_cuotas_mensuales['Beneficiario'] == 'CUOTAS MENSUALES')]
-
-
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos realizados')
-    ws_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
-
     # Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_gestion_cobranzas atrás
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Filtra los pagos realizados por Categoría y Fecha')
-    ws_vigilancia = ws_vigilancia[(ws_vigilancia['Categoría'] == 'Vigilancia') & \
-                                  (ws_vigilancia['Fecha'] <= fecha_de_referencia) & \
-                                  (ws_vigilancia['Fecha'] >= mes_inicial)]
-    ws_vigilancia = ws_vigilancia[['Mes', 'Día', 'Monto', 'Fecha']]
+    ws_vigilancia = df_vigilancia[(df_vigilancia['Fecha'] <= fecha_de_referencia) & \
+                                  (df_vigilancia['Fecha'] >= mes_inicial)]
 
     # Valida que los datos estén completos y agrega registros en cero para los datos faltantes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Valida la completitud de valores en el período ' + \
@@ -1102,30 +1099,30 @@ def gráfica_4():
 
     ws_vigilancia = ws_vigilancia.append(a_agregar, ignore_index=True)
 
-    # Totaliza los pagos de vigilancia por día y mes
-    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza los pagos de vigilancia por día y mes')
-    ws_vigilancia = pivot_table(ws_vigilancia, values='Monto', index=['Día', 'Mes'], aggfunc=sum)   # , fill_value=0
-    ws_vigilancia = ws_vigilancia.reset_index() 
-
     # Normalizar los montos dividiéndolo por el estimado del mes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Normaliza los pagos de vigilancia en base a la cuota ' + \
-                                                                     'del mes')
+                                                                     'vigente a la fecha')
+
     ws_vigilancia['Monto_normalizado'] = ws_vigilancia.apply(
-                                            lambda ws: ws['Monto'] / ws_cuotas_mensuales[ws['Mes']], axis=1)
+                                            lambda ws: ws['Monto'] / ws['Cuota'], axis=1)
+
+    # Totaliza los pagos de vigilancia por día y mes
+    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza los pagos de vigilancia por día y mes')
+    ws_vigilancia = pivot_table(ws_vigilancia, values=['Monto', 'Monto_normalizado'], index=['Día', 'Mes'], aggfunc=sum)
+    ws_vigilancia = ws_vigilancia.reset_index() 
 
     # Genera columnas a graficar
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los datos del mes actual')
     ws_mes_actual = ws_vigilancia[ws_vigilancia['Mes'] == mes_actual].copy().reset_index()
     ws_mes_actual['Acumulado'] = ws_mes_actual['Monto_normalizado'].cumsum()
+
     total_recaudado = ws_mes_actual['Monto'].sum()
-    pct_del_estimado = total_recaudado / ws_cuotas_mensuales[mes_actual] * 100
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los datos del promedio de los meses anteriores')
     ws_meses_anteriores = ws_vigilancia[ws_vigilancia['Mes'] < mes_actual]
     ws_meses_anteriores = pivot_table(ws_meses_anteriores, values='Monto_normalizado', index=['Día'], fill_value=0)
     ws_meses_anteriores = ws_meses_anteriores.reset_index()
     ws_meses_anteriores['Acumulado'] = ws_meses_anteriores['Monto_normalizado'].cumsum()
-
 
     # Mes actual
     trace_mes_actual = go.Scatter(
@@ -1163,7 +1160,7 @@ def gráfica_4():
                 y = ws_meses_anteriores['Acumulado'],
                 mode = 'lines',
                 # name = f"Promedio {num_meses_gestion_cobranzas} últimos meses",
-                name = f"Promedio de {str_mes_inicial} a {str_mes_final}",
+                name = f"Promedio de los {num_meses_gestion_cobranzas} meses anteriores: {str_mes_inicial} a {str_mes_final}",
                 line = dict(
                             width = 3,
                             color = 'blue',
@@ -1172,13 +1169,13 @@ def gráfica_4():
 
     data = [trace_mes_actual, trace_prom_5_ultimos_meses, trace_regresion]
 
-    título = 'Cuotas Recibidas en el Mes'
+    título =    'Cuotas Recibidas en el Mes'
     subtítulo = 'al ' + fecha_de_referencia.strftime("%d %b %Y")
     día = fecha_de_referencia.day
 
     layout = go.Layout(
                 title = dict(
-                            text = f'<b>{título}</b><br>{subtítulo}',
+                            text = TITULO_GRAFICA.format(título, subtítulo),
                         ),
                 width = 1000,
                 height = 600,
@@ -1196,22 +1193,6 @@ def gráfica_4():
                             orientation = 'h',
                             tracegroupgap = 20,
                         ),
-                # annotations = [
-                #         dict(
-                #             text = f"{int(round(ws_mes_actual['Acumulado'][día - 1]))} cuotas recibidas en el mes; " + \
-                #                    f"{int(round(ws_meses_anteriores['Acumulado'][día - 1]))} cuotas promedio a la fecha",
-                #             font = dict(
-                #                     size = 14,
-                #                 ),
-                #             showarrow = False,
-                #             xref = 'paper',
-                #             yref = 'paper',
-                #             x = 0.98,
-                #             y = 0.05,
-                #             align = 'right',
-                #             valign = 'bottom',
-                #         ),
-                #     ],
 #                paper_bgcolor = 'white',
                 plot_bgcolor = 'white',
             )
@@ -1250,7 +1231,8 @@ def gráfica_4():
         xref = "x",
         yref = "y",
         showarrow = True,
-        arrowhead = 3,
+        arrowhead = 3, arrowsize = 1.5,
+        standoff = 3,
     ))
 
     if g4_show:
@@ -1266,6 +1248,175 @@ def gráfica_4():
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Gráfica concluida')
 
 
+def gráfica_5():
+    global num_meses_cuotas_equivalentes
+    from GyG_cuotas import Cuota
+
+    grafica_nombre = 'Cuotas por oportunidad de pago'
+    if es_fin_de_mes(fecha_de_referencia):
+        grafica_png = f"5. Cuotas_por_oportunidad_de_pago {fecha_de_referencia.strftime('%Y-%m (%b)')}.png"
+    else:
+        grafica_png =  '5. Cuotas_por_oportunidad_de_pago.png'
+
+
+    if in_GUI_mode:
+        num_meses_cuotas_equivalentes = int(values['_g5_nro_meses_'])
+        print(f'  - {grafica_nombre}...')
+
+    dia_de_referencia = fecha_de_referencia.day
+    mes_actual = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1)
+    fecha_inicial = fecha_de_referencia - relativedelta(months=num_meses_cuotas_equivalentes)
+    mes_inicial = datetime(fecha_inicial.year, fecha_inicial.month, 1)
+    str_mes_inicial = mes_inicial.strftime('%b'+('/%Y' if mes_inicial.year != fecha_de_referencia.year else ''))
+    str_mes_final = fecha_de_referencia.strftime('%b/%Y')
+
+    distribución = distribución_de_pagos(corte_al_dia_de_referencia=True)
+
+    if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los rangos de la imagen')
+    nPagosMesAnt = list()
+    nPagosMesAct = list()
+    nPagosMesSig = list()
+    nPagosTotal = list()
+    for nPagos, mesAnt, mesAct, mesSig, nCuotas in distribución:
+        nPagosTotal.append(int(round(nCuotas)))
+        total_mes = mesAnt + mesAct + mesSig
+        if total_mes == 0.00:
+            nPagosMesAnt.append(0)
+            nPagosMesAct.append(0)
+            nPagosMesSig.append(0)
+        else:
+            nPagosMesAnt.append(int(round(nCuotas * mesAnt / total_mes)))
+            nPagosMesAct.append(int(round(nCuotas * mesAct / total_mes)))
+            nPagosMesSig.append(int(round(nCuotas * mesSig / total_mes)))
+
+    meses = [fecha_inicial + relativedelta(months=mes) for mes in range(num_meses_cuotas_equivalentes + 1)]
+    # meses_ed =  [mes.strftime(FORMATO_MES) + '<span style="font-size: 10px">' + \
+    #            f'<br>({nPagosTotal[idx]} cuotas)</span>' for idx, mes in enumerate(meses)]
+    meses_ed =  [mes.strftime(FORMATO_MES) for mes in meses]
+
+
+    título =     'Cuotas recibidas por oportunidad de pago'
+    subtítulo = f'corte al día {fecha_de_referencia.strftime("%d")} de cada mes: {str_mes_inicial} a {str_mes_final}'
+
+    fig = go.Figure()
+
+    # Distribución de cuotas
+    fig.add_trace(
+                    go.Scatter(
+                        x = meses_ed,
+                        y = nPagosMesAnt,
+                        mode = 'lines+text',
+                        name = 'Meses anteriores',
+                        line = dict(
+                                    width = 3,
+                                    color = '#4475cd',
+                                ),
+                        text = [str(nP) for nP in nPagosMesAnt],
+                        textposition = 'top center',
+                    ))
+    fig.add_trace(
+                    go.Scatter(
+                        x = meses_ed,
+                        y = nPagosMesAct,
+                        mode = 'lines+text',
+                        name = 'Mes actual',
+                        line = dict(
+                                    width = 3,
+                                    color = 'cornflowerblue',
+                                ),
+                        text = [str(nP) for nP in nPagosMesAct],
+                        textposition = 'top center',
+                    ))
+    fig.add_trace(
+                    go.Scatter(
+                        x = meses_ed,
+                        y = nPagosMesSig,
+                        mode = 'lines+text',
+                        name = 'Meses subsiguientes',
+                        line = dict(
+                                    width = 3,
+                                    color = '#84b5ff',
+                                ),
+                        text = [str(nP) for nP in nPagosMesSig],
+                        textposition = 'top center',
+                    ))
+    fig.add_trace(
+                    go.Scatter(
+                        x = meses_ed,
+                        y = nPagosTotal,
+                        mode = 'lines+text',
+                        name = 'Total pagos',
+                        line = dict(
+                                    width = 3,
+                                    color = 'darkblue',
+                                ),
+                        text = [str(nP) for nP in nPagosTotal],
+                        textposition = 'top center',
+                    ))
+
+    delta_x = 20
+    delta_y =  0
+    # no_solapados = abs(nPagosMesAnt[-1] - nPagosMesSig[-1]) > 2
+    solapado_ant = solapado_act = solapado_sig = solapado_total = False
+    if abs(nPagosMesAnt[-1] - nPagosMesAct[-1]) <= 2: solapado_ant = solapado_act   = True
+    if abs(nPagosMesAnt[-1] - nPagosMesSig[-1]) <= 2: solapado_ant = solapado_sig   = True
+    if abs(nPagosMesAnt[-1] - nPagosTotal[-1])  <= 2: solapado_ant = solapado_total = True
+    if abs(nPagosMesAct[-1] - nPagosMesSig[-1]) <= 2: solapado_act = solapado_sig   = True
+    if abs(nPagosMesAct[-1] - nPagosTotal[-1])  <= 2: solapado_act = solapado_total = True
+    if abs(nPagosMesSig[-1] - nPagosTotal[-1])  <= 2: solapado_sig = solapado_total = True
+    fig.add_annotation(
+        x = 0.95,
+        y = nPagosMesAnt[-1],
+        text = 'Retrasados' + (f': {nPagosMesAnt[-1]}' if solapado_ant else ''),
+        yshift = delta_y,
+    )
+    fig.add_annotation(
+        x = 0.95,               # meses_ed[-1]
+        y = nPagosMesAct[-1],
+        text = 'Mes actual' + (f': {nPagosMesAct[-1]}' if solapado_act else ''),
+        yshift = delta_y,
+    )
+    fig.add_annotation(
+        x = 0.95,
+        y = nPagosMesSig[-1],
+        text = 'Anticipos' + (f': {nPagosMesSig[-1]}' if solapado_sig else ''),
+        yshift = delta_y if not solapado_sig else 15,
+    )
+    fig.add_annotation(
+        x = 0.95,               # meses_ed[-1]
+        y = nPagosTotal[-1],
+        text = 'Total cuotas' + (f': {nPagosTotal[-1]}' if solapado_total else ''),
+        yshift = delta_y if not solapado_total else 15,
+    )
+    fig.update_annotations(dict(
+        xref = "paper", yref = "y",
+        xanchor = "left", yanchor = "bottom",
+        xshift = delta_x,
+        showarrow = False, arrowhead = 3, arrowsize = 1.5, standoff = 3,
+    ))
+    fig.update_layout(
+        title = TITULO_GRAFICA.format(título, subtítulo),
+        width = 1000,
+        height = 600,
+        showlegend = False,
+        # xaxis_tickangle = -30,
+        plot_bgcolor = 'white',
+    )
+
+    fig.update_xaxes(showline=True)
+    fig.update_yaxes(showline=True)
+
+    if g5_show:
+        print(f"    . Desplegando imagen...")
+        fig.show()
+
+    if g5_save:
+        print(f'    . Grabando "{grafica_png}"...')
+        img_bytes = fig.to_image(format="png")
+        with open(os.path.join(GyG_constantes.ruta_graficas, grafica_png), 'wb') as f:
+            f.write(img_bytes)
+
+
 #
 # PROCESO
 #
@@ -1275,6 +1426,35 @@ def gráfica_4():
 
 fecha_de_referencia = datetime.today()
 mes_anterior = datetime(fecha_de_referencia.year, fecha_de_referencia.month, 1) - relativedelta(days=1)
+
+cuotas_obj = Cuota(excel_workbook)
+
+if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos recibidps')
+df_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
+
+# Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_cuotas_equivalentes atrás
+df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == 'Vigilancia')  & \
+                              (df_vigilancia['Fecha'] <= fecha_de_referencia) & \
+                              (df_vigilancia['Fecha'] >= datetime(2017, 1, 1))]
+df_vigilancia = df_vigilancia[['Beneficiario', 'Fecha', 'Monto', 'Concepto', 'Día', 'Mes']]
+
+if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
+df_vigilancia['Cuota'] = df_vigilancia.apply(
+                                lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
+df_vigilancia['Num. Cuotas'] = df_vigilancia.apply(
+                                lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
+
+if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza la cantidad de cuotas completas por Mes...')
+df_num_cuotas = pivot_table(df_vigilancia, values=['Num. Cuotas'], index=['Mes'], aggfunc=sum).astype(int)  #.reset_index()
+                    # Usar df_num_cuotas.loc[<variable con el mes a buscar de la forma datetime(year, month, 1)>]
+
+# DEBUG -----------------------------------
+# print(f"\nDF_VIGILANCIA: {df_vigilancia.columns}")
+# print(df_vigilancia.tail())
+# print(f"\nDF_NUM_CUOTAS: {df_num_cuotas.columns}")
+# print(df_num_cuotas.tail())
+# print()
+# -----------------------------------------
 
 if toma_opciones_por_defecto:
 
@@ -1312,9 +1492,13 @@ if toma_opciones_por_defecto:
     g3_save = se_graban_las_imágenes
     g3_horizontal = graficas_de_barra_en_horizontal
 
-    g4 = True
+    g4 = False
     g4_show = se_muestran_las_gráficas
     g4_save = se_graban_las_imágenes
+
+    g5 = False
+    g5_show = se_muestran_las_gráficas
+    g5_save = se_graban_las_imágenes
 
     fecha_de_referencia = mes_anterior
 
@@ -1350,30 +1534,37 @@ else:
     ANCHURA_NOMBRE_GRAFICO = 28
     graficas_layout = [
                         [sg.Text("", size=(ANCHURA_NOMBRE_GRAFICO - 3, 1)), sg.Text("Visualiza"), sg.Text("Graba"), sg.Text("Horiz.")],
-                        [sg.Checkbox("Gestión de Cobranzas", key="_g1_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=True),
+                        [sg.Checkbox("Gestión de Cobranzas", key="_g1_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=False),
                          sg.Checkbox("", key="_g1_show_", size=(7, 1), default=True),
                          sg.Checkbox("", key="_g1_save_", size=(5, 1)),
                          sg.Text("", size=(5, 1)),      # espaciador (gráfica siempre vertical)
-                         sg.Text("Nº meses:"), sg.Spin(key="_g1_nro_meses_", values=(str(i) for i in range(2, 13)),
+                         sg.Text("Nº meses:"), sg.Spin(key="_g1_nro_meses_", values=[str(i) for i in range(2, 13)],
                                                        initial_value='5', size=(3, 1)),
                          sg.Text("", size=(1, 1))],
-                        [sg.Checkbox("Pagos 100% equivalentes", key="_g2_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=True),
+                        [sg.Checkbox("Pagos 100% equivalentes", key="_g2_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=False),
                          sg.Checkbox("", key="_g2_show_", size=(7, 1), default=True),
                          sg.Checkbox("", key="_g2_save_", size=(5, 1)),
                          sg.Checkbox("", key="_g2_horizontal_", size=(5, 1)),
-                         sg.Text("Nº meses:"), sg.Spin(key="_g2_nro_meses_", values=(str(i) for i in range(3, 25)),
+                         sg.Text("Nº meses:"), sg.Spin(key="_g2_nro_meses_", values=[str(i) for i in range(3, 25)],
                                                        initial_value='12', size=(3, 1))],
-                        [sg.Checkbox("Cuotas equivalentes", key="_g3_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=True),
+                        [sg.Checkbox("Cuotas equivalentes", key="_g3_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=False),
                          sg.Checkbox("", key="_g3_show_", size=(7, 1), default=True),
                          sg.Checkbox("", key="_g3_save_", size=(5, 1)),
-                         sg.Checkbox("", key="_g3_horizontal_", size=(5, 1)),
-                         sg.Text("Nº meses:"), sg.Spin(key="_g3_nro_meses_", values=(str(i) for i in range(3, 25)),
+                         sg.Checkbox("", key="_g3_horizontal_", size=(5, 1), default=True),
+                         sg.Text("Nº meses:"), sg.Spin(key="_g3_nro_meses_", values=[str(i) for i in range(3, 25)],
                                                        initial_value='12', size=(3, 1))],
-                        [sg.Checkbox("Pagos Recibidos", key="_g4_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=True),
+                        [sg.Checkbox("Pagos Recibidos", key="_g4_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=False),
                          sg.Checkbox("", key="_g4_show_", size=(7, 1), default=True),
                          sg.Checkbox("", key="_g4_save_", size=(5, 1)),
                          sg.Text("", size=(5, 1)),      # espaciador (gráfica siempre vertical)
-                         sg.Text("Nº meses:"), sg.Spin(key="_g4_nro_meses_", values=(str(i) for i in range(2, 13)),
+                         sg.Text("Nº meses:"), sg.Spin(key="_g4_nro_meses_", values=[str(i) for i in range(2, 13)],
+                                                       initial_value='5', size=(3, 1)),
+                         sg.Text("", size=(1, 1))],
+                        [sg.Checkbox("Cuotas por oportunidad de pago", key="_g5_", size=(ANCHURA_NOMBRE_GRAFICO, 1), default=False),
+                         sg.Checkbox("", key="_g5_show_", size=(7, 1), default=True),
+                         sg.Checkbox("", key="_g5_save_", size=(5, 1)),
+                         sg.Text("", size=(5, 1)),      # espaciador (gráfica siempre vertical)
+                         sg.Text("Nº meses:"), sg.Spin(key="_g5_nro_meses_", values=[str(i) for i in range(2, 13)],
                                                        initial_value='5', size=(3, 1)),
                          sg.Text("", size=(1, 1))],
                     ]
@@ -1421,6 +1612,10 @@ else:
             g4 = values['_g4_']
             g4_show = values['_g4_show_']
             g4_save = values['_g4_save_']
+
+            g5 = values['_g5_']
+            g5_show = values['_g5_show_']
+            g5_save = values['_g5_save_']
 
             genera_gráficas()
 

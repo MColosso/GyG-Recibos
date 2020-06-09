@@ -7,6 +7,7 @@
 #  . edita_número(number, num_decimals=2)
 #  . trunca_texto(texto, max_width)
 #  . espacios(width=1, char=' ')
+#  . is_numeric(valor)
 #  . MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False)
 #  . genera_recibo(r)
 #      'r' es un diccionario, dataframe o serie con las siguientes claves:
@@ -99,6 +100,9 @@ def trunca_texto(texto, max_width):
 
 def espacios(width=1, char=' '):
     return char * width
+
+def is_numeric(valor):
+    return isinstance(valor, numbers.Number)
 
 
 def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):

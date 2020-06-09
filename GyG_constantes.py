@@ -16,7 +16,8 @@ pagos_ws_resumen            = 'RESUMEN VIGILANCIA'
 pagos_ws_resumen_reordenado = 'R.VIGILANCIA (reordenado)'
 pagos_ws_saldos             = 'Saldos'
 pagos_ws_cuotas             = 'CUOTAS'
-pagos_ws_cobranzas          = 'Cobranzas'
+# pagos_ws_cobranzas          = 'Cobranzas'
+pagos_ws_otros              = 'RESUMEN OTROS'
 pagos_ws_vecinos            = 'Vecinos'
 
 resumen_workbook            = '4.2. GyG Resúmenes - Control resúmenes.xlsx'
@@ -42,6 +43,7 @@ pdf_resumen                 = 'GyG Resumen {resumen:0Xd}.pdf'.replace('X', str(l
 
 txt_analisis_de_pago        = "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
 txt_cartelera_virtual       = "GyG Cartelera Virtual {:%Y-%m (%B)}.txt"
+txt_cambios_de_categoría    = "GyG Cambios de Categoría {:%Y-%m (%B)}.txt"
 
 recibo_fmt                  = "{recibo:0Xd}".replace('X', str(long_num_archivo))
 
@@ -83,6 +85,9 @@ ruta_relacion_ingresos       = '../GyG Archivos/Relación de Ingresos'
                               # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
                               # Carpeta de carteleras_virtuales
 
+ruta_cambios_de_categoría    = '../GyG Archivos/Otros'
+                              # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
+                              # Carpeta de carteleras_virtuales
 #recibos_temp                = 'C:/Users/MColosso/Documents/GyG Recibos_temp/'
                               # Carpeta en la cual se generan temporalmente (y desde el cual se envían)
                               # los recibos de pago

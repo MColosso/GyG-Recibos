@@ -125,7 +125,7 @@ encabezado = 'CARTELERA VIRTUAL\n   CUADRA SEGURA GyG ({})\n' + \
              'al {:%d de %B de %Y}\n\n'
 encabezado_colaboración   = 'Familias que colaboran con un monto inferior a la cuota establecida y tienen ' + \
                             'pendiente el pago.\n'
-encabezado_cuota_completa = 'Familias que pagan el 100% de la cuota y tienen retraso en el pago.\n'
+encabezado_cuota_completa = 'Familias que pagan el 100% de la cuota y tienen retrasos en el pago.\n'
 encabezado_no_participa   = 'Familias que se benefician del servicio de vigilancia gracias al aporte del resto ' + \
                             'de los vecinos que cancelan su cuota para la seguridad de la zona.\n'
 encabezado_al_día         = 'Familias que pagan el 100% de la cuota o colaboran con dicho pago y se encuentran ' + \
