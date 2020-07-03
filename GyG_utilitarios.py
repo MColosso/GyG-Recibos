@@ -15,7 +15,14 @@
 #        . 'Monto',        'Concepto',  'Categoría'
 #
 
+"""
+    POR HACER
+    -   
 
+    HISTORICO
+    -   Corregidos algunos acentos en rutina MontoEnLetras() (14/06/2020)
+    
+"""
 
 from re import match
 from datetime import datetime, timedelta
@@ -118,8 +125,8 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):
     def _número_recursivo(número):
         UNIDADES = ("", "Un", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
                     "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho",
-                    "Diecinueve", "Veinte", "Veintiun", "Veintidos", "Veintitres", "Veinticuatro", "Veinticinco",
-                    "Veintiseis", "Veintisiete", "Veintiocho", "Veintinueve")
+                    "Diecinueve", "Veinte", "Veintiun", "Veintidós", "Veintitrés", "Veinticuatro", "Veinticinco",
+                    "Veintiséis", "Veintisiete", "Veintiocho", "Veintinueve")
         DECENAS  = ("", "Diez", "Veinte", "Treinta", "Cuarenta", "Cincuenta", "Sesenta", "Setenta", "Ochenta",
                     "Noventa", "Cien")
         CENTENAS = ("", "Ciento", "Doscientos", "Trescientos", "Cuatrocientos", "Quinientos", "Seiscientos",

@@ -63,6 +63,10 @@ ruta_imagen_recibos         = '../GyG Archivos/Temporales/'
                               # 'C:/Users/MColosso/Dropbox/Vigilancia/Temporales/'
                               # Carpeta de recibos de pago como imágenes (.jpg | .png)
 
+ruta_temporales             = '../GyG Archivos/Temporales/'
+                              # 'C:/Users/MColosso/Dropbox/Vigilancia/Temporales/'
+                              # Carpeta de recibos de pago como imágenes (.jpg | .png)
+
 ruta_resumenes              = '../GyG Archivos/Resúmenes'
                               # 'C:/Users/MColosso/Google Drive/GyG Recibos/Resúmenes/'
                               # Carpeta de resúmenes de pagos

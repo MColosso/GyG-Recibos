@@ -75,6 +75,8 @@ opciones =  [['Recibos de pago',       '1',  GyG_constantes.ruta_recibos],
              ['Saldos pendientes',     '3',  GyG_constantes.ruta_saldos_pendientes],
              ['Gráficas',              '3',  GyG_constantes.ruta_graficas],
              ['Cambios de categoría',  '3',  GyG_constantes.ruta_cambios_de_categoría],
+
+             ['Archivos temporales',   '3',  GyG_constantes.ruta_temporales],
             ]
 
 layout = [  [sg.Text("Mes de referencia:"),

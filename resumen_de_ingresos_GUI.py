@@ -8,6 +8,7 @@
     -   
 
     HISTORICO
+    -   Se agrega un listado de categorías a ignorar (27/06/2020)
     -   Generar la relación de ingresos en formato PDF en lugar de texto (16/04/2020)
     -   Versión inicial (14/04/2020)
 
@@ -34,7 +35,7 @@ nombre_análisis     = GyG_constantes.txt_relacion_ingresos      # "GyG Relació
 attach_path         = GyG_constantes.ruta_relacion_ingresos     # "./GyG Recibos/Análisis de Pago"
 
 excel_workbook      = GyG_constantes.pagos_wb_estandar          # '1.1. GyG Recibos.xlsm'
-excel_ws_cobranzas  = GyG_constantes.pagos_ws_cobranzas
+# excel_ws_cobranzas  = GyG_constantes.pagos_ws_cobranzas
 excel_ws_vigilancia = GyG_constantes.pagos_ws_vigilancia
 excel_ws_saldos     = GyG_constantes.pagos_ws_saldos
 
@@ -43,6 +44,8 @@ CALENDAR_SIZE       = (16, 16)
 CALENDAR_SUBSAMPLE  = 8
 
 NUM_MESES           =  12
+
+categorias_a_ignorar = ['ANULADO', 'DEPOSITO', 'DONACION', 'REVERSADO', 'SOLVENTE']
 
 # VERBOSE = False                         # Muestra mensajes adicionales
 
@@ -315,7 +318,8 @@ ws_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
 # Selecciona los pagos de vigilancia entre la fecha de referencia y NUM_MESES_GESTION_COBRANZAS atrás
 ws_vigilancia = ws_vigilancia[(ws_vigilancia['Enviado'] == 'ü')  & \
                               (ws_vigilancia['Mes'] < mes_actual) & \
-                              (ws_vigilancia['Mes'] >= mes_inicial)]
+                              (ws_vigilancia['Mes'] >= mes_inicial) & \
+                              (~ws_vigilancia['Categoría'].isin(categorias_a_ignorar))]
 ws_vigilancia = ws_vigilancia[['Mes', 'Monto', 'Categoría']]
 
 

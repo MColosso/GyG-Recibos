@@ -300,7 +300,7 @@ def no_participa_desde(r):
             ultimo_pago = df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']].tail(1).squeeze()
             #
             #    <-- Verificar, adicionalmente, si df_pagos['Fecha'] < "Fecha de referencia"
-            u_fecha = ultimo_pago['Fecha'].strftime('%d %b %Y')
+            u_fecha = ultimo_pago['Fecha'].strftime('%d/%m/%Y')
             # u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
             u_concepto = re.search(r'.*([,:] )(.*)$', str(ultimo_pago.Concepto)).group(2)   # Busca ', ' (como en 'Cancelación Vigilancia, ') o
                                                                                             # ': ' (como en 'Vigilancia: ') y toma el resto del
@@ -323,6 +323,7 @@ def ajusta_nombre_y_dirección(str):
         Remueve los textos "Familia " y "Calle " del texto recibido
     """
     return ' - ' + str.replace('Familia ', '').replace('Calle ', '').replace('Nro. ', '').replace('Nros. ', '')
+
 
 meses            = ['enero',      'febrero', 'marzo',     'abril',
                     'mayo',       'junio',   'julio',     'agosto',
@@ -603,6 +604,15 @@ for categoría in categorías:
             cartelera += pie_no_participa
         else:
             pass
+
+        if seña in [1, 2]:
+            cartelera += ' '.join([
+                'Si usted',
+                'paga el 100%+ de la cuota' if seña == 1 else 'colabora con un monto inferior a la cuota',
+                'y no aparece en este listado, significa que usted se encuentra solvente a la',
+                'fecha de este reporte.\n\n'
+            ])
+
         cartelera += pie_de_página.format(hoy, am_pm)
         
         # Genera una linea de separación entre categorías
