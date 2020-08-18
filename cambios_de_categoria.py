@@ -216,6 +216,9 @@ f_ref_último_día = mes_de_referencia + relativedelta(months=1, days=-1)
 
 print()
 
+# Número de meses a analizar para propuestas de cambio de categoría
+nMeses = input_valor('Número de meses a analizar', nMeses, toma_opciones_por_defecto)
+
 # Selecciona si se muestran sólo vecinos con propuestas de cambio o no
 sólo_propuestas = input_si_no('Sólo vecinos con propuestas de cambio', 'sí', toma_opciones_por_defecto)
 

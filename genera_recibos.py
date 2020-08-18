@@ -4,7 +4,17 @@
 
 """
     POR HACER
-    -   
+    -   "Sellar" los recibos de pago con el sello de la Asociación.
+         -> Se agrega el parámetro 'sella_recibo' a la rutina 'genera_recibo()' de GyG_utilitarios
+            para "imprimir" el sello de la Asociación en el Recibo de Pago (30/07/2020)
+         -> Se añade una consulta al principio de la ejecución de este módulo para controlar la
+            impresión del sello de la Asociación (30/07/2020)
+         -> Falta por definir cuáles recibos estarán sellados: ¿todos?, ¿sólo algunos?
+            Sabemos que los recibos del Colegio El Trigal deberán estar sellados, así como los
+            recibos de solvencia, pero, ¿y los demás?
+            Por indicaciones de Marisol Mendoza, todos los recibos serán generados con el sello de
+            la Asociación (30/07/2020)
+
 
     HISTORICO
     -   Utiliza la versión unificada de 'genera_recibo()' en GyG_utilitarios, en la cual se ajustó
@@ -30,33 +40,17 @@ from GyG_utilitarios import *
 import sys, os
 
 # Selecciona la carpeta de destino
-output_path = GyG_constantes.ruta_recibos    # './GyG Recibos/Recibos de Pago'
-#path_changed = False
-#if len(sys.argv) > 1:
-#    output_path = sys.argv[1]
-#    path_changed = True
+# output_path = GyG_constantes.ruta_recibos    # './GyG Recibos/Recibos de Pago'
 
 print('Cargando librerías...')
-from pandas import read_excel, isnull, notnull
-from PIL import Image, ImageFont, ImageDraw, ImageEnhance
-from datetime import date
+from pandas import read_excel
 import locale
 
 # Define textos
-input_file      = GyG_constantes.plantilla_recibos     # './imagenes/plantilla_recibos.png'
-output_file     = GyG_constantes.img_recibo            # 'GyG Recibo_{recibo:05d}.png'
-
 excel_workbook  = GyG_constantes.pagos_wb_estandar     # '1.1. GyG Recibos.xlsm'
 excel_worksheet = GyG_constantes.pagos_ws_vigilancia   # 'Vigilancia'
 
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
-
-# Fuentes
-calibri             = os.path.join(GyG_constantes.rec_fuentes, 'calibri.ttf')
-calibri_italic      = os.path.join(GyG_constantes.rec_fuentes, 'calibrii.ttf')
-calibri_bold        = os.path.join(GyG_constantes.rec_fuentes, 'calibrib.ttf')
-calibri_bold_italic = os.path.join(GyG_constantes.rec_fuentes, 'calibriz.ttf')
-stencil             = os.path.join(GyG_constantes.rec_fuentes, 'STENCIL.TTF')
 
 # Fuente de los recibos a generar
 selección_manual = False
@@ -162,6 +156,9 @@ genera_historico = False
 if selección_manual:
     print()
     genera_historico = input_si_no('Genera los recibos a partir del histórico', 'no')
+    sella_recibos = input_si_no('Sella los recibos de pago', 'sí')
+    codigo_de_seguridad = input_si_no('Con código de seguridad', 'sí')
+    print()
 
     excel_workbook = GyG_constantes.pagos_wb_historico if genera_historico else GyG_constantes.pagos_wb_estandar
     df = read_excel(excel_workbook, sheet_name=excel_worksheet, dtype={'Nro. Recibo': int})
@@ -179,7 +176,9 @@ if selección_manual:
             un, s = ('un ', '') if len(t_invalid) == 1 else ('', 's')
             print(f"    Hay {un}rango{s} inválido{s}: {', '.join(t_invalid)}")
     print()
-
+else:
+    sella_recibos = True
+    codigo_de_seguridad = True
 
 # Abre la hoja de cálculo de Recibos de Pago
 print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook))
@@ -199,12 +198,14 @@ df['Nro. Recibo'] = df['Nro. Recibo'].astype(int)
 df = df[['Nro. Recibo', 'Fecha', 'Monto', 'Beneficiario', 'Dirección', 'Concepto', 'Categoría']]
 
 if df.shape[0] == 0:
-    print(f'\n*** Proceso terminado: No hay recibos {"seleccionados para" if selección_manual else "pendientes por"} generar\n')
+    print(f'\n*** Proceso terminado: No hay recibos ' + \
+          f'{"seleccionados para" if selección_manual else "pendientes por"} generar\n')
     sys.exit()
 
+s = "s" if df.shape[0] != 1 else ""
 if selección_manual:
     print()
-    print(f"Generando recibos {muestra_rangos(t_recibos)}: ", end="")
+    print(f"Generando recibo{s} {muestra_rangos(t_recibos)}: ", end="")
 else:
     print('Generando recibos', end="")
 
@@ -212,11 +213,9 @@ recibos_convertidos = 0
 for index, r in df.iterrows():
     print('.', end='')   # Imprime un punto en la pantalla por cada mensaje
     sys.stdout.flush()   # Flush output to the screen
-    if genera_recibo(r):
+    if genera_recibo(r, sella_recibos, codigo_de_seguridad):
         recibos_convertidos += 1
 
 print()
-print('\n*** Proceso terminado: {} de {} recibos generados\n'.format(recibos_convertidos,
-                                                                     df.shape[0]))
-#if path_changed:
-#    print(f'    Carpeta "{output_path}"')
+print('\n*** Proceso terminado: {} de {} recibo{} generado{}\n'.format(recibos_convertidos,
+                                                                       df.shape[0], s, s))

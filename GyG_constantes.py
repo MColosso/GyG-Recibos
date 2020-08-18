@@ -38,6 +38,9 @@ patrón_pdfs                 = 'GyG Recibo_%0Xd.pdf'.replace('X', str(long_num_a
 pdf_recibo                  = 'GyG Recibo_{recibo:0Xd}.pdf'.replace('X', str(long_num_archivo))
 img_recibo                  = 'GyG Recibo_{recibo:0Xd}.png'.replace('X', str(long_num_archivo))
 
+# img_sello_GyG               = os.path.join('./recursos/imagenes', 'GyG_sello_negro.png')
+img_sello_GyG               = os.path.join('./recursos/imagenes', 'GyG_sello_humedo.png')
+
 pdf_resumen                 = 'GyG Resumen {resumen:0Xd}.pdf'.replace('X', str(long_num_archivo))
                               # pdf_file = 'GyG Resumen {}-{}T_{:03d}.pdf' en genera_ y envia_resumenes.py
 
@@ -96,7 +99,7 @@ ruta_cambios_de_categoría    = '../GyG Archivos/Otros'
                               # Carpeta en la cual se generan temporalmente (y desde el cual se envían)
                               # los recibos de pago
 
-rec_imágenes                = './recursos/imágenes'
+rec_imágenes                = './recursos/imagenes'
 rec_fuentes                 = './recursos/fuentes'
 rec_plantillas              = './recursos/plantillas'
 
@@ -120,6 +123,6 @@ Windows_encoding            = 'cp1252'
 #long_prueba_patrón          = inicio_num_recibo - 2   # Cantidad de caracteres a probar para determinar si se trata
                                                        # de un número de recibo
 
-sellos                       = ['ANULADO', 'SOLVENTE', 'REVERSADO']
+sellos                       = ['ANULADO', 'SOLVENTE', 'REVERSADO', 'ANTICIPO']
                                                        # Sellos a imprimir sobre el recibo de pago, según la
                                                        # categoría de pago

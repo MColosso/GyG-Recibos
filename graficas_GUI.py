@@ -13,6 +13,11 @@
     -   
 
     HISTORICO
+    -   Error al generar gráfica de Cuotas equivalentes (gráfica_3) al 15/07/2020: "IndexError:
+        list index out of range"
+         -> La rutina "distribución_de_pagps()" calculaba la distribución en base a un número
+            fijo de meses (g1_nro_meses) en lugar de utilizar la cantidad de meses indicados en
+            los parámetros (17/07/2020)
     -   Generar la gráfica 'Pagos recibidos en el mes equivalentes a cuotas completas' como barras
         horizontales cuando se realiza vía batch.
          -> Corregido. (02/07/2020)
@@ -172,7 +177,7 @@ def es_fin_de_mes(fecha):
     return fecha == fin_de_mes
 
 
-def distribución_de_pagos(corte_al_dia_de_referencia=False):
+def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
     from openpyxl import load_workbook
     from pyparsing import Word, Regex, Literal, OneOrMore, ParseException
     import warnings
@@ -339,7 +344,7 @@ def distribución_de_pagos(corte_al_dia_de_referencia=False):
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Calcula cómo se distribuyen los pagos por mes')
 
-    fecha_inicial = fecha_de_referencia - relativedelta(months=g1_nro_meses)
+    fecha_inicial = fecha_de_referencia - relativedelta(months=nro_meses)
     mes_inicial = datetime(fecha_inicial.year, fecha_inicial.month, 1)
 
     cuotas_obj = Cuota(excel_workbook)
@@ -407,7 +412,7 @@ def distribución_de_pagos(corte_al_dia_de_referencia=False):
 
     lista_resultados = list()
     idx_total_cuotas = 0
-    for offset in reversed(range(g1_nro_meses+1)):
+    for offset in reversed(range(nro_meses+1)):
         f_ref = f"{mes_actual - relativedelta(months=offset) + relativedelta(day=1):%m-%Y}"
         resultado = análisis_de_pagos(f_ref)
         total = sum(resultado[1:])
@@ -849,7 +854,8 @@ def gráfica_3():
     fecha_inicial = fecha_de_referencia - relativedelta(months=g3_nro_meses)
     mes_inicial = datetime(fecha_inicial.year, fecha_inicial.month, 1)
 
-    distribución = distribución_de_pagos()
+    distribución = distribución_de_pagos(nro_meses=g3_nro_meses)
+
     pctMesAnt = list()
     pctMesAct = list()
     pctMesSig = list()
@@ -879,6 +885,7 @@ def gráfica_3():
     num_cuotas_completas = ws_cant_pagos['_num. cuotas_'].to_list()
     meses_ed = [mes.strftime(FORMATO_MES) for mes in meses]
     promedio = int(round(mean(num_cuotas_completas[:-1]), ndigits=0))
+
     bar_mesAnt = [num_pagos * pctMesAnt[idx] for idx, num_pagos in enumerate(num_cuotas_completas)]
     bar_mesAct = [num_pagos * pctMesAct[idx] for idx, num_pagos in enumerate(num_cuotas_completas)]
     bar_mesSig = [num_pagos * pctMesSig[idx] for idx, num_pagos in enumerate(num_cuotas_completas)]
@@ -1275,7 +1282,7 @@ def gráfica_5():
     str_mes_inicial = mes_inicial.strftime('%b'+('/%Y' if mes_inicial.year != fecha_de_referencia.year else ''))
     str_mes_final = fecha_de_referencia.strftime('%b/%Y')
 
-    distribución = distribución_de_pagos(corte_al_dia_de_referencia=True)
+    distribución = distribución_de_pagos(nro_meses=g5_nro_meses, corte_al_dia_de_referencia=True)
 
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los rangos de la imagen')
     nPagosMesAnt = list()
