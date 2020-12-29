@@ -13,3 +13,4 @@ python3 ./cartelera_virtual.py
 
 echo ""
 echo "Proceso terminado . . . "
+echo ""

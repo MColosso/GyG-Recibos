@@ -24,3 +24,4 @@ python3 ./genera_recibos.py --seleccion_manual
 
 echo ""
 echo "Proceso terminado . . . "
+echo ""

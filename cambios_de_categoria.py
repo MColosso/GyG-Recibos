@@ -8,6 +8,7 @@
 
 
     HISTORICO
+    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
     -   Versión inicial (07/06/2020)
 
 
@@ -273,7 +274,8 @@ if sólo_propuestas:
     df_resumen_r = df_resumen_r[df_resumen_r['Propuesta'] != '']
 
 if ordenado:
-    df_resumen_r.sort_values(by=['Beneficiario'], inplace=True)
+    df_resumen_r['Benef_sort'] = df_resumen_r['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
+    df_resumen_r.sort_values(by=['Benef_sort'], inplace=True)
 
 
 # Define encabezado

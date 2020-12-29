@@ -195,7 +195,7 @@ else:
 df['Nro. Recibo'] = df['Nro. Recibo'].astype(int)
 
 # Selecciona sólo las columnas a utilizar
-df = df[['Nro. Recibo', 'Fecha', 'Monto', 'Beneficiario', 'Dirección', 'Concepto', 'Categoría']]
+df = df[['Nro. Recibo', 'Fecha', 'Monto', 'Monto $', '$', 'Beneficiario', 'Dirección', 'Concepto', 'Categoría']]
 
 if df.shape[0] == 0:
     print(f'\n*** Proceso terminado: No hay recibos ' + \

@@ -12,7 +12,19 @@
     POR HACER
     -   
 
+
     HISTORICO
+    -   Revisar:
+            Generando gráficas...
+              - Cuotas por oportunidad de pago...
+            Traceback (most recent call last):
+              File "./graficas_GUI.py", line 252, in separa_meses
+                mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
+            ValueError: None is not in list
+        El concepto "Cancelación Vigilancia, meses de Junio, Julio, Agosto, Septiembre y Octubre 2020
+        y US$ 10 como anticipo para meses subsiguientes" generó el error anterior. Se corrigió cambiando
+        el concepto a "Cancelación Vigilancia, meses de Junio, Julio, Agosto, Septiembre y Octubre 2020
+        (saldo a favor: US$ 10,00)" (10/10/2020)
     -   Error al generar gráfica de Cuotas equivalentes (gráfica_3) al 15/07/2020: "IndexError:
         list index out of range"
          -> La rutina "distribución_de_pagps()" calculaba la distribución en base a un número
@@ -158,6 +170,9 @@ TITULO_GRAFICA      = '<span style="font-size: 18px"><b>{}</b></span><br>' + \
                       '<span style="font-size: 14px"><i>{}</i></span>'
 
 VERBOSE             = False             # Muestra mensajes adicionales
+
+GRAFICA_5_PROM_MESES_ANTERIORES = False
+
 
 toma_opciones_por_defecto = False
 if len(sys.argv) > 1:
@@ -451,6 +466,11 @@ def genera_gráficas():
     if g5:
         gráfica_5()     # Cuotas recibidas por tipo
 
+
+#
+# GRAFICA 1 - Gestión de Cobranzas en base al estimado de pagos --------------------------------------------
+#
+
 def gráfica_1():
     global g1_nro_meses
 
@@ -728,6 +748,11 @@ def gráfica_1():
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Gráfica concluida')
 
 
+
+#
+# GRAFICA 2 - Pagos 100% Equivalentes ----------------------------------------------------------------------
+#
+
 def gráfica_2():
     global g2_nro_meses
 
@@ -831,6 +856,11 @@ def gráfica_2():
         with open(os.path.join(GyG_constantes.ruta_graficas, grafica_png), 'wb') as f:
             f.write(img_bytes)
 
+
+
+#
+# GRAFICA 3 - Pagos recibidos en el mes equivalentes a cuotas completas ------------------------------------
+#
 
 def gráfica_3():
     global g3_nro_meses
@@ -1005,6 +1035,11 @@ def gráfica_3():
         with open(os.path.join(GyG_constantes.ruta_graficas, grafica_png), 'wb') as f:
             f.write(img_bytes)
 
+
+
+#
+# GRAFICA 4 - Cuotas recibidas en el mes -------------------------------------------------------------------
+#
 
 def gráfica_4():
     global g4_nro_meses
@@ -1261,6 +1296,11 @@ def gráfica_4():
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Gráfica concluida')
 
 
+
+#
+# GRAFICA 5 - Cuotas recibidas por oportunidad de pago -----------------------------------------------------
+#
+
 def gráfica_5():
     global g5_nro_meses
     from GyG_cuotas import Cuota
@@ -1306,6 +1346,9 @@ def gráfica_5():
     #            f'<br>({nPagosTotal[idx]} cuotas)</span>' for idx, mes in enumerate(meses)]
     meses_ed =  [mes.strftime(FORMATO_MES) for mes in meses]
 
+    if GRAFICA_5_PROM_MESES_ANTERIORES:
+        avg = int(sum(nPagosTotal[:-1]) / len(nPagosTotal[:-1]))
+        nPromMesesAnt = [avg for nP in nPagosTotal[:-1]]
 
     título =     'Cuotas recibidas por oportunidad de pago'
     subtítulo = f'corte al día {fecha_de_referencia.strftime("%d")} de cada mes: {str_mes_inicial} a {str_mes_final}'
@@ -1365,6 +1408,22 @@ def gráfica_5():
                         text = [str(nP) for nP in nPagosTotal],
                         textposition = 'top center',
                     ))
+
+    if GRAFICA_5_PROM_MESES_ANTERIORES:
+        fig.add_trace(
+                        go.Scatter(
+                            x = meses_ed[:-1],
+                            y = nPromMesesAnt,
+                            mode = 'lines+text',
+                            name = 'Promedio',
+                            line = dict(
+                                        width = 1.5,
+                                        color = 'red',
+                                        dash = 'dash',
+                                    ),
+                            text = ['' for nP in nPromMesesAnt[:-1]] + [str(nPromMesesAnt[-1])],
+                            textposition = 'top center',
+                        ))
 
     # Define el desplazamiento vertical del nombre de la curva para evitar solapamientos
     valores = [{'key': 'Total cuotas', 'cuotas': nPagosTotal[-1]},
@@ -1427,6 +1486,14 @@ def gráfica_5():
         text = 'Total cuotas' + (f': {nPagosTotal[-1]}' if muestra_cuota else ''),
         yshift = delta_y,
     )
+    if GRAFICA_5_PROM_MESES_ANTERIORES:
+        fig.add_annotation(
+            x = 0.95,               # meses_ed[-1]
+            y = nPromMesesAnt[-1],
+            name = 'Promedio',
+            text = 'Promedio',
+            yshift = delta_y,
+        )
     fig.update_annotations(dict(
         xref = "paper", yref = "y",
         xanchor = "left", yanchor = "bottom",

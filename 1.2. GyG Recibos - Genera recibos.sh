@@ -18,3 +18,4 @@ python3 ./genera_recibos.py
 
 echo ""
 echo "Proceso terminado . . . "
+echo ""

@@ -14,10 +14,10 @@
     -   Agregar al resumen:
           . Para aquellos vecinos que pagan la cuota completa, indicar los meses que están por debajo de
             la cuota (incluye meses no cancelados que quedaron "encerrados" entre otros)
-    -   
 
 
     HISTORICO
+    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
     -   Se incorpora la librería 'swifter' para acelerar el cálculo de las funciones 'apply' en Pandas
         (12/05/2020)
     -   En el resumen de pagos se muestra adicionalmente el promedio de los 5 meses anteriores (24/04/2020)
@@ -659,8 +659,8 @@ def distribución_de_pagos():
         total = sum(resultado[1:])
         lista_resultados.append(resultado)
 
-        print(f"  {f_ref}: {edit(total, width=10)} [" + \
-              f"{edit(resultado[1])} ({edit_pct(resultado[1], total)}), " + \
+        print(f" {f_ref}: {edit(total, width=10)} [" + \
+              f"{edit(resultado[1], width=10)} ({edit_pct(resultado[1], total)}), " + \
               f"{edit(resultado[2], width=10)} ({edit_pct(resultado[2], total)}), " + \
               f"{edit(resultado[3])} ({edit_pct(resultado[3], total)})"   + "]")
 
@@ -818,7 +818,9 @@ if solo_deudores:
 
 # Ordena los beneficiarios en orden alfabético
 if ordenado:
-    df_resumen.sort_values(by='Beneficiario', inplace=True)
+    df_resumen = df_resumen.copy()
+    df_resumen['Benef_sort'] = df_resumen['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
+    df_resumen.sort_values(by='Benef_sort', inplace=True)
 
 # Inserta las columnas 'Promedio' y 'Variación' con el día promedio de pago y su
 # desviación estándar
@@ -856,6 +858,10 @@ análisis += f'GyG ANALISIS DE PAGOS, {fecha_análisis}\n({datetime.now():%d/%m/
 genera_resumen()
 
 # Análisis de pago
+# # --- DEBUG ---------------------------------------------------------------
+# a_mostrar = ['Yuraima Rodríguez', 'Teresita Román', 'Familia Hernández Alzurutt', ]     # <== DEBUG
+# # --- END DEBUG -----------------------------------------------------------
+
 análisis += 'Análisis de pago:\n\n'
 dirección_anterior = None
 for index, r in df_resumen.iterrows():
@@ -926,14 +932,36 @@ for index, r in df_resumen.iterrows():
         else:
             tipo_pago = 'Paga ' + r['Categoría'].lower()
         if notnull(r['Promedio']):
-            detalles_pago = ' y su único pago fue el {:%d de %B de %Y}'.format(
+            único_último = 'último' if notnull(r['Variación']) else 'único'
+            detalles_pago = ' y su {} pago fue el {:%d de %B de %Y}'.format(
+                                único_último,
                                 max(df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']]['Fecha']))
         else:
             detalles_pago = ' y no se tienen pagos registrados'
 
         info_pago, info_deuda = no_participa_desde(r)
-        info_deuda = re.findall(r'([0-9]+\.[0-9]+)', info_deuda)[0]
-        detalles_pago += f"\n  Tiene cuotas pendientes por Bs. {info_deuda}"
+        # # --- DEBUG ---------------------------------------------------------------
+        # if r['Beneficiario'] in a_mostrar:
+        #     print("\n-----------------------------------------------------")
+        #     print(f"*** {r['Beneficiario'] = }")
+        #     print(f"*** {r['Promedio'] = }, {r['Variación'] = }")
+        #     print(f"*** {info_pago = }, {info_deuda = }")
+        #     print("-----------------------------------------------------")
+        # # --- END DEBUG -----------------------------------------------------------
+        try:
+            info_deuda = re.findall(r'([0-9]+(\.[0-9]+)*)', info_deuda)[0][0]
+        except IndexError:
+            pass
+        except:
+            print("\n-- DEBUG: Análisis de Pagos --------------------------------------")
+            print(f"-- {r['Beneficiario'] = }")
+            print(f"-- {info_pago  = }")
+            print(f"-- {info_deuda = }")
+            print(f"-- ERROR: {str(sys.exc_info()[0])}: {str(sys.exc_info()[1])}")
+            print("------------------------------------------------------------------\n")
+            sys.exit(1)            
+        if len(info_deuda) > 0:
+            detalles_pago += f"\n  Tiene cuotas pendientes por Bs. {info_deuda}"
         if not(solo_deudores and len(info_deuda) == 0):
             if dirección_anterior == None:
                 dirección_anterior = get_street(r['Dirección'])

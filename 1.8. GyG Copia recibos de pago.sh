@@ -18,3 +18,4 @@ python3 ./copia_recibos.py
 
 echo ""
 echo "Proceso terminado . . . "
+echo ""

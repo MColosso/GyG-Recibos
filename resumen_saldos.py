@@ -8,6 +8,9 @@
     -   Incluir una opción para omitir o no los saldos de los vecinos que tienen cuenta
 
     HISTORICO
+    -   Ajustado el tamaño de los campos de Deuda y Pendiente en el encabezado para mostrar adecua-
+        damente montos superiores a 10 millones (10/10/2020)
+    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
     -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
         implementando la opción '--toma_opciones_por_defecto' en la linea de comandos (08/12/2019)
     -   Ajustar los mensajes para hacer más claro su contenido (04/11/2019)
@@ -373,7 +376,8 @@ df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 df_resumen['Beneficiario'] = df_resumen['Beneficiario'].apply(lambda benef: edita_beneficiario(benef))
 
 if ordenado:
-    df_resumen.sort_values(by='Beneficiario', inplace=True)
+    df_resumen['Benef_sort'] = df_resumen['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
+    df_resumen.sort_values(by='Benef_sort', inplace=True)
 
 
 # ANÁLISIS DE SALDOS PENDIENTES
@@ -381,17 +385,17 @@ if ordenado:
 print(f"Creando archivo de saldos '{nombre_análisis.format(datetime(año, mes, 1))}'...")
 print('')
 
-mensaje_con_saldo = '{:<20} | {:<14} | {:<13} | {:>9} | {:>9} | {}\n'
-mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>9} | {}\n'
+mensaje_con_saldo = '{:<20} | {:<14} | {:<13} | {:>10} | {:>9} | {}\n'
+mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>10} | {}\n'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
 análisis = f"GyG RESUMEN DE SALDOS al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
             "Vecino               | Dirección      | Categoría     |" + \
-           ("     Deuda |   A favor |" if muestra_saldos else " Pendiente |") + \
+           ("      Deuda |   A favor |" if muestra_saldos else "  Pendiente |") + \
             " Período\n"
 
-análisis += espacios(94 if muestra_saldos else 82, '-') + '\n'
+análisis += espacios(95 if muestra_saldos else 83, '-') + '\n'
 
 # SALDOS
 dirección_anterior = None

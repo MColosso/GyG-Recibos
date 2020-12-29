@@ -8,6 +8,7 @@
     -   
     
     HISTORICO
+    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
     -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
         implementando la opción '--toma_opciones_por_defecto' en la linea de comandos (08/12/2019)
     -   Incluir en el total de la deuda cualquier saldo pendiente del último mes pagado (tomar Resumen
@@ -392,7 +393,8 @@ df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 
 # Ordena los beneficiarios en orden alfabético
 if ordenado:
-    df_resumen.sort_values(by='Beneficiario', inplace=True)
+    df_resumen['Benef_sort'] = df_resumen['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
+    df_resumen.sort_values(by='Benef_sort', inplace=True)
 
 
 # ANÁLISIS DE SALDOS PENDIENTES

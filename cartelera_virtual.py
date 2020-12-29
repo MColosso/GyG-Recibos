@@ -7,9 +7,14 @@
     -   Después de ajustar todos los programas para usar esta nueva clase, cambiar el título
         de la columna "2016" en la hoja de Excel a "=fecha(2016;1;1)" y eliminar el cambio
         de nombre en la rutina principal
-    -   
+    -   En ocasiones es necesario que el 'resumen_de_cuotas()' muestre también el monto de la
+        cuota del mes en curso, y en otros no. ¿Cómo se determina cuando sí y cuándo no? o,
+        ¿cómo se le indica...?
     
     HISTORICO
+    -   Ajustado el texto final de la cartelera 1: "Si usted paga el 100%+ de la cuota y no aparece
+        en este listado..." a "Si usted paga la totalidad de la cuota o más, y no aparece en este
+        listado..." para facilitar su lectura (10/10/2020)
     -   Si el mes seleccionado corresponde al mes actual, colocar la fecha de hoy como fecha de
         referencia (17/05/2020)
     -   Corregir inconsistencia en 'no_participa_desde()': Al seleccionar una fecha de referencia
@@ -608,8 +613,8 @@ for categoría in categorías:
         if seña in [1, 2]:
             cartelera += ' '.join([
                 'Si usted',
-                'paga el 100%+ de la cuota' if seña == 1 else 'colabora con un monto inferior a la cuota',
-                'y no aparece en este listado, significa que usted se encuentra solvente a la',
+                'paga la totalidad de la cuota o más,' if seña == 1 else 'colabora con un monto inferior a la cuota',
+                'y no aparece en este listado, significa que se encuentra solvente a la',
                 'fecha de este reporte.\n\n'
             ])
 

@@ -13,3 +13,4 @@ python3 ./envia_recibos.py
 
 echo ""
 echo "Proceso terminado . . . "
+echo ""

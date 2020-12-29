@@ -9,6 +9,7 @@
 #  . trunca_texto(texto, max_width) -> str
 #  . espacios(width=1, char=' ') -> str
 #  . is_numeric(valor) -> bool
+#  . remueve_acentos(text: str) -> str
 #  . _obscure(data: bytes) -> bytes
 #  . _unobscure(data: bytes) -> bytes
 #  . valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool
@@ -16,23 +17,40 @@
 #  . genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False)
 #      'r' es un diccionario, dataframe o serie con las siguientes claves:
 #        . 'Nro. Recibo',  'Fecha',     'Beneficiario',  'Dirección',
-#        . 'Monto',        'Concepto',  'Categoría'
+#        . 'Monto',        'Concepto',  'Categoría',     'Monto $',    '$'
 #
 
 """
     POR HACER
-    -   
+    -   Cambiar de nombre a la rutina 'is_numeric()' a 'es_numérico()':
+            [ ] saldos_pendientes.py        [ ] resumen_saldos.py
+            [ ] analisis_de_pagos.py        [ ] cambios_de_categorias.py
+            [ ] cartelera_virtual.py
+    -   Cambiar parámetro 'num_decimals' en la rutina 'edita_número()' a ???
 
+     
     HISTORICO
-    -   Se agrega el código de validación al recibo de pago y las rutinas para la
-        generación y validación del mismo (18/08/2020)
+    -   Se corrigió la rutina MontoEnLetras() para añadir la partícula 'de' cuando el monto es en millones.
+        (Ejemplos: 1.000.000,00 = Un Millón de Bolivares con 00/100
+                     870.000,00 = Ochocientos Setenta Mil Bolívares con 00/100) (22/11/2020)
+    -   Se añadió la posibilidad de generar un recibo de pago con el monto expresado en dólares (19/11/2020)
+    -   Se corrigió la rutina genera_recibo(): Al incorporar la impresión del sello de la Asociación, se
+        produjo un error en la ubicación de los sellos en rojo («Anulado», etc.), quedando fuera del area
+        visible (09/11/2020)
+    -   Se agrega el código de validación al recibo de pago y las rutinas para la generación y validación del
+        mismo (18/08/2020)
+        Las rutinas _obscure() y _deobscure() fueron tomadas de:
+        "Simple way to encode a string according to a password?"
+        (https://stackoverflow.com/questions/2490334/simple-way-to-encode-a-string-according-to-a-password/16321853)
     -   Corregidos algunos acentos en rutina MontoEnLetras() (14/06/2020)
     
 """
 
 import GyG_constantes
+import re
 from re import match
 from datetime import datetime, timedelta
+from unicodedata import normalize
 import numbers
 import locale
 
@@ -146,8 +164,8 @@ def input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
         return valor_actual
 
 
-def edita_número(number, num_decimals=2):
-    return locale.format_string(f'%.{num_decimals}f', number, grouping=True, monetary=True)
+def edita_número(valor, num_decimals=2):
+    return locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True)
 
 def trunca_texto(texto, max_width):
     return texto[0: max_width - 3] + '...' if len(texto) > max_width else texto
@@ -163,12 +181,22 @@ def valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool:
     str_fecha = fecha.strftime("%d/%m/%Y")
     return str(_obscure(bytes(' '.join([nro_recibo, str_fecha]), 'UTF-8')), 'UTF-8') == codigo
 
+def remueve_acentos(texto: str) -> str:
+    # -> NFD y eliminar diacríticos
+    s = re.sub(
+            r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+", r"\1", 
+            normalize( "NFD", texto), 0, re.I
+        )
+    # -> NFC
+    return normalize( 'NFC', s)
 
-def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):
+def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False, moneda='Bolívar'):
     #
     # Constantes
-    Moneda = "Bolívar"       # Nombre de Moneda (Singular)
-    Monedas = "Bolívares"    # Nombre de Moneda (Plural)
+    Vocales = ['a', 'e', 'i', 'o', 'u']
+    Moneda = moneda          # Nombre de Moneda (Singular)
+    Monedas = f"{moneda}{'s' if moneda[-1] in Vocales else 'es'}"
+                             # Nombre de Moneda (Plural)
     Céntimo = "Céntimo"      # Nombre de Céntimos (Singular)
     Céntimos = "Céntimos"    # Nombre de Céntimos (Plural)
     Preposición = "con"      # Preposición entre Moneda y Céntimos
@@ -214,11 +242,14 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False):
         return resultado
 
     if 0 <= número <= Máximo:
+        # Si el número es en millones, debe expresarse como: «monto en letras» de «moneda(s)»
+        de = ' de ' if int(número) != 0 and int(número) % 1000000 == 0 else ' '
+
         # convertir la parte entera del número en letras
         letra = _número_recursivo(int(número))
 
         # Agregar la descripción de la moneda
-        letra += ' ' + (Moneda if int(número) == 1 else Monedas)
+        letra += de + (Moneda if int(número) == 1 else Monedas)
 
         # Obtener los céntimos del Numero
         num_céntimos = int(round((número - int(número)) * 100, 0))
@@ -240,7 +271,7 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
         Recibe como parámetro con las siguientes claves:
           . 'Nro. Recibo',  'Fecha',    'Beneficiario',
           . 'Dirección',    'Monto',    'Concepto',
-          . 'Categoría'
+          . 'Categoría',    'Monto $',  '$'
     """
 
     # Librerías
@@ -256,6 +287,9 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     output_file = GyG_constantes.img_recibo            # 'GyG Recibo_{recibo:05d}.png'
     output_path = GyG_constantes.ruta_recibos          # '../GyG Archivos/Recibos de Pago'
     img_sello   = GyG_constantes.img_sello_GyG         # './recursos/imágenes/sello_GyG.png'
+
+    moneda, moneda_abrev, monto_en_moneda = ('Dólar',   'US$', r['Monto $']) if r['$'] == 'ü' \
+                                       else ('Bolívar', 'Bs.', r['Monto'])
 
     # Fuentes
     calibri             = os.path.join(GyG_constantes.rec_fuentes, 'calibri.ttf')
@@ -307,13 +341,13 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     recibo.text(xy=(620,  64), text=f"{r['Nro. Recibo']:0{GyG_constantes.long_num_recibo}d}", font=font, fill='black')
 
     font = ImageFont.truetype(font=calibri_bold, size=18)
-    monto = edita_número(r['Monto'])
+    monto = edita_número(monto_en_moneda)
     if anchura_de_texto(monto, font) > 90:
-        texto = 'Por Bs. ' + monto
+        texto = f'Por {moneda_abrev} {monto}'
         recibo.text(xy=(498 + justifica_centro(texto, 670-498+1, font) + 1, 91),
                     text=texto, font=font, fill='black')
     else:
-        recibo.text(xy=(515, 91), text='Por Bs. ', font=font, fill='black')
+        recibo.text(xy=(515, 91), text=f'Por {moneda_abrev} ', font=font, fill='black')
         recibo.text(xy=(571 + justifica_derecha(monto, 90, font),  91),
                     text=monto, font=font, fill='black')
 
@@ -322,7 +356,7 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
 
     font = ImageFont.truetype(font=calibri_italic, size=15)
     posicion = (195, 199)
-    monto_en_letras = multilineas(MontoEnLetras(r['Monto']), 480, font)
+    monto_en_letras = multilineas(MontoEnLetras(monto_en_moneda, moneda=moneda), 480, font)
     text_size = recibo.textsize(text=monto_en_letras, font=font)
     recibo.rectangle((posicion[0]-2, posicion[1]-2, posicion[0]+text_size[0]+2, posicion[1]+text_size[1]+2),
                      fill=(189, 215, 238))
@@ -338,7 +372,7 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     transparente = (0, 0, 0, 0)
 
     if codigo_de_seguridad:
-        font = ImageFont.truetype(font=calibri, size=11)
+        font = ImageFont.truetype(font=calibri, size=10)
         código_a_convertir = f"{r['Nro. Recibo']:0{GyG_constantes.long_num_recibo}d} " + \
                              r['Fecha'].strftime('%d/%m/%Y')
         código_convertido = str(_obscure(bytes(código_a_convertir, 'UTF-8')), 'UTF-8')
@@ -347,8 +381,8 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
         # ----------------------------------------------------------------
         # CODIGO DE VALIDACION HORIZONTAL (justificado a la izquierda)
         #
-        # recibo.text(xy=(20, plantilla.size[1] - 25),
-        #             text=código_convertido, font=font, fill='black')
+        recibo.text(xy=(20, plantilla.size[1] - 25),
+                    text=código_convertido, font=font, fill='black')
         # ----------------------------------------------------------------
         # CODIGO DE VALIDACION HORIZONTAL (justificado a la derecha)
         #
@@ -357,17 +391,17 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
         # ----------------------------------------------------------------
         # CODIGO DE VALIDACION VERTICAL
         #
-        ancho_código = anchura_de_texto(código_convertido, font)
-        alto_código = altura_de_texto(código_convertido, font)
-        max_hw = max(ancho_código, alto_código)
-        canvas = Image.new(mode='RGBA', size=(max_hw, max_hw), color=transparente)
-        img_código = ImageDraw.Draw(canvas)
-        img_código.text(xy=(0, 0), text=código_convertido, font=font, fill='black')
-        canvas = canvas.rotate(90, expand=True, fillcolor=transparente)
-        opacidad = 0.5
-        en = ImageEnhance.Brightness(canvas)
-        mask = en.enhance(1.0 - opacidad)
-        plantilla.paste(canvas, box=(12, plantilla.size[1] - canvas.size[1] - 15), mask=mask)
+        # ancho_código = anchura_de_texto(código_convertido, font)
+        # alto_código = altura_de_texto(código_convertido, font)
+        # max_hw = max(ancho_código, alto_código)
+        # canvas = Image.new(mode='RGBA', size=(max_hw, max_hw), color=transparente)
+        # img_código = ImageDraw.Draw(canvas)
+        # img_código.text(xy=(0, 0), text=código_convertido, font=font, fill='black')
+        # canvas = canvas.rotate(90, expand=True, fillcolor=transparente)
+        # opacidad = 0.5
+        # en = ImageEnhance.Brightness(canvas)
+        # mask = en.enhance(1.0 - opacidad)
+        # plantilla.paste(canvas, box=(12, plantilla.size[1] - canvas.size[1] - 15), mask=mask)
         # ----------------------------------------------------------------
 
     if sella_recibo:
@@ -398,6 +432,7 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     if r['Categoría'] in GyG_constantes.sellos:
         font = ImageFont.truetype(font=stencil, size=60)
         ancho, alto = recibo.textsize(text=r['Categoría'].capitalize(), font=font)
+        cx, cy = plantilla.size[0] // 2, plantilla.size[1] // 2
         tx, ty = cx - ancho // 2, cy - alto // 2
         angulo = 30
         opacidad = 0.5
