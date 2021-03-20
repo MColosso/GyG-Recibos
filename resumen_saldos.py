@@ -7,7 +7,12 @@
     PENDIENTE POR HACER
     -   Incluir una opción para omitir o no los saldos de los vecinos que tienen cuenta
 
+
     HISTORICO
+    -   Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
+        pendientes (26/01/2021)
+    -   Se corrigió la rutina 'get_street(address)' para devolver correctamente el nombre de la calle
+        para corregir un "salto" inadecuado ("Guacara, terreno baldío") (25/01/2021)
     -   Ajustado el tamaño de los campos de Deuda y Pendiente en el encabezado para mostrar adecua-
         damente montos superiores a 10 millones (10/10/2020)
     -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
@@ -90,7 +95,11 @@ def get_filename(filename):
     return os.path.basename(filename)
 
 def get_street(address):
-    return address.index(' ', address.index(' ') + 1)
+    # return address.index(' ', address.index(' ') + 1)
+    grupos = re.findall(r'\w+', address)
+    if grupos[0].lower() == "av":
+        return "Avenida"
+    return grupos[1] if len(grupos) > 0 else ''
 
 def edita_beneficiario(beneficiario):
     return beneficiario.replace('Familia ', '')
@@ -190,7 +199,7 @@ def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
     else:
         return None
 
-#a_evaluar = ['Ely Saúl Rivero Gómez', 'Del Negro Palermo', 'Acevedo', 'López Hermoso']
+# a_evaluar = ['Neira Chacón', ]
 
 def no_participa_desde(r):
     """
@@ -213,7 +222,7 @@ def no_participa_desde(r):
             ultimo_mes_con_pagos = idx
             break
         x = idx
-        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx]) # cuotas[idx]
+        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
     if ultimo_mes_con_pagos == None:
         ultimo_mes_con_pagos = this_col = f_desde
         fecha_txt = '2016'
@@ -277,9 +286,9 @@ def no_participa_desde(r):
     saldo_a_favor = df_saldos[df_saldos['Beneficiario'] == beneficiario]['Saldo']
     info_saldo = '' if saldo_a_favor.empty else edita_número(saldo_a_favor.iloc[0], num_decimals=0)
 
-#    if r['Beneficiario'] in a_evaluar: print(f' (10): mensaje:    "{mensaje}",\n' + \
-#                                             f'       info_deuda: "{info_deuda}",\n' + \
-#                                             f'       info_saldo: "{info_saldo}"')
+    # if r['Beneficiario'] in a_evaluar: print(f' (10): mensaje:    "{mensaje}",\n' + \
+    #                                         f'       info_deuda: "{info_deuda}",\n' + \
+    #                                         f'       info_saldo: "{info_saldo}"')
 
     return mensaje, info_deuda, info_saldo
 
@@ -303,6 +312,9 @@ ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_def
 
 # Selecciona si se muestra la columna de saldos a favor
 muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_opciones_por_defecto)
+
+# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
+aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
 
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
@@ -385,14 +397,15 @@ if ordenado:
 print(f"Creando archivo de saldos '{nombre_análisis.format(datetime(año, mes, 1))}'...")
 print('')
 
-mensaje_con_saldo = '{:<20} | {:<14} | {:<13} | {:>10} | {:>9} | {}\n'
-mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>10} | {}\n'
+mensaje_con_saldo = '{:<20} | {:<14} | {:<13} | {:>11} | {:>9} | {}\n'
+mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>11} | {}\n'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-análisis = f"GyG RESUMEN DE SALDOS al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
+ajuste_por_inflación = 'ajustados por inflación ' if aplica_IPC else ''
+análisis = f"GyG RESUMEN DE SALDOS {ajuste_por_inflación}al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
             "Vecino               | Dirección      | Categoría     |" + \
-           ("      Deuda |   A favor |" if muestra_saldos else "  Pendiente |") + \
+           ("       Deuda |   A favor |" if muestra_saldos else "   Pendiente |") + \
             " Período\n"
 
 análisis += espacios(95 if muestra_saldos else 83, '-') + '\n'
@@ -404,7 +417,7 @@ for index, r in df_resumen.iterrows():
     info_pago, info_deuda, info_saldo = no_participa_desde(r)
 
     if not(solo_deudores and len(info_deuda) == 0):
-        if dirección_anterior == None:
+        if dirección_anterior is None:
             dirección_anterior = get_street(r['Dirección'])
         if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
             análisis += '\n'

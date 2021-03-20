@@ -4,6 +4,9 @@
 
 """
     POR HACER
+    -   
+
+    HISTORICO
     -   "Sellar" los recibos de pago con el sello de la Asociación.
          -> Se agrega el parámetro 'sella_recibo' a la rutina 'genera_recibo()' de GyG_utilitarios
             para "imprimir" el sello de la Asociación en el Recibo de Pago (30/07/2020)
@@ -14,9 +17,6 @@
             recibos de solvencia, pero, ¿y los demás?
             Por indicaciones de Marisol Mendoza, todos los recibos serán generados con el sello de
             la Asociación (30/07/2020)
-
-
-    HISTORICO
     -   Utiliza la versión unificada de 'genera_recibo()' en GyG_utilitarios, en la cual se ajustó
         el despliegue de montos "grandes" (27/04/2020)
     -   Unificar los archivos 'genera_recibos.py' y 'genera_recibos_seleccionados', separando

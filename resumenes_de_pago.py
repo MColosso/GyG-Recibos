@@ -8,6 +8,7 @@
     PENDIENTE POR HACER
     -   Fijar como celda superior izquierda de la hoja de cálculo 'A solicitud' unas 5 filas
         antes del último grupo generado
+         -> Verificar si "openpyxl" tiene ahora una opción para ello
     -   
 
     HISTORICO

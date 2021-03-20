@@ -6,10 +6,11 @@
 
 """
     POR HACER
-    -   Incluir el mantenimiento de la carpeta Graficas, eliminando archivos con más de
-        tres meses
+    -   
 
     HISTORICO
+    -   Incluir el mantenimiento de la carpeta Graficas, eliminando archivos con más de
+        tres meses (09/06/2020)
     -   Versión inicial (17/04/2020)
 
 

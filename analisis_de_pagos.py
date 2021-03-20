@@ -154,8 +154,15 @@ if len(sys.argv) > 1:
 def esVigilancia(x):
     return x == 'Vigilancia'
 
+# def get_street(address):
+#     return address.index(' ', address.index(' ') + 1)
+
 def get_street(address):
-    return address.index(' ', address.index(' ') + 1)
+    # return address.index(' ', address.index(' ') + 1)
+    grupos = re.findall(r'\w+', address)
+    if grupos[0].lower() == "av":
+        return "Avenida"
+    return grupos[1] if len(grupos) > 0 else ''
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 

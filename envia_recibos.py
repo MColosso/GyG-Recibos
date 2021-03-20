@@ -5,13 +5,7 @@
 
 """
     PENDIENTE POR HACER
-    -   Enviar como anexos archivos .png (en lugar de .pdf), si estuviesen presentes; ello implica
-        que no se generará el archivo .png al enviar por WhatsApp, si estuviese presente.
-    -   Unificar la opción para la generación de recibos de pago: rutina convierte_en_imagenes(anexos)
-        con la utilizada en 'genera_recibos.py'
-         -> Esta opción se habilitó para facilitar su envío por WhatsApp cuando los recibos de pago se
-            generaban en formato PDF. Actualmente, todos ellos se generan como imágenes, por lo que ya
-            no es necesaria -> Opción eliminada (20/05/2020)
+    -   
 
     HISTORICO
     -   Definir una opción para copiar a Temporales los archivos a ser enviados por WhatsApp
@@ -22,6 +16,11 @@
         (09/10/2019)
     -   Ajustar el resumen_de_cuotas() para indicar que, a partir de Septiembre 2019 se maneja una
         cuota mensual de 1 dólar, actualizada semanalmente. (04/09/2019)
+    -   Unificar la opción para la generación de recibos de pago: rutina convierte_en_imagenes(anexos)
+        con la utilizada en 'genera_recibos.py'
+         -> Esta opción se habilitó para facilitar su envío por WhatsApp cuando los recibos de pago se
+            generaban en formato PDF. Actualmente, todos ellos se generan como imágenes, por lo que ya
+            no es necesaria -> Opción eliminada (20/05/2020)
     -   CORREGIR: En la hoja de cálculo '1.1. GyG Recibos.xlsm' se cambió el título de la columna 'B'
         de 'Archivo' a 'Generar' (corregido 08/07/2019)
     -   Los correos con los recibos de pagos por anticipado no muestran el monto de las nuevas cuotas
@@ -34,20 +33,20 @@
         mismas que la del resto de los vecinos, por lo que los montos desplegados no son correctos
         (corregido 10/06/2019)
     -   Enviar recibo de pago a múltiples destinatarios, e-mail o WhatsApp
-        ^--> Colocar los teléfonos o direcciones de correo, usando la barra vertical como separador:
+        +--> Colocar los teléfonos o direcciones de correo, usando la barra vertical como separador:
              me@mailserver.com | 0555-550.1234 | you@anothermailserver.com (19/04/2019)
-        ^--> Agrupar todas las direcciones de correo en una lista, a fin de enviar un único correo,
+        +--> Agrupar todas las direcciones de correo en una lista, a fin de enviar un único correo,
              aprovechando las capacidades de yagmail (21/04/2019)
-        ^--> Corrección de errores introducidos (25/04/2019)
+        +--> Corrección de errores introducidos (25/04/2019)
     -   Generar automáticamente el resumen de cuotas de vigilancia a partir de la misma hoja
         de cálculo
     -   Utilizar la librería YAGMAIL para el envío de los correos electrónicos, en lugar de
         SMTPLIB
     -   Agrupar los recibos por beneficiario para realizar un solo envío
         -  Revisar qué hacer con los recibos que fueron enviados anteriormente
-           ^--> Emitir mensaje con los números de recibo de aquellos que fueron enviados previamente
+           +--> Emitir mensaje con los números de recibo de aquellos que fueron enviados previamente
                 y enviar sólo aquellos que no
-                ^--> Se estaban enviado correos erroneos a aquellos beneficiarios con todos los
+                +--> Se estaban enviado correos erroneos a aquellos beneficiarios con todos los
                      recibos ya enviados (lista de anexos vacía)
     -   Corregir: Los recibos a ser entregados "En Físico" son mostrados como a ser enviados por
         Whatsapp

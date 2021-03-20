@@ -12,6 +12,9 @@
     -   
 
     HISTORICO
+    -   Se agregó el parámetro 'aplica_IPC' a las rutinas 'cuota_vigente()' y 'cuota_actual()'
+        para aplicar o no el ajuste por inflación en el cálculo de los saldos pendientes
+        (26/01/2021)
     -   Corregir: En el resumen de cuotas, no se muestra el año final cuando es diferente al
         año inicial (23/02/2020)
     -   Corregir: Se muestra el monto de la cuota en lugar de la tasa en el párrafo iniciado
@@ -52,21 +55,26 @@ class Cuota:
         columnas = [str.replace('CUOTA ', '') for str in self.df_cuotas.columns.to_list()]
         self.df_cuotas.columns = columnas
 
-    def cuota_vigente(self, beneficiario, fecha):
+    def cuota_vigente(self, beneficiario, fecha, aplica_IPC=False):
         """
         Cuota vigente para el vecino indicado en la fecha establecida.
         Empleado para determinar si la cuota fue totalmente cancelada para la fecha del
         último pago.
         """
         column_name = beneficiario if beneficiario in self.df_cuotas.columns.to_list() else 'CUOTA'
+        if (column_name == 'CUOTA') and aplica_IPC:
+            column_name = 'Reexpr. por inflación'
         return self.df_cuotas[self.df_cuotas['Fecha'] <= fecha].iloc[-1][column_name]
 
-    def cuota_actual(self, beneficiario, fecha):
+    def cuota_actual(self, beneficiario, fecha, aplica_IPC=False):
         """
         Cuota a ser utilizada para el cálculo del saldo deudor.
-        A partir del 1° de Septiembre, se tomará como cuota actual la última registrada.
+        A partir del 1° de Septiembre 2019, se tomará como cuota actual la última registrada.
+        Si aplica_IPC es verdadero, los valores de las cuotas se reexpresarán en base al Indice de Precios
+        al Consumidor (df_cuotas['Reexpr. por inflación'])
         """
-        return self.cuota_vigente(beneficiario, fecha if fecha < GyG_constantes.fecha_de_corte else datetime.today())
+        return self.cuota_vigente(beneficiario, fecha if fecha < GyG_constantes.fecha_de_corte else datetime.today(),
+                                  aplica_IPC=aplica_IPC)
 
     def tasa_actual(self, fecha, redondeada=True):
         """
@@ -146,35 +154,41 @@ class Cuota:
 
             if len(fechas) > 0:
                 idx_inicial = 0
-                cuota = cuotas[idx_inicial]
-                last_notnull = idx_inicial
-                año_anterior = 0
-                txtCuotasMensuales = f'Las cuotas para el pago de la vigilancia en los últimos ' + \
-                                     f'meses han sido las siguientes:{UL}'
-                más_de_un_elemento = False
-                for idx in range(1, len(fechas)):
-                    if notnull(cuotas[idx]):
-                        last_notnull = idx
-                        if cuotas[idx] != cuota:
-                            txtCuotasMensuales += rango_fechas(idx_inicial, idx - 1, cuota, año_anterior, rango_final=False)
-                            más_de_un_elemento = True
-                            idx_inicial = idx
-                            cuota = cuotas[idx_inicial]
-                            año_anterior = fechas[idx - 1].year
-                txtCuotasMensuales = (txtCuotasMensuales[:-2] if más_de_un_elemento and not lista else txtCuotasMensuales) + \
-                                     rango_fechas(idx_inicial, last_notnull, cuota, año_anterior, 
-                                                  rango_final=True, más_de_un_elemento=más_de_un_elemento) + \
-                                     END_UL
+                if fechas[idx_inicial] < GyG_constantes.fecha_de_corte:
+                    cuota = cuotas[idx_inicial]
+                    last_notnull = idx_inicial
+                    año_anterior = 0
+                    txtCuotasMensuales = f'Las cuotas para el pago de la vigilancia en los últimos ' + \
+                                         f'meses han sido las siguientes:{UL}'
+                    más_de_un_elemento = False
+                    for idx in range(1, len(fechas)):
+                        if notnull(cuotas[idx]):
+                            last_notnull = idx
+                            if cuotas[idx] != cuota:
+                                txtCuotasMensuales += rango_fechas(idx_inicial, idx - 1, cuota, año_anterior, rango_final=False)
+                                más_de_un_elemento = True
+                                idx_inicial = idx
+                                cuota = cuotas[idx_inicial]
+                                año_anterior = fechas[idx - 1].year
+                    txtCuotasMensuales = (txtCuotasMensuales[:-2] if más_de_un_elemento and not lista else txtCuotasMensuales) + \
+                                         rango_fechas(idx_inicial, last_notnull, cuota, año_anterior, 
+                                                      rango_final=True, más_de_un_elemento=más_de_un_elemento) + \
+                                         END_UL
 
             if dt_final >= GyG_constantes.fecha_de_corte:
                 tasa = self.tasa_actual(datetime.today())
                 str_tasa = locale.format_string(f'%.2f', tasa, grouping=True, monetary=True).replace(',00', '')
-                separador = "" if (len(fechas) == 0) or lista else EOL * 2
+                if (len(fechas) > 0) and (fechas[0] >= GyG_constantes.fecha_de_corte):
+                    separador = ""
+                else:
+                    separador = "" if (len(fechas) == 0) or lista else EOL * 2
+                cuota_a_mostrar = self.cuota_vigente(beneficiario, datetime.today())
+                cuota_a_mostrar = locale.format_string(f'%.2f', cuota_a_mostrar, grouping=True, monetary=True).replace(',00', '')
                 txtCuotasMensuales += separador + \
-                              "Las cuotas pendientes por cancelar hasta Agosto 2019 se pagarán según los montos fijos " + \
-                              "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
-                              "en base a la cuota vigente."
-
+                              "Las cuotas pendientes por pagar hasta Agosto 2019 se cancelarán según los montos fijos " + \
+                              "ya establecidos. A partir del 1° de Septiembre de dicho año, toda cuota atrasada " + \
+                              "se cancelará en base a la cuota vigente " + \
+                             f"(Bs. {cuota_a_mostrar} al {datetime.today().strftime('%d/%m/%Y')})"
                              #  "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
                              #  "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \
                              # f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar." + EOL + \

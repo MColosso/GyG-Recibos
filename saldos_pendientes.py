@@ -87,8 +87,15 @@ def esVigilancia(x):
 def get_filename(filename):
     return os.path.basename(filename)
 
+# def get_street(address):
+#     return address.index(' ', address.index(' ') + 1)
+
 def get_street(address):
-    return address.index(' ', address.index(' ') + 1)
+    # return address.index(' ', address.index(' ') + 1)
+    grupos = re.findall(r'\w+', address)
+    if grupos[0].lower() == "av":
+        return "Avenida"
+    return grupos[1] if len(grupos) > 0 else ''
 
 def edita_número(number, num_decimals=2):
 #    return f"{number:,.{num_decimals}f}".replace(',', 'x').replace('.', ',').replace('x', '.')

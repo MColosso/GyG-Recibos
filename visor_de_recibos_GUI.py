@@ -115,7 +115,7 @@ file_list_column = [
             values=file_list, enable_events=True, size=(40, 30), key="-FILE LIST-"
         )
     ],
-    [sg.Button('A Temporales', key="-COPIA RECIBO-", disabled=True), sg.Button('Finaliza')],
+    [sg.Button('Copia en Temporales', key="-COPIA RECIBO-", disabled=True), sg.Button('Finaliza')],
 ]
 
 # For now will only show the name of the file that was chosen
