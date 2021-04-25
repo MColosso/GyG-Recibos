@@ -13,9 +13,11 @@
     -   
 
     HISTORICO
-    -   Corregir: Si se selecciona una fecha correspondiente a fin de mes, en las gráficas "Gestión de
-        Cobranzas" (gráfica_1) y "Cuotas recibidas en el mes" (gráfica_4) debe mostrarse el promedio de
-        cuotas al fin de mes en lugar del día específico. (17/03/2021)
+    -   Si se selecciona una fecha correspondiente a fin de mes, en las gráficas "Gestión de Cobranzas"
+        (gráfica_1) y "Cuotas recibidas en el mes" (gráfica_4) debe mostrarse el promedio de cuotas al
+        fin de mes en lugar del día específico. (17/03/2021)
+         -> Si la fecha de referencia NO ES FIN DE MES, el promedio de cuotas debe mostrarse en el día
+            específico. (Corregido: 20/03/2021)
     -   En la gráfica de "Cuotas por oportunidad de pago" (gráfica_5()), mostrar los promedios de las
         diferentes oportunidades de pago (en el mes, anticipadas y atrasados) para el período indicado
         (16/03/2021)
@@ -219,7 +221,7 @@ def promedio(lista):
     if len(lista) == 0:
         return 0
     else:
-        return sum(lista) / len(lista)
+        return sum(lista[:-1]) / len(lista[:-1])
 
 
 def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
@@ -228,17 +230,17 @@ def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
     import warnings
     warnings.simplefilter("ignore", category=UserWarning)
 
-    meses            = ['enero',      'febrero', 'marzo',     'abril',
-                        'mayo',       'junio',   'julio',     'agosto',
-                        'septiembre', 'octubre', 'noviembre', 'diciembre']
-    meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-                        'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-    conectores       = ['a', '-']
-    textos_anticipos = ['adelanto', 'anticipo'   ]
-    textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-    modificadores    = ['anticipo', 'saldo']
+    # meses            = ['enero',      'febrero', 'marzo',     'abril',
+    #                     'mayo',       'junio',   'julio',     'agosto',
+    #                     'septiembre', 'octubre', 'noviembre', 'diciembre']
+    # meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+    #                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+    # conectores       = ['a', '-']
+    # textos_anticipos = ['adelanto', 'anticipo'   ]
+    # textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
+    # modificadores    = ['anticipo', 'saldo']
 
-    tokens_validos = meses + meses_abrev + conectores
+    # tokens_validos = meses + meses_abrev + conectores
 
 
     def ajusta_fecha(ref):
@@ -246,64 +248,64 @@ def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
             '%Y-%m' ('2019-05') para facilitar su comparación """
         return f"{ref[3:7]}-{ref[0:2]}"
 
-    def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-        import re
+    # def separa_meses(mensaje, as_string=False, muestra_modificador=False):
+    #     import re
         
-        tokens_validos = meses + meses_abrev + conectores + modificadores
+    #     tokens_validos = meses + meses_abrev + conectores + modificadores
 
-        mensaje = re.sub("\([^()]*\)", "", mensaje)
-        mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-        for token in textos_anticipos:
-            mensaje.replace(token, modificadores[0])
-        for token in textos_saldos:
-            mensaje.replace(token, modificadores[1])
-        mensaje = re.sub(r"\W ", " ", mensaje).split()
-        mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-        last_year = None
-        last_month = None
-        acción = ''
-        mensaje_anterior = None
-        mensaje_final = list()
-        maneja_conector = False
-        for x in reversed(mensaje_ed):
-            token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-            if token.isdigit():
-                if mensaje_anterior != None:
-                    mensaje_final = mensaje_anterior + mensaje_final
-                last_year = token
-                last_month = None
-                mensaje_anterior = None
-            elif token in meses:
-                if mensaje_anterior != None:
-                    mensaje_final = mensaje_anterior + mensaje_final
-                if maneja_conector:
-                    try:
-                        n_last_month = meses.index(last_month)
-                    except:
-                        continue    # ignora los mensajes que contienen textos del tipo:
-                                    # "(saldo a favor: Bs. 69.862,95)"
-                    n_token = meses.index(token)
-                    for t in reversed(range(n_token + 1, n_last_month)):
-    #                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
-                        mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-                    maneja_conector = False
-                last_month = token
-    #                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
-                mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
-            elif x in conectores:
-                maneja_conector = True
-            elif x in modificadores and muestra_modificador:
-    #                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
-                mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-                mensaje_anterior = None
+    #     mensaje = re.sub("\([^()]*\)", "", mensaje)
+    #     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
+    #     for token in textos_anticipos:
+    #         mensaje.replace(token, modificadores[0])
+    #     for token in textos_saldos:
+    #         mensaje.replace(token, modificadores[1])
+    #     mensaje = re.sub(r"\W ", " ", mensaje).split()
+    #     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
+    #     last_year = None
+    #     last_month = None
+    #     acción = ''
+    #     mensaje_anterior = None
+    #     mensaje_final = list()
+    #     maneja_conector = False
+    #     for x in reversed(mensaje_ed):
+    #         token = meses[meses_abrev.index(x)] if x in meses_abrev else x
+    #         if token.isdigit():
+    #             if mensaje_anterior != None:
+    #                 mensaje_final = mensaje_anterior + mensaje_final
+    #             last_year = token
+    #             last_month = None
+    #             mensaje_anterior = None
+    #         elif token in meses:
+    #             if mensaje_anterior != None:
+    #                 mensaje_final = mensaje_anterior + mensaje_final
+    #             if maneja_conector:
+    #                 try:
+    #                     n_last_month = meses.index(last_month)
+    #                 except:
+    #                     continue    # ignora los mensajes que contienen textos del tipo:
+    #                                 # "(saldo a favor: Bs. 69.862,95)"
+    #                 n_token = meses.index(token)
+    #                 for t in reversed(range(n_token + 1, n_last_month)):
+    # #                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
+    #                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
+    #                 maneja_conector = False
+    #             last_month = token
+    # #                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
+    #             mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
+    #         elif x in conectores:
+    #             maneja_conector = True
+    #         elif x in modificadores and muestra_modificador:
+    # #                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
+    #             mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
+    #             mensaje_anterior = None
 
-        if mensaje_anterior != None:
-            mensaje_final = mensaje_anterior + mensaje_final
+    #     if mensaje_anterior != None:
+    #         mensaje_final = mensaje_anterior + mensaje_final
 
-        if as_string:
-            mensaje_final = '|'.join(mensaje_final)
+    #     if as_string:
+    #         mensaje_final = '|'.join(mensaje_final)
 
-        return mensaje_final
+    #     return mensaje_final
 
 
     def análisis_de_pagos(fecha_referencia):
@@ -339,7 +341,7 @@ def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
                     count_braces -= 1
                 elif token in ['+', '-'] and count_braces == 0:
                     result += ''.join(parsed_expression[start_idx: curr_idx])
-                    if len(result) > 0 and modificador in [modificadores[0], '']:   # Cancela un Anticipo
+                    if len(result) > 0 and modificador in [GyG_constantes.modificadores[0], '']:   # Cancela un Anticipo
                         return eval(result)
                     result = ''
                     start_idx = curr_idx
@@ -729,6 +731,9 @@ def gráfica_1():
 
     ultimo_indice_act = ws_mes_actual['_% acumulado a la fecha_'].index[-1]
     ultimo_indice_ant = ws_meses_anteriores['_% acumulado a la fecha_'].index[-1]
+    if not es_fin_de_mes(fecha_de_referencia):
+        ultimo_indice_ant = ultimo_indice_act
+
     dx, dy = 20, 40
     actual_ge_anteriores = ws_mes_actual['_% acumulado a la fecha_'][ultimo_indice_act] >= \
                                ws_meses_anteriores['_% acumulado a la fecha_'][ultimo_indice_ant]
@@ -1282,6 +1287,9 @@ def gráfica_4():
 
     ultimo_indice_act = ws_mes_actual['_% acumulado a la fecha_'].index[-1]
     ultimo_indice_ant = ws_meses_anteriores['_% acumulado a la fecha_'].index[-1]
+    if not es_fin_de_mes(fecha_de_referencia):
+        ultimo_indice_ant = ultimo_indice_act
+
     dx, dy = 20, 40
     actual_ge_anteriores = ws_mes_actual['_% acumulado a la fecha_'][ultimo_indice_act] >= \
                                ws_meses_anteriores['_% acumulado a la fecha_'][ultimo_indice_ant]
@@ -1380,21 +1388,17 @@ def gráfica_5():
     nPagosMesSig = list()
     nPagosTotal = list()
     for nPagos, mesAnt, mesAct, mesSig, nCuotas in distribución:
-        nPagosTotal.append(int(round(nCuotas)))
         total_mes = mesAnt + mesAct + mesSig
-        if total_mes == 0.00:
-            nPagosMesAnt.append(0)
-            nPagosMesAct.append(0)
-            nPagosMesSig.append(0)
-        else:
-            nPagosMesAnt.append(int(round(nCuotas * mesAnt / total_mes)))
-            nPagosMesAct.append(int(round(nCuotas * mesAct / total_mes)))
-            nPagosMesSig.append(int(round(nCuotas * mesSig / total_mes)))
+        nPagosMesAnt.append(0 if total_mes == 0.00 else int(round(nCuotas * mesAnt / total_mes)))
+        nPagosMesAct.append(0 if total_mes == 0.00 else int(round(nCuotas * mesAct / total_mes)))
+        nPagosMesSig.append(0 if total_mes == 0.00 else int(round(nCuotas * mesSig / total_mes)))
+        nPagosTotal.append(0 if total_mes == 0.00 else int(round(nCuotas)))
 
     promPagosMesAnt = int(round(promedio(nPagosMesAnt)))
     promPagosMesAct = int(round(promedio(nPagosMesAct)))
     promPagosMesSig = int(round(promedio(nPagosMesSig)))
     promPagosTotal = int(round(promedio(nPagosTotal)))
+
     sAnt = '' if promPagosMesAnt == 1 else 's'
     sAct = '' if promPagosMesAct == 1 else 's'
     sSig = '' if promPagosMesSig == 1 else 's'
@@ -1404,7 +1408,7 @@ def gráfica_5():
                     f"{promPagosMesAnt} cuota{sAnt} retrasada{sAnt}, " + \
                     f"{promPagosMesAct} cuota{sAct} para el mes, " + \
                     f"{promPagosMesSig} anticipo{sSig}; " + \
-                    f"total: {int(promedio(nPagosTotal))} cuota{sTotal} completa{sTotal}"
+                    f"total: {promPagosTotal} cuota{sTotal} completa{sTotal}"
 
     if GRAFICA_5_BARRA_COMPARACION:
         max_nPagosTotal = max(nPagosTotal)

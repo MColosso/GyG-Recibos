@@ -25,6 +25,16 @@ echo "-------------------------"
 python3 ./analisis_de_pagos.py --toma_opciones_por_defecto
 
 
+# GyG Estadística de Pagos --------------------------------------------
+
+cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
+echo ""
+echo "3.2 GyG Estadística de Pagos"
+echo "----------------------------"
+
+python3 ./estadistica_pagos.py --toma_opciones_por_defecto
+
+
 # GyG Saldos pendientes --------------------------------------------
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null

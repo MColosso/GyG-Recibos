@@ -29,7 +29,7 @@ long_num_archivo            =  5   # Longitud de la numeración del recibo en el
                                    # archivo
 long_num_recibo             =  5   # Longitud de la numeración en el recibo   
 
-pdf_GyG_Recibos             = '1.3. GyG Recibos.pdf'
+# pdf_GyG_Recibos             = '1.3. GyG Recibos.pdf'
 
 patrón_pdfs                 = 'GyG Recibo_%0Xd.pdf'.replace('X', str(long_num_archivo))
                               # a ser usado en la separación de páginas del archivo pdf_GyG_Recibos
@@ -44,9 +44,10 @@ img_sello_GyG               = os.path.join('./recursos/imagenes', 'GyG_sello_hum
 pdf_resumen                 = 'GyG Resumen {resumen:0Xd}.pdf'.replace('X', str(long_num_archivo))
                               # pdf_file = 'GyG Resumen {}-{}T_{:03d}.pdf' en genera_ y envia_resumenes.py
 
-txt_analisis_de_pago        = "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
-txt_cartelera_virtual       = "GyG Cartelera Virtual {:%Y-%m (%B)}.txt"
-txt_cambios_de_categoría    = "GyG Cambios de Categoría {:%Y-%m (%B)}.txt"
+txt_analisis_de_pago        = "GyG Analisis de Pagos {:%Y-%m (%b)}.txt"
+txt_cartelera_virtual       = "GyG Cartelera Virtual {:%Y-%m (%b)}.txt"
+txt_cambios_de_categoría    = "GyG Cambios de Categoría {:%Y-%m (%b)}.txt"
+txt_estadistica_de_pagos    = "GyG Estadistica de Pagos {:%Y-%m (%b)}.txt"
 
 recibo_fmt                  = "{recibo:0Xd}".replace('X', str(long_num_archivo))
 
@@ -86,15 +87,20 @@ ruta_cartelera_virtual      = '../GyG Archivos/Cartelera Virtual'
                               # Carpeta de carteleras_virtuales
 
 ruta_graficas               = '../GyG Archivos/Graficas'
-                              # Carpeta de carteleras_virtuales
+                              # Carpeta de gráficas
 
 ruta_relacion_ingresos       = '../GyG Archivos/Relación de Ingresos'
                               # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
-                              # Carpeta de carteleras_virtuales
+                              # Carpeta de relación de ingresos
 
 ruta_cambios_de_categoría    = '../GyG Archivos/Otros'
                               # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
-                              # Carpeta de carteleras_virtuales
+                              # Carpeta de cambios de categoría
+
+ruta_otros                   = '../GyG Archivos/Otros'
+                              # "C:/Users/MColosso/Google Drive/GyG Recibos/Graficas/"
+                              # Carpeta de estadísticas de pagos
+
 #recibos_temp                = 'C:/Users/MColosso/Documents/GyG Recibos_temp/'
                               # Carpeta en la cual se generan temporalmente (y desde el cual se envían)
                               # los recibos de pago
@@ -126,3 +132,19 @@ Windows_encoding            = 'cp1252'
 sellos                       = ['ANULADO', 'SOLVENTE', 'REVERSADO', 'ANTICIPO']
                                                        # Sellos a imprimir sobre el recibo de pago, según la
                                                        # categoría de pago
+
+# ==================================================================
+
+meses            = ['enero',      'febrero', 'marzo',     'abril',
+                    'mayo',       'junio',   'julio',     'agosto',
+                    'septiembre', 'octubre', 'noviembre', 'diciembre']
+meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+conectores       = ['a', '-']
+textos_anticipos = ['adelanto', 'anticipo']
+textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
+modificadores    = ['anticipo', 'saldo']
+
+# tokens_validos = meses + meses_abrev + conectores
+
+# ==================================================================

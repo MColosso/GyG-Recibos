@@ -14,9 +14,23 @@
     -   Agregar al resumen:
           . Para aquellos vecinos que pagan la cuota completa, indicar los meses que están por debajo de
             la cuota (incluye meses no cancelados que quedaron "encerrados" entre otros)
+    -   Al cambiar la rutina "separa_meses()" a la versión de GyG_utilitarios, se encontró que a algunos
+        vecinos se les agregó una propuesta de cambio de categoría:
+            * Familia Durvelle Serrano, Calle Guacara Nro. 89-60
+              Paga cuota completa entre el 30 del mes anterior y el 18 del mes actual, usualmente hacia el día 9
+              Su último pago fue el 03 de abril (abr. 2021) y no tiene saldos pendientes
+              En el 5% de los casos (2 de 54), su pago correspondió a más de un mes
+              Se sugiere cambiar su categoría de pago a 'COLABORACIÓN'
+        ¿Por qué...?
+         -> Se estaba comparando el monto cancelado en el mes con la cuota vigente a la fecha en lugar
+            de la cuota vigente a la fecha de pago.
+             -> Se cambió la invocación a 'cuota_vigente()' por 'cuota_actual()' en la rutina
+                'genera_propuesta_categoría()'
 
 
     HISTORICO
+    -   Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
+        pendientes (22/03/2021)
     -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
     -   Se incorpora la librería 'swifter' para acelerar el cálculo de las funciones 'apply' en Pandas
         (12/05/2020)
@@ -123,8 +137,10 @@ excel_worksheet_Vecinos = GyG_constantes.pagos_ws_vecinos              # 'Vecino
 excel_worksheet_cuotas  = GyG_constantes.pagos_ws_cuotas               # 'CUOTA'
 excel_worksheet_saldos  = GyG_constantes.pagos_ws_saldos               # 'Saldos'
 
-nMeses                  = 3  # Meses a analizar para propuestas de cambio de categoría
-nMeses_resumen          = 6  # Meses a mostrar en el cuadro resumen al inicio del análisis
+nMeses                  = 3     # Meses a analizar para propuestas de cambio de categoría
+nMeses_resumen          = 6     # Meses a mostrar en el cuadro resumen al inicio del análisis
+
+VERBOSE = False                 # Despliega tabla de distribución de pagos
 
 
 # Gramática de expresiones aritméticas
@@ -225,74 +241,74 @@ def desviación(r):
     return desv_est
     
 
-meses            = ['enero',      'febrero', 'marzo',     'abril',
-                    'mayo',       'junio',   'julio',     'agosto',
-                    'septiembre', 'octubre', 'noviembre', 'diciembre']
-meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-conectores       = ['a', '-']
-textos_anticipos = ['adelanto', 'anticipo'   ]
-textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-modificadores    = ['anticipo', 'saldo']
+# meses            = ['enero',      'febrero', 'marzo',     'abril',
+#                     'mayo',       'junio',   'julio',     'agosto',
+#                     'septiembre', 'octubre', 'noviembre', 'diciembre']
+# meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+#                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+# conectores       = ['a', '-']
+# textos_anticipos = ['adelanto', 'anticipo'   ]
+# textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
+# modificadores    = ['anticipo', 'saldo']
 
-tokens_validos = meses + meses_abrev + conectores
+# tokens_validos = meses + meses_abrev + conectores
 
-def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-    tokens_validos = meses + meses_abrev + conectores + modificadores
+# def separa_meses(mensaje, as_string=False, muestra_modificador=False):
+#     tokens_validos = meses + meses_abrev + conectores + modificadores
 
-    mensaje = re.sub("\([^()]*\)", "", mensaje)
-    mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-    for token in textos_anticipos:
-        mensaje.replace(token, modificadores[0])
-    for token in textos_saldos:
-        mensaje.replace(token, modificadores[1])
-    mensaje = re.sub(r"\W ", " ", mensaje).split()
-    mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-    last_year = None
-    last_month = None
-    acción = ''
-    mensaje_anterior = None
-    mensaje_final = list()
-    maneja_conector = False
-    for x in reversed(mensaje_ed):
-        token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-        if token.isdigit():
-            if mensaje_anterior != None:
-                mensaje_final = mensaje_anterior + mensaje_final
-            last_year = token
-            last_month = None
-            mensaje_anterior = None
-        elif token in meses:
-            if mensaje_anterior != None:
-                mensaje_final = mensaje_anterior + mensaje_final
-            if maneja_conector:
-                try:
-                    n_last_month = meses.index(last_month)
-                except:
-                    continue    # ignora los mensajes que contienen textos del tipo:
-                                # "(saldo a favor: Bs. 69.862,95)"
-                n_token = meses.index(token)
-                for t in reversed(range(n_token + 1, n_last_month)):
-#                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
-                    mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-                maneja_conector = False
-            last_month = token
-#                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
-            mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
-        elif x in conectores:
-            maneja_conector = True
-        elif x in modificadores and muestra_modificador:
-#                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
-            mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-            mensaje_anterior = None
+#     mensaje = re.sub("\([^()]*\)", "", mensaje)
+#     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
+#     for token in textos_anticipos:
+#         mensaje.replace(token, modificadores[0])
+#     for token in textos_saldos:
+#         mensaje.replace(token, modificadores[1])
+#     mensaje = re.sub(r"\W ", " ", mensaje).split()
+#     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
+#     last_year = None
+#     last_month = None
+#     acción = ''
+#     mensaje_anterior = None
+#     mensaje_final = list()
+#     maneja_conector = False
+#     for x in reversed(mensaje_ed):
+#         token = meses[meses_abrev.index(x)] if x in meses_abrev else x
+#         if token.isdigit():
+#             if mensaje_anterior != None:
+#                 mensaje_final = mensaje_anterior + mensaje_final
+#             last_year = token
+#             last_month = None
+#             mensaje_anterior = None
+#         elif token in meses:
+#             if mensaje_anterior != None:
+#                 mensaje_final = mensaje_anterior + mensaje_final
+#             if maneja_conector:
+#                 try:
+#                     n_last_month = meses.index(last_month)
+#                 except:
+#                     continue    # ignora los mensajes que contienen textos del tipo:
+#                                 # "(saldo a favor: Bs. 69.862,95)"
+#                 n_token = meses.index(token)
+#                 for t in reversed(range(n_token + 1, n_last_month)):
+# #                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
+#                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
+#                 maneja_conector = False
+#             last_month = token
+# #                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
+#             mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
+#         elif x in conectores:
+#             maneja_conector = True
+#         elif x in modificadores and muestra_modificador:
+# #                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
+#             mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
+#             mensaje_anterior = None
 
-    if mensaje_anterior != None:
-        mensaje_final = mensaje_anterior + mensaje_final
+#     if mensaje_anterior != None:
+#         mensaje_final = mensaje_anterior + mensaje_final
 
-    if as_string:
-        mensaje_final = '|'.join(mensaje_final)
+#     if as_string:
+#         mensaje_final = '|'.join(mensaje_final)
 
-    return mensaje_final
+#     return mensaje_final
 
 
 def fecha_ultimo_pago(beneficiario, str_mes_año):
@@ -326,7 +342,7 @@ def no_participa_desde(r):
         if notnull(r.iloc[idx]):
             break
         x = idx
-        sum_cuotas += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx]) # cuotas[idx]
+        sum_cuotas += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
     this_col = columns[x] if isnull(r.iloc[last_col]) else columns[x]   # <<<=== anteriormente 'x+1' en lugar de 'x'
     fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
 
@@ -417,14 +433,14 @@ def genera_resumen():
         return char * width
 
     análisis += f'Resumen de los últimos {nMeses_resumen} meses:\n'
-    análisis += espacios(12) + 'Pagos' + espacios(31) + 'Pagos  Equiv.       Pagos         Distribución\n'
-    análisis += '  Mes     |  mes | Total Bs. |  Prom. |Cuota(*)| 100% | 100%' + \
-                   espacios(6) + 'recibidos  |  Ant.   Mes   Pos.\n'
-    análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
+    análisis += espacios(10) + 'Pagos' + espacios(36) + 'Pagos   Equiv.       Pagos          Distribución\n'
+    análisis += 'Mes      | mes | Total Bs.  |   Prom.  | Cuota(*) | 100% |  100%' + \
+                   espacios(6) + 'recibidos   |  Ant.   Mes   Pos.\n'
+    análisis += espacios(65, '-') + '  ' + espacios(36, '-') + '\n'
     dist_idx = 0
     df_tabla = DataFrame(columns=[i for i in range(11)])    # 11 columnas a mostrar
     for idx in range(last_col - nMeses_resumen + 1, last_col + 1):
-        mes = format(columns[idx], '%b%Y')   #.capitalize()
+        mes = format(columns[idx], '%b %Y')   #.capitalize()
         num_pagos = pagos_mensuales[idx]
         tot_pagos = edita_número(totales_mensuales[idx], num_decimals=0)
 #       num_pagos_100_pct = int(num_100_pct[idx])   # <<<=== Determinar la cantidad de pagos al 100% realizados
@@ -450,9 +466,9 @@ def genera_resumen():
         dist_pct_ant   = edita_número(distribución[dist_idx][1] / total * 100, num_decimals=1) + '%'
         dist_pct_mes   = edita_número(distribución[dist_idx][2] / total * 100, num_decimals=1) + '%'
         dist_pct_pos   = edita_número(distribución[dist_idx][3] / total * 100, num_decimals=1) + '%'
-        análisis    += f'  {mes:8}{num_pagos:>5}{tot_pagos:>13}{promedio:>9}{cuota_ed:>9}' + \
-                       f'{num_pagos_100_pct:>6}{num_pagos_eqv_ed:>8}' + \
-                       f'{dist_num_pagos:>6}{dist_tot_pagos:>11}' + \
+        análisis    += f'{mes:8}{num_pagos:>5}{tot_pagos:>14}{promedio:>11}{cuota_ed:>11}' + \
+                       f'{num_pagos_100_pct:>6}{num_pagos_eqv_ed:>9}' + \
+                       f'{dist_num_pagos:>6}{dist_tot_pagos:>12}' + \
                        f'{dist_pct_ant:>7}{dist_pct_mes:>7}{dist_pct_pos:>7}\n'
         df_tabla.loc[dist_idx] = [num_pagos,        totales_mensuales[idx],  round(totales_mensuales[idx] / pagos_mensuales[idx], -1), \
                                   cuota,            num_pagos_100_pct,       num_pagos_eqv, \
@@ -460,15 +476,15 @@ def genera_resumen():
                                   distribución[dist_idx][2] / total * 100,   distribución[dist_idx][3] / total * 100]
         if dist_idx == nMeses_resumen - 2:
             df_prom = list(df_tabla.mean())
-            análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
-            análisis += f'  {"   prom.":8}' + \
-                        f'{edita_número(round(df_prom[ 0], 0), num_decimals=0):>5}{edita_número(round(df_prom[1], 0), num_decimals=0):>13}' + \
-                        f'{edita_número(round(df_prom[ 2], 0), num_decimals=0):>9}{edita_número(round(df_prom[3], 0), num_decimals=0):>9}' + \
-                        f'{edita_número(round(df_prom[ 4], 0), num_decimals=0):>6}{edita_número(round(df_prom[5], 1), num_decimals=1):>8}' + \
-                        f'{edita_número(round(df_prom[ 6], 0), num_decimals=0):>6}{edita_número(round(df_prom[7], 0), num_decimals=0):>11}' + \
+            análisis += espacios(65, '-') + '  ' + espacios(36, '-') + '\n'
+            análisis += f'{"prom.":>9}' + \
+                        f'{edita_número(round(df_prom[ 0], 0), num_decimals=0):>4}{edita_número(round(df_prom[1], 0), num_decimals=0):>14}' + \
+                        f'{edita_número(round(df_prom[ 2], 0), num_decimals=0):>11}{edita_número(round(df_prom[3], 0), num_decimals=0):>11}' + \
+                        f'{edita_número(round(df_prom[ 4], 0), num_decimals=0):>6}{edita_número(round(df_prom[5], 1), num_decimals=1):>9}' + \
+                        f'{edita_número(round(df_prom[ 6], 0), num_decimals=0):>6}{edita_número(round(df_prom[7], 0), num_decimals=0):>12}' + \
                         f'{edita_número(round(df_prom[ 8], 1), num_decimals=1)+"%":>7}{edita_número(round(df_prom[9], 1), num_decimals=1)+"%":>7}' + \
                         f'{edita_número(round(df_prom[10], 1), num_decimals=1)+"%":>7}\n'
-            análisis += '  ' + espacios(59, '-') + '  ' + espacios(35, '-') + '\n'
+            análisis += espacios(65, '-') + '  ' + espacios(36, '-') + '\n'
         dist_idx += 1
 
     análisis += '\n  (*) A partir de septiembre 2019 se muestran los promedios de las cuotas semanales'
@@ -478,7 +494,8 @@ def genera_propuesta_categoría():
 
     def genera_propuesta(r):
         # comparar <r> con <cuotas_mensuales> en los últimos <nMeses> meses [last_col - nMeses + 1: last_col]
-        monto_cuotas = [cuotas_obj.cuota_actual(r['Beneficiario'], columns[col]) \
+        # monto_cuotas = [cuotas_obj.cuota_actual(r['Beneficiario'], columns[col]) \
+        monto_cuotas = [cuotas_obj.cuota_vigente(r['Beneficiario'], columns[col]) \
                                 for col in range(last_col - nMeses + 1, last_col + 1)]
         pagos = (r.iloc[last_col - nMeses + 1: last_col + 1]).tolist()
         pagos = [p if is_numeric(p) else NaN for p in pagos]
@@ -496,6 +513,11 @@ def genera_propuesta_categoría():
             propuesta = NaN
         if r['Categoría'] == propuesta:
             propuesta = NaN
+# # -------------------
+#         if r['Beneficiario'] == 'Familia Durvelle Serrano':
+#             for p, m in zip(pagos, monto_cuotas):
+#                 print(p, m)
+# # -------------------
         return propuesta
 
     df = df_resumen[['Beneficiario', 'Categoría', 'Comida']]
@@ -504,6 +526,9 @@ def genera_propuesta_categoría():
     df = df[notnull(df['Categoría'])]
     df['Propuesta'] = df_resumen.swifter.progress_bar(False).apply(genera_propuesta, axis=1)
     df = df[notnull(df['Propuesta'])]
+# --------------------
+    # print(df)
+# --------------------
     return df
 
 def propuesta_de_cambio(beneficiario):
@@ -556,7 +581,7 @@ def distribución_de_pagos():
                     count_braces -= 1
                 elif token in ['+', '-'] and count_braces == 0:
                     result += ''.join(parsed_expression[start_idx: curr_idx])
-                    if len(result) > 0 and modificador in [modificadores[0], '']:   # Cancela un Anticipo
+                    if len(result) > 0 and modificador in [GyG_constantes.modificadores[0], '']:   # Cancela un Anticipo
                         return eval(result)
                     result = ''
                     start_idx = curr_idx
@@ -666,10 +691,11 @@ def distribución_de_pagos():
         total = sum(resultado[1:])
         lista_resultados.append(resultado)
 
-        print(f" {f_ref}: {edit(total, width=10)} [" + \
-              f"{edit(resultado[1], width=10)} ({edit_pct(resultado[1], total)}), " + \
-              f"{edit(resultado[2], width=10)} ({edit_pct(resultado[2], total)}), " + \
-              f"{edit(resultado[3])} ({edit_pct(resultado[3], total)})"   + "]")
+        if VERBOSE:
+            print(f"{f_ref}:{edit(total, width=12)} [" + \
+                  f"{edit(resultado[1], width=11)} ({edit_pct(resultado[1], total)})," + \
+                  f"{edit(resultado[2], width=12)} ({edit_pct(resultado[2], total)})," + \
+                  f"{edit(resultado[3], width=11)} ({edit_pct(resultado[3], total)})"  + "]")
 
     return lista_resultados
 
@@ -720,9 +746,9 @@ def meses_último_pago(beneficiario, fecha):
         if (año == None) or (f[:4] != año):
             año = f[:4]
 #            print(f'DEBUG: {beneficiario:20}, fecha: "{f}", último pago: {último_pago}')
-            meses_cancelados.insert(0, meses_abrev[int(f[-2:])-1] + '. ' + año)
+            meses_cancelados.insert(0, GyG_constantes.meses_abrev[int(f[-2:])-1] + '. ' + año)
         else:
-            meses_cancelados.insert(0, meses_abrev[int(f[-2:])-1] + '.')
+            meses_cancelados.insert(0, GyG_constantes.meses_abrev[int(f[-2:])-1] + '.')
     último_pago = une_lista(meses_cancelados)
 
     return último_pago
@@ -747,6 +773,9 @@ solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_o
 
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
+
+# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
+aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
 
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
@@ -859,7 +888,8 @@ rango_fechas_txt = ' entre el {} y el {}'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-análisis += f'GyG ANALISIS DE PAGOS, {fecha_análisis}\n({datetime.now():%d/%m/%Y %I:%M} {am_pm})\n\n'
+ajuste_por_inflación = ' ajustados por inflación' if aplica_IPC else ''
+análisis += f'GyG ANALISIS DE PAGOS{ajuste_por_inflación}, {fecha_análisis}\n({datetime.now():%d/%m/%Y %I:%M} {am_pm})\n\n'
 
 # Resumen
 genera_resumen()

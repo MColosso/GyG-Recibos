@@ -24,6 +24,9 @@
 
     
     HISTORICO
+    -   Se agrega la opción para añadir marcas de edición (negritas e itálicas) si la cartelera va a
+        ser enviada por WhatsApp (25/04/2021)
+    -   Revisar y ajustar las opciones de despliegue de saldos (21/03/2021)
     -   Corregir:
          - Scaletta Briceño, Av. "L" anexo de Los Tronquitos. Tiene cuotas pendientes desde 2016. Saldo
             actual Bs. 41.800.000
@@ -139,6 +142,7 @@ import numbers
 import re
 import locale
 
+
 # Define textos
 nombre_cartelera   = GyG_constantes.txt_cartelera_virtual         # "GyG Cartelera Virtual {:%Y-%m (%B)}.txt"
 attach_path        = GyG_constantes.ruta_cartelera_virtual        # "./GyG Recibos/Cartelera Virtual"
@@ -150,19 +154,19 @@ excel_pagos        = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 
 encabezado = 'CARTELERA VIRTUAL\n   CUADRA SEGURA GyG ({})\n' + \
              'al {:%d de %B de %Y}{}\n\n'
-encabezado_colaboración   = 'Familias que colaboran con un monto inferior a la cuota establecida y tienen ' + \
-                            'pendiente el pago.\n'
-encabezado_cuota_completa = 'Familias que pagan el 100% de la cuota y tienen retrasos en el pago.\n'
+encabezado_colaboración   = '{}Familias que colaboran con un monto inferior a la cuota establecida y tienen ' + \
+                            'pendiente el pago.{}\n'
+encabezado_cuota_completa = '{}Familias que pagan el 100% de la cuota y tienen retrasos en el pago{}.\n'
 # encabezado_no_participa   = 'Familias que se benefician del servicio de vigilancia gracias al aporte del resto ' + \
 #                             'de los vecinos que cancelan su cuota para la seguridad de la zona.\n'
-encabezado_no_participa   = 'Familias que no contribuyen con el pago del servicio de vigilancia.\n'
-encabezado_al_día         = 'Familias que pagan el 100% de la cuota o colaboran con dicho pago y se encuentran ' + \
-                            'al día en el mantenimiento del servicio de vigilancia.\n'
-encabezado_comida_vigilantes = 'Familias que colaboran con almuerzos, cenas o agua para los vigilantes.\n'
+encabezado_no_participa   = '{}Familias que no contribuyen con el pago del servicio de vigilancia.{}\n'
+encabezado_al_día         = '{}Familias que pagan el 100% de la cuota o colaboran con dicho pago y se encuentran ' + \
+                            'al día en el mantenimiento del servicio de vigilancia.{}\n'
+encabezado_comida_vigilantes = '{}Familias que colaboran con almuerzos, cenas o agua para los vigilantes.{}\n'
 pie_cuota_completa = '<< Generado automáticamente >>'
 pie_no_participa   = 'Los invitamos a que se sumen a este esfuerzo. Ello nos ayudará a mantener la seguridad ' + \
                      'que hemos alcanzado en el sector. Tu contribución es importante.\n\n'
-pie_de_página      = 'Equipo de cobranza, Cuadra Segura GyG\n\n' + \
+pie_de_página      = '\n{}Equipo de cobranza, Cuadra Segura GyG{}\n\n' + \
                      'Cualquier comentario por Trivialidades.\n({:%d/%m/%Y %I:%M} {})\n'
 
 nMeses             =  5   # Se muestran los <nMeses> últimos meses en el resumen de cuotas
@@ -173,8 +177,6 @@ toma_opciones_por_defecto = False
 if len(sys.argv) > 1:
     toma_opciones_por_defecto = sys.argv[1] == '--toma_opciones_por_defecto'
 
-muestra_ultimo_pago_colaboracion = False
-aplica_IPC = False
 
 #
 # DEFINE ALGUNAS RUTINAS UTILITARIAS
@@ -305,59 +307,70 @@ def no_participa_desde(r):
     # if r['Beneficiario'] in a_evaluar: print(f"  (8): Deuda: actual: Bs. {edita_número(deuda_actual, num_decimals=0)}, " + \
     #                                          f"Saldo último mes: Bs. {edita_número(saldo_ultimo_mes, num_decimals=0)}")
 
-    info_deuda = ''
     if saldo_ultimo_mes == 0.00 and ultimo_mes_con_pagos < last_col and fecha_txt != '2016':
         ultimo_mes_con_pagos += 1
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
         fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
     # if r['Beneficiario'] in a_evaluar: print(f"  (9): x: {ultimo_mes_con_pagos}, last_col: {last_col}, r[{fecha_referencia}]: {r[fecha_referencia]}, deuda: {saldo_ultimo_mes}")
 
+    msg_pendiente_desde = ''
+    msg_monto_pendiente = ''
+    msg_último_pago = ''
     if deuda_actual != 0.00:
         if saldo_ultimo_mes != 0.00:
-            info_deuda = 'Tiene una diferencia pendiente en ' + fecha_txt
-            if ultimo_mes_con_pagos != last_col:
-                info_deuda += ' y cuotas de meses subsiguientes'
+            if last_col - ultimo_mes_con_pagos == 1:
+                msg_pendiente_desde = f'. Tiene una diferencia pendiente en {this_col.strftime("%B")} ' + \
+                                      f'y la cuota del mes de {fecha_referencia.strftime("%B %Y")}'
+            else:
+                msg_pendiente_desde = '. Tiene una diferencia pendiente en ' + fecha_txt
+                if ultimo_mes_con_pagos != last_col:
+                    # if r['Beneficiario'] in a_evaluar: print(f" (9c): {fecha_txt = }, {ultimo_mes_con_pagos = }, {last_col = }")
+                    msg_pendiente_desde += ' y cuotas de meses subsiguientes'
         else:
             if ultimo_mes_con_pagos == last_col:
-                info_deuda = 'Tiene pendiente ' + fecha_txt
+                msg_pendiente_desde = '. Tiene pendiente ' + fecha_txt
             else:
-                info_deuda = f"Tiene {'colaboraciones' if r['Categoría'] == 'Colaboración' else 'cuotas'} " + \
+                msg_pendiente_desde = f". Tiene {'colaboraciones' if r['Categoría'] == 'Colaboración' else 'cuotas'} " + \
                           f"pendientes desde {fecha_txt}"
 
-    if muestra_saldos and (deuda_actual != 0.00) and \
-        (((r['Categoría'] == 'Colaboración') and muestra_ultimo_pago_colaboracion) or \
-         ((r['Categoría'] == 'No participa') and muestra_saldo_no_participa) or \
-         (r['Categoría'] == 'Cuota completa')):
-        # if r['Beneficiario'] in a_evaluar: print(f" (9a): Complemento de mensaje sobre deuda")
-        if saldo_pendiente:
-            sep1, sep2 = (' por ', '')
-            if x == last_col:
-                sep1 = ' de '
-        elif r['Categoría'] in ['Colaboración', 'No participa']:    # , 'No participa'
-            ultimo_pago = df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']].tail(1).squeeze()
-            #
-            #    <-- Verificar, adicionalmente, si df_pagos['Fecha'] < "Fecha de referencia"
-            if len(ultimo_pago) > 0:
-                u_fecha = ultimo_pago['Fecha'].strftime('%d/%m/%Y')
-                # u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
-                u_concepto = re.search(r'.*([,:] )(.*)$', str(ultimo_pago.Concepto)).group(2)   # Busca ', ' (como en 'Cancelación Vigilancia, ') o
-                                                                                                # ': ' (como en 'Vigilancia: ') y toma el resto del
-                                                                                                # string
-                # if r['Beneficiario'] in a_evaluar: print(f"  (9c): Concepto: {ultimo_pago.Concepto}, concepto editado: {u_concepto}")
-
-                u_concepto = re.sub('mes(es)* de', 'correspondiente a', u_concepto)             # Cambia 'mes[es] de' por 'correspondiente a'
-                sep1 = f". Último pago: {u_fecha}, "
-                sep2 = f", {u_concepto}"
-                if (r['Categoría'] == 'No participa') and muestra_saldo_no_participa:
-                    sep2 += f". Saldo Bs. {edita_número(deuda_actual, num_decimals=2).replace(',00', '')}"
-                deuda_actual = ultimo_pago['Monto']
-            else:
-                sep1, sep2 = '. Saldo actual ', ''
+        u_monto_pendiente = edita_número(deuda_actual, num_decimals=2).replace(',00', '')
+        if r['Categoría'] == 'Cuota completa' and \
+                (muestra_pend_desde_c_completa or muestra_u_pago_c_completa):
+            msg_monto_pendiente = f" (Bs. {u_monto_pendiente})"
         else:
-            sep1, sep2 = (' (', ')')
-        # if r['Beneficiario'] in a_evaluar: print(f' (9b): Complemento: sep1 = "{sep1}", sep2 = "{sep2}", {deuda_actual = }')
-        info_deuda += f"{sep1}Bs. {edita_número(deuda_actual, num_decimals=2).replace(',00', '')}{sep2}"
+            msg_monto_pendiente = f". Saldo Bs. {u_monto_pendiente}"
 
+        ultimo_pago = df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']].tail(1).squeeze()
+        if len(ultimo_pago) > 0:
+            u_fecha = ultimo_pago['Fecha'].strftime('%d/%m/%Y')
+            # u_monto = edita_número(ultimo_pago.Monto, num_decimals=2).replace(',00', '')
+            u_concepto = re.search(r'.*([,:] )(.*)$', str(ultimo_pago.Concepto)).group(2)   # Busca ', ' (como en 'Cancelación Vigilancia, ') o
+                                                                                            # ': ' (como en 'Vigilancia: ') y toma el resto del
+                                                                                            # string
+            u_concepto = re.sub(r"\(.*\)", "", u_concepto).strip().lower()                  # Elimina el texto encerrado entre paréntesis
+                                                                                            # como en "anticipo Marzo 2021 (Bs. 230.000)"
+
+            if u_concepto[:3] == 'mes':
+                u_concepto = re.sub('mes(es)* de', 'correspondiente a', u_concepto)         # Cambia 'mes[es] de' por 'correspondiente a'
+            else:
+                u_concepto = f'correspondiente a "{u_concepto}"'
+            u_colaboración_pago = 'última colaboración' if r['Categoría'] == 'Colaboración' else 'último pago'
+            msg_último_pago = f". Su {u_colaboración_pago} fue el {u_fecha}, {u_concepto}"
+
+    info_deuda = ''
+    if (r['Categoría'] == 'Cuota completa' and muestra_pend_desde_c_completa) or \
+           (r['Categoría'] == 'Colaboración' and muestra_pend_desde_colabora) or \
+           (r['Categoría'] == 'No participa' and muestra_pend_desde_no_participa):
+        info_deuda += msg_pendiente_desde
+    if (r['Categoría'] == 'Cuota completa' and muestra_u_pago_c_completa) or \
+           (r['Categoría'] == 'Colaboración' and muestra_u_pago_colabora) or \
+           (r['Categoría'] == 'No participa' and muestra_u_pago_no_participa):
+        info_deuda += msg_último_pago
+    if (r['Categoría'] == 'Cuota completa' and muestra_saldos_c_completa) or \
+           (r['Categoría'] == 'No participa' and muestra_saldos_no_participa):
+        info_deuda += msg_monto_pendiente
+    if deuda_actual != 0.00 and len(info_deuda) == 0:
+        info_deuda = ' '
     # if r['Beneficiario'] in a_evaluar: print(f" (10): info_deuda: {info_deuda}")
 
     return info_deuda
@@ -367,57 +380,6 @@ def ajusta_nombre_y_dirección(str):
         Remueve los textos "Familia " y "Calle " del texto recibido
     """
     return ' - ' + str.replace('Familia ', '').replace('Calle ', '').replace('Nro. ', '').replace('Nros. ', '')
-
-
-meses            = ['enero',      'febrero', 'marzo',     'abril',
-                    'mayo',       'junio',   'julio',     'agosto',
-                    'septiembre', 'octubre', 'noviembre', 'diciembre']
-meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-conectores       = ['a', '-']
-textos_anticipos = ['adelanto', 'anticipo'   ]
-textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-modificadores    = ['anticipo', 'saldo']
-
-tokens_validos = meses + meses_abrev + conectores
-
-def separa_meses(mensaje, as_string=False):
-    tokens_validos = meses + meses_abrev + conectores
-    mensaje = re.sub("\([^()]*\)", "", mensaje)
-    mensaje = re.sub(r"\W ", " ", mensaje.lower().replace('-', ' a ').replace('/', ' ')).split()
-    mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-    last_year = None
-    last_month = None
-    mensaje_final = list()
-    maneja_conector = False
-    for x in reversed(mensaje_ed):
-        token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-        if token.isdigit():
-            last_year = token
-            last_month = None
-            continue
-        elif token in meses:
-            if maneja_conector:
-                try:
-                    n_last_month = meses.index(last_month)
-                except:
-                    continue    # ignora los mensajes que contienen textos del tipo:
-                                # "(saldo a favor: Bs. 69.862,95)"
-                n_token = meses.index(token)
-                for t in reversed(range(n_token + 1, n_last_month)):
-#                    mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
-                    mensaje_final = [f"{t:02d}-{last_year}"] + mensaje_final
-                maneja_conector = False
-            last_month = token
-#            mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"] + mensaje_final
-            mensaje_final = [f"{meses.index(last_month)+1:02d}-{last_year}"] + mensaje_final
-        elif x in conectores:
-            maneja_conector = True
-
-    if as_string:
-        mensaje_final = '|'.join(mensaje_final)
-
-    return mensaje_final
 
 
 def cartelera_vecinos_al_día():
@@ -439,7 +401,7 @@ def cartelera_vecinos_al_día():
 
     # Genera el encabezado
     texto_cartelera += encabezado.format(4, f_ref_último_día, '')
-    texto_cartelera += encabezado_al_día
+    texto_cartelera += encabezado_al_día.format(wa_bold, wa_bold)
 
     # Genera el detalle
     inicio_dirección = ''
@@ -455,7 +417,7 @@ def cartelera_vecinos_al_día():
     # Genera el pie de página
     texto_cartelera += '\n'
     texto_cartelera += pie_cuota_completa
-    texto_cartelera += pie_de_página.format(hoy, am_pm)
+    texto_cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
     
     # Genera una linea de separación entre categorías
     texto_cartelera += '\n' + '-' * 25 + '\n\n'
@@ -469,7 +431,7 @@ def cartelera_comida_vigilantes(df_comida):
 
     # Genera el encabezado
     texto_cartelera += encabezado.format(5, f_ref_último_día, '')
-    texto_cartelera += encabezado_comida_vigilantes
+    texto_cartelera += encabezado_comida_vigilantes.format(wa_bold, wa_bold)
 
     # Genera el detalle
     inicio_dirección = ''
@@ -484,7 +446,7 @@ def cartelera_comida_vigilantes(df_comida):
         
     # Genera el pie de página
     texto_cartelera += '\n'
-    texto_cartelera += pie_de_página.format(hoy, am_pm)
+    texto_cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
     
     # Genera una linea de separación entre categorías
     #cartelera += '\n' + '-' * 25 + '\n\n'
@@ -507,18 +469,37 @@ print()
 # Selecciona el mes y año a procesar
 mes_año = input_mes_y_año('Indique el mes y año de la cartelera virtual', período_anterior, toma_opciones_por_defecto)
 
+# Selecciona si se muestra desde cuándo está pendiente el pago
+muestra_pend_desde_c_completa = input_si_no('  - Cuota completa: ¿Muestra pendiente desde?', 'sí', toma_opciones_por_defecto)
+# Selecciona si se muestra el último pago realizado
+muestra_u_pago_c_completa = input_si_no('                    ¿Muestra último pago?', 'no', toma_opciones_por_defecto)
 # Selecciona si se muestran los saldos deudores o no
-muestra_saldos = input_si_no('Muestra los saldos pendientes', 'sí', toma_opciones_por_defecto)
+muestra_saldos_c_completa = input_si_no('                    ¿Muestra saldos pendientes?', 'sí', toma_opciones_por_defecto)
 
-# Selecciona si se muestran los saldos deudores de los colaboradores o no
-muestra_ultimo_pago_colaboracion = False
-if muestra_saldos:
-    muestra_ultimo_pago_colaboracion = input_si_no('Muestra el último pago de los colaboradores', 'si', toma_opciones_por_defecto)
-    muestra_saldo_no_participa = input_si_no('Muestra el saldo de los que no participan', 'no', toma_opciones_por_defecto)
+# Selecciona si se muestra desde cuándo están pendientes las colaboraciones
+muestra_pend_desde_colabora = input_si_no('  - Colaboración:   ¿Muestra pendiente desde?', 'sí', toma_opciones_por_defecto)
+# Selecciona si se muestran los saldos deudores de los colaboradores
+muestra_u_pago_colabora = input_si_no('                    ¿Muestra último pago?', 'sí', toma_opciones_por_defecto)
 
-    # Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
+# Selecciona si se muestra desde cuándo está pendiente el pago
+muestra_pend_desde_no_participa = input_si_no('  - No participa:   ¿Muestra pendiente desde?', 'sí', toma_opciones_por_defecto)
+# Selecciona si se muestra el último pago realizado
+muestra_u_pago_no_participa = input_si_no('                    ¿Muestra último pago?', 'no', toma_opciones_por_defecto)
+# Selecciona si se muestran los saldos deudores o no
+muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos pendientes?', 'no', toma_opciones_por_defecto)
+
+# Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
+whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
+
+# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
+aplica_IPC = False
+if muestra_saldos_c_completa or muestra_saldos_no_participa:
     aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
 
+# Prepara los caracteres de negrita e italizado para los textos, en caso de WhatsApp
+wa_bold, wa_italic = ('*', '_') if whatsapp else ('', '')
+
+# Prepara las fechas de referencia
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
 fecha_referencia = datetime(año, mes, 1)
@@ -529,7 +510,7 @@ if (fecha_referencia.year == hoy.year) and (fecha_referencia.month == hoy.month)
 
 # Abre la hoja de cálculo de Recibos de Pago
 print()
-print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook))
+print(f'Cargando hoja de cálculo "{excel_workbook}"...')
 df = read_excel(excel_workbook, sheet_name=excel_worksheet)
 
 # Elimina los registros que no tienen una categoría definida
@@ -595,6 +576,11 @@ cartelera_5 = cartelera_comida_vigilantes(df_comida)
 # Genera el resto de las carteleras
 #
 
+# Ajusta encabezado de cuota completa si el mes de referenicia coincide con el mes actual
+if fecha_referencia == datetime(hoy.year, hoy.month, 1):
+    encabezado_cuota_completa = '{}Familias que pagan el 100% de la cuota y tienen pendiente el mes en curso ' + \
+                                'o tienen retrasos en el pago.{}\n'
+
 # Elimina los registros con pago en el mes seleccionado
 #df = df.loc[isnull(df[mes_año])]
 df = df.loc[seleccionaRegistro(df['Beneficiario'], df['Categoría'], df[fecha_referencia])]
@@ -612,15 +598,16 @@ for categoría in categorías:
         seña = 0      # OCULTO, etc.
 
     if seña > 0:
-        muestra_encabezado_IPC = aplica_IPC and (seña == 1 or (seña == 3 and muestra_saldo_no_participa))
+        muestra_encabezado_IPC = aplica_IPC and \
+            ((seña == 1 and muestra_saldos_c_completa) or (seña == 3 and muestra_saldos_no_participa))
         ajuste_por_inflación = '\n(Saldos ajustados por inflación -IPC-)' if muestra_encabezado_IPC else ''
         cartelera += encabezado.format(seña, f_ref_último_día, ajuste_por_inflación)
         if categoría   == 'Cuota completa':
-            cartelera += encabezado_cuota_completa
+            cartelera += encabezado_cuota_completa.format(wa_bold, wa_bold)
         elif categoría == 'Colaboración':
-            cartelera += encabezado_colaboración
+            cartelera += encabezado_colaboración.format(wa_bold, wa_bold)
         elif categoría == 'No participa':
-            cartelera += encabezado_no_participa
+            cartelera += encabezado_no_participa.format(wa_bold, wa_bold)
         else:
             pass
 
@@ -636,12 +623,13 @@ for categoría in categorías:
                 cartelera += '\n'
             cartelera += ajusta_nombre_y_dirección(row['Beneficiario'] + ', ' + row['Dirección'])
             if categoría in ['Colaboración', 'Cuota completa', 'No participa']:
-                cartelera += '. ' + str(row['Pendiente'])
-#            if (categoría == 'Colaboración' and muestra_ultimo_pago_colaboracion):
-#                cartelera += '. ' + str(row['Pendiente'])
+                # cartelera += '. ' + str(row['Pendiente'])
+                cartelera += str(row['Pendiente'])
             cartelera += '\n'
             if inicio_dirección != row['Dirección'][: 3]:
                 inicio_dirección = row['Dirección'][: 3]
+                cartelera += '\n'
+            if whatsapp:
                 cartelera += '\n'
 
         # Genera el pie de página
@@ -658,12 +646,12 @@ for categoría in categorías:
         if seña in [1, 2]:
             cartelera += ' '.join([
                 'Si usted',
-                'paga la totalidad de la cuota o más,' if seña == 1 else 'colabora con un monto inferior a la cuota',
+                'paga la totalidad de la cuota, o más,' if seña == 1 else 'colabora con un monto inferior a la cuota',
                 'y no aparece en este listado, significa que se encuentra solvente a la',
                 'fecha de este reporte.\n\n'
             ])
 
-        cartelera += pie_de_página.format(hoy, am_pm)
+        cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
         
         # Genera una linea de separación entre categorías
         cartelera += '\n' + '-' * 25 + '\n\n'

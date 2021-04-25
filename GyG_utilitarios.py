@@ -1,20 +1,21 @@
 # GyG Utilitarios
 #
 # Rutinas utilitarias utilizadas en varios módulos
-#  . input_mes_y_año(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
-#  . input_fecha(mensaje, valor_por_defecto)
-#  . input_si_no(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
-#  . input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
-#  . edita_número(number, num_decimals=2) -> str
-#  . trunca_texto(texto, max_width) -> str
-#  . espacios(width=1, char=' ') -> str
+#  . input_mes_y_año(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str
+#  . input_fecha(mensaje: str, valor_por_defecto) -> datetime
+#  . input_si_no(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str
+#  . input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=False)
+#  . edita_número(number, num_decimals: int=2) -> str
+#  . trunca_texto(texto: str, max_width: int) -> str
+#  . espacios(width: int=1, char: str=' ') -> str
 #  . is_numeric(valor) -> bool
 #  . remueve_acentos(text: str) -> str
+#  . separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False) -> list | str
 #  . _obscure(data: bytes) -> bytes
 #  . _unobscure(data: bytes) -> bytes
 #  . valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool
-#  . MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False)
-#  . genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False)
+#  . MontoEnLetras(número: float, mostrar_céntimos: bool=True, céntimos_en_letras: bool=False) -> str
+#  . genera_recibo(r, sella_recibo: bool=False, codigo_de_seguridad: bool=False)
 #      'r' es un diccionario, dataframe o serie con las siguientes claves:
 #        . 'Nro. Recibo',  'Fecha',     'Beneficiario',  'Dirección',
 #        . 'Monto',        'Concepto',  'Categoría',     'Monto $',    '$'
@@ -27,10 +28,21 @@
             [ ] analisis_de_pagos.py        [ ] cambios_de_categorias.py
             [ ] cartelera_virtual.py
     -   Cambiar parámetro 'num_decimals' en la rutina 'edita_número()' a ???
+    -   Revisar la rutina 'separa_meses()' en:
+            [√] resumen_saldos          [√] saldos_pendientes.py    [√] carterlera_virtual.py
+            [√] graficas_GUI.py         [√] cambios_de_categoria.py [X] analisis_de_pagos.py
+            [√] estadistica_pagos.py
+        y modificarla para usar la versión de 'GyG_utilitarios'
+         -> 'graficas_GUI.py', 'cambios_de_categoria.py' y 'analisis_de_pagos.py' utilizan versiones
+            particulares de la rutina 'separa_meses()', por lo que, en primera instancia, no pueden ser
+            sustituidas por la versión en 'GyG_constantes'
+         -> Ajustada en base a la versión encontrada en 'cambios_de_categoria.py'
 
      
     HISTORICO
-    -   Se corrigió la rutina MontoEnLetras() para añadir la partícula 'de' cuando el monto es en millones.
+    -   Se incorporó la rutina 'separa_meses()' y se ajustó para permitir el manejo de las secuencias
+        «Mes» '-' «Año», ignorando el guión, y no como «Mes» 'a' «Año» (13/04/2021)
+    -   Se corrigió la rutina 'MontoEnLetras()' para añadir la partícula 'de' cuando el monto es en millones.
         (Ejemplos: 1.000.000,00 = Un Millón de Bolivares con 00/100
                      870.000,00 = Ochocientos Setenta Mil Bolívares con 00/100) (22/11/2020)
     -   Se añadió la posibilidad de generar un recibo de pago con el monto expresado en dólares (19/11/2020)
@@ -50,6 +62,7 @@ import GyG_constantes
 import re
 from re import match
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from unicodedata import normalize
 import numbers
 import locale
@@ -69,7 +82,7 @@ def _unobscure(obscured: bytes) -> bytes:
     return zlib.decompress(b64dec(obscured))
 
 
-def input_mes_y_año(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
+def input_mes_y_año(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str:
     """
     Lee del standard input un mes y año en el formato 'mm-yyyy', filtrando años entre 2017 y 2029
     """
@@ -88,7 +101,7 @@ def input_mes_y_año(mensaje, valor_por_defecto, toma_opción_por_defecto=False)
                 print('  > Seleccione un mes y año correctos (2017+), con un guión como separador')
         return valor_actual
 
-def input_fecha(mensaje, valor_por_defecto=None):
+def input_fecha(mensaje: str, valor_por_defecto: bool=None) -> datetime:
     """
     Lee del standard input una fecha en el formato 'dd-mm-yyyy' o 'dd/mm/yyyy'
     """
@@ -115,7 +128,7 @@ def input_fecha(mensaje, valor_por_defecto=None):
         print("  > Seleccione una fecha correcta: 2017+, formato 'dd-mm-yyyy' o 'dd/mm/yyyy'")
     return fecha
 
-def input_si_no(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
+def input_si_no(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str:
     """
     Lee del standard input 'sí' o 'no' como respuesta a la pregunta formulada
     """
@@ -135,7 +148,7 @@ def input_si_no(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
                 print("  > Indique 'sí' o 'no'")
         return valor_actual
 
-def input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
+def input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=False):
     """
     Lee del standard input un valor (int, float, str) como respuesta a la pregunta formulada
     """
@@ -147,6 +160,12 @@ def input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
         if len(valor_actual) == 0:
             valor_actual = valor_por_defecto
         else:
+            # Valida grupos numéricos
+            if valor_actual.replace(".", "").replace(",", "", 1).isnumeric():
+                valor_actual = locale.delocalize(valor_actual.replace(".", "").replace(",", "."))
+            elif valor_actual.replace(",", "").replace(".", "", 1).isnumeric():
+                valor_actual = locale.delocalize(valor_actual.replace(",", "").replace(".", "."))
+            # Convierte el tipo de 'valor_actual' al del 'valor_por_defecto'
             while True:
                 if type(valor_actual) != type(valor_por_defecto):
                     typeof_valor_por_defecto = type(valor_por_defecto)
@@ -157,6 +176,7 @@ def input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
                         print(f"  > El valor ingresado no puede ser convertido a '{type(valor_por_defecto)}'")
                 else:
                     break
+            # Convierte el 'case' de 'valor_actual' al del 'valor_por_defecto'
             if isinstance(valor_actual, str):
                 if   valor_por_defecto.islower(): valor_actual = valor_actual.lower()
                 elif valor_por_defecto.isupper(): valor_actual = valor_actual.upper()
@@ -164,16 +184,16 @@ def input_valor(mensaje, valor_por_defecto, toma_opción_por_defecto=False):
         return valor_actual
 
 
-def edita_número(valor, num_decimals=2):
+def edita_número(valor, num_decimals: int=2):
     return locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True)
 
-def trunca_texto(texto, max_width):
+def trunca_texto(texto: str, max_width: int) -> str:
     return texto[0: max_width - 3] + '...' if len(texto) > max_width else texto
 
-def espacios(width=1, char=' '):
+def espacios(width: int=1, char: str=' ') -> str:
     return char * width
 
-def is_numeric(valor):
+def is_numeric(valor) -> bool:
     return isinstance(valor, numbers.Number)
 
 def valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool:
@@ -190,7 +210,87 @@ def remueve_acentos(texto: str) -> str:
     # -> NFC
     return normalize( 'NFC', s)
 
-def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False, moneda='Bolívar'):
+
+def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False):     # -> list | str
+ 
+    def convierte_separador(mensaje: str) -> str:
+        # Convierte '-' en '/' en expresiones del tipo «mes»-«año»
+        pattern = '([a-zA-Z\\.])-([0-9])'
+        while True:
+            m = re.search(pattern, mensaje)
+            if m is None:
+                return mensaje
+            mensaje = re.sub(pattern, m.group(1) + "/" + m.group(2), mensaje, count=1)
+
+    tokens_validos = GyG_constantes.meses + GyG_constantes.meses_abrev + GyG_constantes.conectores
+    if muestra_modificador:
+        tokens_validos += GyG_constantes.modificadores
+    mensaje = convierte_separador(mensaje)
+    mensaje = re.sub("\([^()]*\)", "", mensaje)
+    # mensaje = re.sub(r"\W ", " ", mensaje.lower().replace('-', ' a ').replace('/', ' ')).split()
+    mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
+    if muestra_modificador:
+        for token in GyG_constantes.textos_anticipos:
+            mensaje.replace(token, GyG_constantes.modificadores[0])
+        for token in GyG_constantes.textos_saldos:
+            mensaje.replace(token, GyG_constantes.modificadores[1])
+    mensaje = re.sub(r"\W ", " ", mensaje).split()
+    mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
+    # print(f"DEBUG: {mensaje_ed = }")
+    initial_year = last_year = None
+    initial_month = last_month = None
+    mensaje_anterior = None
+    mensaje_final = list()
+    maneja_conector = False
+
+    for x in reversed(mensaje_ed):
+        token = GyG_constantes.meses[GyG_constantes.meses_abrev.index(x)] if x in GyG_constantes.meses_abrev else x
+        if token.isdigit():
+            # print(f" -> {token}: AÑO")
+            if mensaje_anterior != None:
+                mensaje_final = mensaje_anterior + mensaje_final
+                mensaje_anterior = None
+            if maneja_conector:
+                initial_year = token
+            else:
+                last_year = token
+            continue
+        elif token in GyG_constantes.meses:
+            # print(f" -> {token}: MES")
+            if mensaje_anterior != None:
+                mensaje_final = mensaje_anterior + mensaje_final
+            if maneja_conector:
+                if initial_year is None:
+                    initial_year = last_year
+                n_last_month = GyG_constantes.meses.index(last_month)
+                initial_date = datetime(int(initial_year), GyG_constantes.meses.index(token) + 1, 1)
+                curr_date = datetime(int(last_year), GyG_constantes.meses.index(last_month) + 1, 1)
+                while curr_date > initial_date:
+                    curr_date = curr_date - relativedelta(months=1)
+                    mensaje_final = [curr_date.strftime("%m-%Y")] + mensaje_final
+                    last_year = initial_year
+                maneja_conector = False
+                continue
+            last_month = token
+            mensaje_anterior = [f"{GyG_constantes.meses.index(last_month)+1:02d}-{last_year}"]
+        elif x in GyG_constantes.conectores:
+            # print(f" -> {token}: CONECTOR")
+            maneja_conector = True
+        elif x in GyG_constantes.modificadores and muestra_modificador:
+            # print(f" -> {token}: MODIFICADOR")
+            mensaje_final = [f"{GyG_constantes.meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
+            mensaje_anterior = None
+
+    if mensaje_anterior != None:
+        mensaje_final = mensaje_anterior + mensaje_final
+
+    if as_string:
+        mensaje_final = '|'.join(mensaje_final)
+
+    return mensaje_final
+
+
+def MontoEnLetras(número: float, mostrar_céntimos: bool=True, céntimos_en_letras: bool=False, moneda: str='Bolívar') -> str:
     #
     # Constantes
     Vocales = ['a', 'e', 'i', 'o', 'u']
@@ -202,7 +302,7 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False, mo
     Preposición = "con"      # Preposición entre Moneda y Céntimos
     Máximo = 1999999999.99   # Máximo valor admisible
 
-    def _número_recursivo(número):
+    def _número_recursivo(número) -> str:
         UNIDADES = ("", "Un", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
                     "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho",
                     "Diecinueve", "Veinte", "Veintiun", "Veintidós", "Veintitrés", "Veinticuatro", "Veinticinco",
@@ -266,7 +366,7 @@ def MontoEnLetras(número, mostrar_céntimos=True, céntimos_en_letras=False, mo
         return f'ERROR: El número {edita_número(número, num_decimals=2)} excede los límites admitidos.'
 
 
-def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
+def genera_recibo(r, sella_recibo: bool=False, codigo_de_seguridad: bool=False, codigo_texto: bool=True):
     """ genera_recibo(r, sella_recibo=False)
         Recibe como parámetro con las siguientes claves:
           . 'Nro. Recibo',  'Fecha',    'Beneficiario',
@@ -277,6 +377,13 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     # Librerías
     import GyG_constantes
     from PIL import Image, ImageFont, ImageDraw, ImageEnhance
+
+    # En caso de querer reinstalar la librería para generar códigos de barra, ejecutar:
+    #     python3 -m pip install python-barcode
+    #
+    # import barcode
+    # from barcode.writer import ImageWriter
+
     from math import ceil
     from random import random
     import sys
@@ -297,7 +404,7 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     calibri_bold        = os.path.join(GyG_constantes.rec_fuentes, 'calibrib.ttf')
     calibri_bold_italic = os.path.join(GyG_constantes.rec_fuentes, 'calibriz.ttf')
     stencil             = os.path.join(GyG_constantes.rec_fuentes, 'STENCIL.TTF')
-
+    dejavusansmono      = os.path.join(GyG_constantes.rec_fuentes, 'DejaVuSansMono.ttf')
 
     def anchura_de_texto(text, font):
         return recibo.textsize(text=text, font=font)[0]
@@ -372,17 +479,34 @@ def genera_recibo(r, sella_recibo=False, codigo_de_seguridad=False):
     transparente = (0, 0, 0, 0)
 
     if codigo_de_seguridad:
-        font = ImageFont.truetype(font=calibri, size=10)
+        # font = ImageFont.truetype(font=calibri, size=10)
+        font = ImageFont.truetype(font=dejavusansmono, size=10)
         código_a_convertir = f"{r['Nro. Recibo']:0{GyG_constantes.long_num_recibo}d} " + \
                              r['Fecha'].strftime('%d/%m/%Y')
         código_convertido = str(_obscure(bytes(código_a_convertir, 'UTF-8')), 'UTF-8')
-        ancho_código = anchura_de_texto(código_convertido, font)
+        # ancho_código = anchura_de_texto(código_convertido, font)
+        # print(f"DEBUG: {código_convertido = }")
 
         # ----------------------------------------------------------------
         # CODIGO DE VALIDACION HORIZONTAL (justificado a la izquierda)
         #
+        # if codigo_texto:
         recibo.text(xy=(20, plantilla.size[1] - 25),
                     text=código_convertido, font=font, fill='black')
+        # else:
+        #     # Cambiado:  module_width: 0.065, module_height: 1.5, font_size: 6, text_distance: 0.5,
+        #     #            posición Y: 60
+        #     codigo_de_barras = barcode.get('code128', código_convertido, writer=ImageWriter())
+        #     opciones = {
+        #         'module_width': 0.085,  # Defaults to  0.2; min = 0.084666667 -> 0.085
+        #         'module_height': 1.0,   # Defaults to 15.0
+        #         'quiet_zone': 1.0,      # Defaults to  6.5
+        #         'font_size': 0,         # Defaults to 10
+        #         'text_distance': 0.5,   # Defaults to  5.0
+        #     }
+        #     plantilla.paste(codigo_de_barras.render(writer_options=opciones),
+        #                     (20, plantilla.size[1] - 30))
+
         # ----------------------------------------------------------------
         # CODIGO DE VALIDACION HORIZONTAL (justificado a la derecha)
         #

@@ -7,6 +7,6 @@
 @echo 1.6 GyG Recibos - Visor de Recibos de Pago
 @echo ------------------------------------------
 
-python3 ./visor_de_recibos_GUI.py
+python ./visor_de_recibos_GUI.py
 
 @pause

@@ -4,7 +4,10 @@
 
 """
     POR HACER
-    -   
+    -   Generar el código de seguridad como código de barras
+         -> El código generado ('code128' para permitir mayúsculas y minúsculas) es muy largo
+            y abarcaría todo el recibo para que sea legible
+             -> Ignorar este requerimiento.... (01/04/2021)
 
     HISTORICO
     -   "Sellar" los recibos de pago con el sello de la Asociación.
@@ -158,6 +161,9 @@ if selección_manual:
     genera_historico = input_si_no('Genera los recibos a partir del histórico', 'no')
     sella_recibos = input_si_no('Sella los recibos de pago', 'sí')
     codigo_de_seguridad = input_si_no('Con código de seguridad', 'sí')
+    if codigo_de_seguridad:
+        # codigo_de_barras = input_si_no(' ... como código de barras', 'no')
+        codigo_de_barras = False
     print()
 
     excel_workbook = GyG_constantes.pagos_wb_historico if genera_historico else GyG_constantes.pagos_wb_estandar
@@ -179,6 +185,7 @@ if selección_manual:
 else:
     sella_recibos = True
     codigo_de_seguridad = True
+    codigo_de_barras = False
 
 # Abre la hoja de cálculo de Recibos de Pago
 print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook))
@@ -213,7 +220,7 @@ recibos_convertidos = 0
 for index, r in df.iterrows():
     print('.', end='')   # Imprime un punto en la pantalla por cada mensaje
     sys.stdout.flush()   # Flush output to the screen
-    if genera_recibo(r, sella_recibos, codigo_de_seguridad):
+    if genera_recibo(r, sella_recibos, codigo_de_seguridad, not codigo_de_barras):
         recibos_convertidos += 1
 
 print()

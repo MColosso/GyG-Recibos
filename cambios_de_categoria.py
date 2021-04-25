@@ -111,73 +111,73 @@ def genera_propuesta_categoría():
     return df
 
 # ----------------------------------------------------------------------------
-nombre_meses     = ['enero',      'febrero', 'marzo',     'abril',
-                    'mayo',       'junio',   'julio',     'agosto',
-                    'septiembre', 'octubre', 'noviembre', 'diciembre']
-meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-conectores       = ['a', '-']
-textos_anticipos = ['adelanto', 'anticipo'   ]
-textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-modificadores    = ['anticipo', 'saldo']
+# nombre_meses     = ['enero',      'febrero', 'marzo',     'abril',
+#                     'mayo',       'junio',   'julio',     'agosto',
+#                     'septiembre', 'octubre', 'noviembre', 'diciembre']
+# meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+#                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+# conectores       = ['a', '-']
+# textos_anticipos = ['adelanto', 'anticipo'   ]
+# textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
+# modificadores    = ['anticipo', 'saldo']
 
-tokens_validos = nombre_meses + meses_abrev + conectores
+# tokens_validos = nombre_meses + meses_abrev + conectores
 
-def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-    import re
+# def separa_meses(mensaje, as_string=False, muestra_modificador=False):
+#     import re
     
-    tokens_validos = nombre_meses + meses_abrev + conectores + modificadores
+#     tokens_validos = nombre_meses + meses_abrev + conectores + modificadores
 
-    mensaje = re.sub("\([^()]*\)", "", mensaje)
-    mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-    for token in textos_anticipos:
-        mensaje.replace(token, modificadores[0])
-    for token in textos_saldos:
-        mensaje.replace(token, modificadores[1])
-    mensaje = re.sub(r"\W ", " ", mensaje).split()
-    mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-    last_year = None
-    last_month = None
-    acción = ''
-    mensaje_anterior = None
-    mensaje_final = list()
-    maneja_conector = False
-    for x in reversed(mensaje_ed):
-        token = nombre_meses[meses_abrev.index(x)] if x in meses_abrev else x
-        if token.isdigit():
-            if mensaje_anterior != None:
-                mensaje_final = mensaje_anterior + mensaje_final
-            last_year = token
-            last_month = None
-            mensaje_anterior = None
-        elif token in nombre_meses:
-            if mensaje_anterior != None:
-                mensaje_final = mensaje_anterior + mensaje_final
-            if maneja_conector:
-                try:
-                    n_last_month = nombre_meses.index(last_month)
-                except:
-                    continue    # ignora los mensajes que contienen textos del tipo:
-                                # "(saldo a favor: Bs. 69.862,95)"
-                n_token = nombre_meses.index(token)
-                for t in reversed(range(n_token + 1, n_last_month)):
-                    mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-                maneja_conector = False
-            last_month = token
-            mensaje_anterior = [f"{nombre_meses.index(last_month)+1:02}-{last_year}"]
-        elif x in conectores:
-            maneja_conector = True
-        elif x in modificadores and muestra_modificador:
-            mensaje_final = [f"{nombre_meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-            mensaje_anterior = None
+#     mensaje = re.sub("\([^()]*\)", "", mensaje)
+#     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
+#     for token in textos_anticipos:
+#         mensaje.replace(token, modificadores[0])
+#     for token in textos_saldos:
+#         mensaje.replace(token, modificadores[1])
+#     mensaje = re.sub(r"\W ", " ", mensaje).split()
+#     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
+#     last_year = None
+#     last_month = None
+#     acción = ''
+#     mensaje_anterior = None
+#     mensaje_final = list()
+#     maneja_conector = False
+#     for x in reversed(mensaje_ed):
+#         token = nombre_meses[meses_abrev.index(x)] if x in meses_abrev else x
+#         if token.isdigit():
+#             if mensaje_anterior != None:
+#                 mensaje_final = mensaje_anterior + mensaje_final
+#             last_year = token
+#             last_month = None
+#             mensaje_anterior = None
+#         elif token in nombre_meses:
+#             if mensaje_anterior != None:
+#                 mensaje_final = mensaje_anterior + mensaje_final
+#             if maneja_conector:
+#                 try:
+#                     n_last_month = nombre_meses.index(last_month)
+#                 except:
+#                     continue    # ignora los mensajes que contienen textos del tipo:
+#                                 # "(saldo a favor: Bs. 69.862,95)"
+#                 n_token = nombre_meses.index(token)
+#                 for t in reversed(range(n_token + 1, n_last_month)):
+#                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
+#                 maneja_conector = False
+#             last_month = token
+#             mensaje_anterior = [f"{nombre_meses.index(last_month)+1:02}-{last_year}"]
+#         elif x in conectores:
+#             maneja_conector = True
+#         elif x in modificadores and muestra_modificador:
+#             mensaje_final = [f"{nombre_meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
+#             mensaje_anterior = None
 
-    if mensaje_anterior != None:
-        mensaje_final = mensaje_anterior + mensaje_final
+#     if mensaje_anterior != None:
+#         mensaje_final = mensaje_anterior + mensaje_final
 
-    if as_string:
-        mensaje_final = '|'.join(mensaje_final)
+#     if as_string:
+#         mensaje_final = '|'.join(mensaje_final)
 
-    return mensaje_final
+#     return mensaje_final
 # ----------------------------------------------------------------------------
 
 def edita_beneficiario(beneficiario):
@@ -197,7 +197,7 @@ def edita_último_pago(beneficiario):
     fecha = r['Fecha'].strftime('%d/%m/%Y')
     mes = separa_meses(r['Concepto'], as_string=False, muestra_modificador=True)[-1].split()
     if len(mes) == 1: mes.append('')
-    último_pago = f"{mes[1]}{' ' if len(mes[1])>0 else ''}{meses_abrev[int(mes[0][:2])-1]}{mes[0][2:]}"
+    último_pago = f"{mes[1]}{' ' if len(mes[1])>0 else ''}{GyG_constantes.meses_abrev[int(mes[0][:2])-1]}{mes[0][2:]}"
     return f'Último pago: {último_pago} ({fecha})'
 
 def dif_meses(d1, d2):

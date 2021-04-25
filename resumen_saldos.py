@@ -69,18 +69,6 @@ excel_detalle    = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
 excel_cuotas     = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
 excel_saldos     = GyG_constantes.pagos_ws_saldos          # 'Saldos'
 
-meses            = ['enero',      'febrero', 'marzo',     'abril',
-                    'mayo',       'junio',   'julio',     'agosto',
-                    'septiembre', 'octubre', 'noviembre', 'diciembre']
-meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-conectores       = ['a', '-']
-textos_anticipos = ['adelanto', 'anticipo'   ]
-textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-modificadores    = ['anticipo', 'saldo']
-
-tokens_validos = meses + meses_abrev + conectores
-
 formato_mes      = "%b%Y" if sys.platform.startswith('win') else "%b.%Y"
 
 
@@ -142,42 +130,6 @@ def seleccionaRegistro(beneficiarios, categorías, montos):
     list_3 = [len(df_saldos_gt_0[df_saldos_gt_0['Beneficiario'] == b]) > 0 for b in beneficiarios]
 
     return list_or(list_1, list_or(list_2, list_3))
-
-def separa_meses(mensaje, as_string=False):
-    tokens_validos = meses + meses_abrev + conectores
-    mensaje = re.sub("\([^()]*\)", "", mensaje)
-    mensaje = re.sub(r"\W ", " ", mensaje.lower().replace('-', ' a ').replace('/', ' ')).split()
-    mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-    last_year = None
-    last_month = None
-    mensaje_final = list()
-    maneja_conector = False
-    for x in reversed(mensaje_ed):
-        token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-        if token.isdigit():
-            last_year = token
-            last_month = None
-            continue
-        elif token in meses:
-            if maneja_conector:
-                try:
-                    n_last_month = meses.index(last_month)
-                except:
-                    continue    # ignora los mensajes que contienen textos del tipo:
-                                # "(saldo a favor: Bs. 69.862,95)"
-                n_token = meses.index(token)
-                for t in reversed(range(n_token + 1, n_last_month)):
-                    mensaje_final = [f"{t:02d}-{last_year}"] + mensaje_final
-                maneja_conector = False
-            last_month = token
-            mensaje_final = [f"{meses.index(last_month)+1:02d}-{last_year}"] + mensaje_final
-        elif x in conectores:
-            maneja_conector = True
-
-    if as_string:
-        mensaje_final = '|'.join(mensaje_final)
-
-    return mensaje_final
 
 
 def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
@@ -408,7 +360,7 @@ análisis = f"GyG RESUMEN DE SALDOS {ajuste_por_inflación}al {datetime.now():%d
            ("       Deuda |   A favor |" if muestra_saldos else "   Pendiente |") + \
             " Período\n"
 
-análisis += espacios(95 if muestra_saldos else 83, '-') + '\n'
+análisis += espacios(97 if muestra_saldos else 85, '-') + '\n'
 
 # SALDOS
 dirección_anterior = None

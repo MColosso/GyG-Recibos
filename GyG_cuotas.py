@@ -55,7 +55,7 @@ class Cuota:
         columnas = [str.replace('CUOTA ', '') for str in self.df_cuotas.columns.to_list()]
         self.df_cuotas.columns = columnas
 
-    def cuota_vigente(self, beneficiario, fecha, aplica_IPC=False):
+    def cuota_vigente(self, beneficiario: str, fecha: datetime, aplica_IPC: bool=False):
         """
         Cuota vigente para el vecino indicado en la fecha establecida.
         Empleado para determinar si la cuota fue totalmente cancelada para la fecha del
@@ -66,7 +66,7 @@ class Cuota:
             column_name = 'Reexpr. por inflación'
         return self.df_cuotas[self.df_cuotas['Fecha'] <= fecha].iloc[-1][column_name]
 
-    def cuota_actual(self, beneficiario, fecha, aplica_IPC=False):
+    def cuota_actual(self, beneficiario: str, fecha: datetime, aplica_IPC: bool=False):
         """
         Cuota a ser utilizada para el cálculo del saldo deudor.
         A partir del 1° de Septiembre 2019, se tomará como cuota actual la última registrada.
@@ -76,15 +76,15 @@ class Cuota:
         return self.cuota_vigente(beneficiario, fecha if fecha < GyG_constantes.fecha_de_corte else datetime.today(),
                                   aplica_IPC=aplica_IPC)
 
-    def tasa_actual(self, fecha, redondeada=True):
+    def tasa_actual(self, fecha: datetime, redondeada: bool=True):
         """
         Tasa a ser utilizada para el cálculo de la cuota.
         """
         return self.df_cuotas[self.df_cuotas['Fecha'] <= fecha].iloc[-1]['Tasa redondeada' if redondeada else 'Tasa Bs./US$']
 
 
-    def resumen_de_cuotas(self, beneficiario, fecha_final, 
-                                fecha_inicial=None, formato=fmtText, lista=False):
+    def resumen_de_cuotas(self, beneficiario: str, fecha_final, 
+                                fecha_inicial=None, formato: str=fmtText, lista: bool=False):
         """
         Retorna el resumen de las últimas <n-meses> -5- cuotas mensuales, hasta el mes de
         Agosto 2019, y el mensaje indicativo de los cambios vigentes a partir del 1° de
@@ -93,7 +93,7 @@ class Cuota:
         atributos HTML o no (por defecto)
         """
 
-        def spaces(n):
+        def spaces(n: int) -> str:
             return (' ' if formato == fmtText else '&nbsp;') * n
 
         def rango_fechas(idx_inicial, idx_final, cuota, año_anterior, rango_final=False, más_de_un_elemento=False):

@@ -4,7 +4,24 @@
 
 """
     POR HACER
-    -   
+    -   Revisar error en Windows:
+
+        1.6 GyG Recibos - Visor de Recibos de Pago
+        ------------------------------------------
+
+        C:\Users\MColosso\Dropbox\GyG Recibos>python ./visor_de_recibos_GUI.py
+        Cargando hoja de cálculo "1.1. GyG Recibos.xlsm"...
+        Cargando la lista de recibos...
+        * Warning... no image specified in Image Element! *
+        *ERROR laying out form.... Image Element has no image specified*
+
+
+        C:\Users\MColosso\AppData\Local\Programs\Python\Python38-32\lib\site-packages\PySimpleGUI\PySimpleGUI.py:2848: 
+        UserWarning: You cannot Update element with key = -IMAGE- until the window has been Read or Finalized
+          warnings.warn('You cannot Update element with key = {} until the window has been Read or Finalized'.format(self.Key), 
+          UserWarning)
+        Presione una tecla para continuar . . .
+
 
     HISTORICO
     -   Se agregó código para habilitar el botón «A Temporales» al seleccionar un recibo

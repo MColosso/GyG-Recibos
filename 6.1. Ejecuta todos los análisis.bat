@@ -21,6 +21,14 @@ python ./cartelera_virtual.py --toma_opciones_por_defecto
 python ./analisis_de_pagos.py --toma_opciones_por_defecto
 
 
+:: GyG Estadística de Pagos --------------------------------------------
+
+@echo 3.2 GyG Estadística de Pagos
+@echo ----------------------------
+
+python ./estadistica_pagos.py --toma_opciones_por_defecto
+
+
 :: GyG Saldos pendientes --------------------------------------------
 
 @echo 3.3 GyG Saldos pendientes
