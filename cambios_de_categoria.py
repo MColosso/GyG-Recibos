@@ -4,12 +4,14 @@
 
 """
     POR HACER
-    -   
+      - 
 
 
     HISTORICO
-    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
-    -   Versión inicial (07/06/2020)
+      - Se añade la opción para generar las tablas de detalle en fuente monoespaciada para ser
+        enviadas por WhatsApp (19/05/2921)
+      - Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
+      - Versión inicial (07/06/2020)
 
 
     LAYOUT
@@ -110,84 +112,6 @@ def genera_propuesta_categoría():
 
     return df
 
-# ----------------------------------------------------------------------------
-# nombre_meses     = ['enero',      'febrero', 'marzo',     'abril',
-#                     'mayo',       'junio',   'julio',     'agosto',
-#                     'septiembre', 'octubre', 'noviembre', 'diciembre']
-# meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-#                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-# conectores       = ['a', '-']
-# textos_anticipos = ['adelanto', 'anticipo'   ]
-# textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-# modificadores    = ['anticipo', 'saldo']
-
-# tokens_validos = nombre_meses + meses_abrev + conectores
-
-# def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-#     import re
-    
-#     tokens_validos = nombre_meses + meses_abrev + conectores + modificadores
-
-#     mensaje = re.sub("\([^()]*\)", "", mensaje)
-#     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-#     for token in textos_anticipos:
-#         mensaje.replace(token, modificadores[0])
-#     for token in textos_saldos:
-#         mensaje.replace(token, modificadores[1])
-#     mensaje = re.sub(r"\W ", " ", mensaje).split()
-#     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-#     last_year = None
-#     last_month = None
-#     acción = ''
-#     mensaje_anterior = None
-#     mensaje_final = list()
-#     maneja_conector = False
-#     for x in reversed(mensaje_ed):
-#         token = nombre_meses[meses_abrev.index(x)] if x in meses_abrev else x
-#         if token.isdigit():
-#             if mensaje_anterior != None:
-#                 mensaje_final = mensaje_anterior + mensaje_final
-#             last_year = token
-#             last_month = None
-#             mensaje_anterior = None
-#         elif token in nombre_meses:
-#             if mensaje_anterior != None:
-#                 mensaje_final = mensaje_anterior + mensaje_final
-#             if maneja_conector:
-#                 try:
-#                     n_last_month = nombre_meses.index(last_month)
-#                 except:
-#                     continue    # ignora los mensajes que contienen textos del tipo:
-#                                 # "(saldo a favor: Bs. 69.862,95)"
-#                 n_token = nombre_meses.index(token)
-#                 for t in reversed(range(n_token + 1, n_last_month)):
-#                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-#                 maneja_conector = False
-#             last_month = token
-#             mensaje_anterior = [f"{nombre_meses.index(last_month)+1:02}-{last_year}"]
-#         elif x in conectores:
-#             maneja_conector = True
-#         elif x in modificadores and muestra_modificador:
-#             mensaje_final = [f"{nombre_meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-#             mensaje_anterior = None
-
-#     if mensaje_anterior != None:
-#         mensaje_final = mensaje_anterior + mensaje_final
-
-#     if as_string:
-#         mensaje_final = '|'.join(mensaje_final)
-
-#     return mensaje_final
-# ----------------------------------------------------------------------------
-
-def edita_beneficiario(beneficiario):
-    return beneficiario.replace('Familia ', '')
-
-def edita_dirección(dirección):
-    return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
-
-def edita_categoría(categoría):
-    return categoría
 
 def edita_último_pago(beneficiario):
     r = df_vigilancia[df_vigilancia['Beneficiario'] == beneficiario]
@@ -199,6 +123,7 @@ def edita_último_pago(beneficiario):
     if len(mes) == 1: mes.append('')
     último_pago = f"{mes[1]}{' ' if len(mes[1])>0 else ''}{GyG_constantes.meses_abrev[int(mes[0][:2])-1]}{mes[0][2:]}"
     return f'Último pago: {último_pago} ({fecha})'
+
 
 def dif_meses(d1, d2):
     return (d1.year - d2.year) * 12 + d1.month - d2.month
@@ -226,6 +151,12 @@ sólo_propuestas = input_si_no('Sólo vecinos con propuestas de cambio', 'sí', 
 # # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
 
+# Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
+whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
+
+# Prepara los caracteres de negrita, italizado y monoespaciado para los textos, en caso de WhatsApp
+wa_bold, wa_italic, wa_table = ('*', '_', '```') if whatsapp else ('', '', '')
+
 
 # Abre la hoja de cálculo de Recibos de Pago
 print()
@@ -237,7 +168,7 @@ if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos 
 df_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
 
 # Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_cuotas_equivalentes atrás
-df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == 'Vigilancia')  & \
+df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA)  & \
                               (df_vigilancia['Fecha'] <  mes_de_referencia) & \
                               (df_vigilancia['Fecha'] >= datetime(2017, 1, 1))]
 df_vigilancia = df_vigilancia[['Beneficiario', 'Fecha', 'Monto', 'Concepto', 'Día', 'Mes']]
@@ -274,15 +205,20 @@ if sólo_propuestas:
     df_resumen_r = df_resumen_r[df_resumen_r['Propuesta'] != '']
 
 if ordenado:
-    df_resumen_r['Benef_sort'] = df_resumen_r['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
+    df_resumen_r['Benef_sort'] = df_resumen_r['Beneficiario'] \
+                        .apply(lambda benef: edita_beneficiario(remueve_acentos(benef)))
     df_resumen_r.sort_values(by=['Benef_sort'], inplace=True)
 
 
 # Define encabezado
 am_pm = 'pm' if fecha_de_referencia.hour > 12 else 'm' if fecha_de_referencia.hour == 12 else 'am'
-propuestas = f"GyG PROPUESTAS DE CAMBIO DE CATEGORÍA\nal {fecha_de_referencia:%d/%m/%Y %I:%M} {am_pm}\n\n\n" + \
-              "Vecino               | Dirección      | Categoría actual | Propuesta\n" + \
-              espacios(76, '-') + '\n'
+propuestas = ''.join([
+                    f"GyG PROPUESTAS DE CAMBIO DE CATEGORÍA\n",
+                    f"al {fecha_de_referencia:%d/%m/%Y %I:%M} {am_pm}\n", '\n\n',
+                    wa_table,
+                    "Vecino               | Dirección      | Categoría actual | Propuesta\n",
+                    espacios(76, '-'), '\n'
+                ])
 
 # Detalle de las propuestas de cambio
 for index, r in df_resumen_r.iterrows():
@@ -293,6 +229,7 @@ for index, r in df_resumen_r.iterrows():
             trunca_texto(edita_categoría(r['Propuesta']), 16),
             trunca_texto(edita_último_pago(r['Beneficiario']), 53))
     propuestas += espacios(76, '-') + '\n'
+propuestas += wa_table
 
 if len(no_evaluables) > 0:
     propuestas += f"\n(*) No evaluable: menos de {nMeses} meses desde su inicio en el sector.\n"

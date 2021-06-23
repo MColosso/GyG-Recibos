@@ -4,6 +4,8 @@
 
 """
     PENDIENTE POR HACER
+    -   REVISAR: Cuando hay ordenamiento alfabético, no debe haber un salto de línea cuando
+        cambia la calle
     -   Después de ajustar todos los programas para usar esta nueva clase, cambiar el título
         de la columna "2016" en la hoja de Excel a "=fecha(2016;1;1)" y eliminar el cambio
         de nombre en la rutina principal
@@ -24,6 +26,7 @@
 
     
     HISTORICO
+    -   Se agrega la opción para ordenar la lista de beneficiarios (12/06/2021)
     -   Se agrega la opción para añadir marcas de edición (negritas e itálicas) si la cartelera va a
         ser enviada por WhatsApp (25/04/2021)
     -   Revisar y ajustar las opciones de despliegue de saldos (21/03/2021)
@@ -268,7 +271,7 @@ def no_participa_desde(r):
             ultimo_mes_con_pagos = idx
             break
         x = idx
-        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
+        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_INPC=aplica_INPC) # cuotas[idx]
     if ultimo_mes_con_pagos == None:
         ultimo_mes_con_pagos = this_col = f_desde
         fecha_de_inicio = columns[columns.index(r['F.Desde'])]
@@ -406,11 +409,11 @@ def cartelera_vecinos_al_día():
     # Genera el detalle
     inicio_dirección = ''
     for index, row in vad.iterrows():
-        if inicio_dirección != row['Dirección'][: 3]:
+        if inicio_dirección != row['Dirección'][: 3] and not ordenado:
             inicio_dirección = row['Dirección'][: 3]
             texto_cartelera += '\n'
         texto_cartelera += ajusta_nombre_y_dirección(row['Beneficiario'] + ', ' + row['Dirección']) + '\n'
-        if inicio_dirección != row['Dirección'][: 3]:
+        if inicio_dirección != row['Dirección'][: 3] and not ordenado:
             inicio_dirección = row['Dirección'][: 3]
             texto_cartelera += '\n'
         
@@ -436,11 +439,11 @@ def cartelera_comida_vigilantes(df_comida):
     # Genera el detalle
     inicio_dirección = ''
     for index, row in df_comida.iterrows():
-        if inicio_dirección != row['Dirección'][: 3]:
+        if inicio_dirección != row['Dirección'][: 3] and not ordenado:
             inicio_dirección = row['Dirección'][: 3]
             texto_cartelera += '\n'
         texto_cartelera += ajusta_nombre_y_dirección(row['Beneficiario'] + ', ' + row['Dirección']) + '\n'
-        if inicio_dirección != row['Dirección'][: 3]:
+        if inicio_dirección != row['Dirección'][: 3] and not ordenado:
             inicio_dirección = row['Dirección'][: 3]
             texto_cartelera += '\n'
         
@@ -488,13 +491,16 @@ muestra_u_pago_no_participa = input_si_no('                    ¿Muestra último
 # Selecciona si se muestran los saldos deudores o no
 muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos pendientes?', 'no', toma_opciones_por_defecto)
 
+# Selecciona si se ordenan alfabéticamente los vecinos
+ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
+
 # Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
 whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
 
-# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
-aplica_IPC = False
+# Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
+aplica_INPC = False
 if muestra_saldos_c_completa or muestra_saldos_no_participa:
-    aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
+    aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
 # Prepara los caracteres de negrita e italizado para los textos, en caso de WhatsApp
 wa_bold, wa_italic = ('*', '_') if whatsapp else ('', '')
@@ -529,6 +535,11 @@ df = df[df['F.Desde'] < f_ref_último_día]
 # a la fecha de análisis
 df = df[df['F.Hasta'] >= f_ref_último_día]
 
+# Ordena los beneficiarios en orden alfabético
+if ordenado:
+    df['Benef_sort'] = df['Beneficiario'].apply(lambda benef: edita_beneficiario(remueve_acentos(benef)))
+    df.sort_values(by='Benef_sort', inplace=True)
+
 # Cambia el nombre de la columna 2016 a datetimme(2016, 1, 1)
 df.rename(columns={2016:datetime(2016, 1, 1)}, inplace=True)
 
@@ -544,7 +555,7 @@ pie_cuota_completa = cuotas_obj.resumen_de_cuotas('Vecino genérico', fecha_refe
 
 # Lee la hoja de cálculo de pagos
 df_pagos = read_excel(excel_workbook, sheet_name=excel_pagos)
-df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
+df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != GyG_constantes.CATEGORIA_VIGILANCIA], inplace=True)
 df_pagos = df_pagos[['Beneficiario', 'Fecha', 'Monto', 'Concepto']]
 
 df_pagos = df_pagos[df_pagos['Fecha'] <= f_ref_último_día]          # Ignora los pagos posteriores
@@ -598,9 +609,9 @@ for categoría in categorías:
         seña = 0      # OCULTO, etc.
 
     if seña > 0:
-        muestra_encabezado_IPC = aplica_IPC and \
+        muestra_encabezado_INPC = aplica_INPC and \
             ((seña == 1 and muestra_saldos_c_completa) or (seña == 3 and muestra_saldos_no_participa))
-        ajuste_por_inflación = '\n(Saldos ajustados por inflación -IPC-)' if muestra_encabezado_IPC else ''
+        ajuste_por_inflación = '\n(Saldos ajustados por inflación -INPC-)' if muestra_encabezado_INPC else ''
         cartelera += encabezado.format(seña, f_ref_último_día, ajuste_por_inflación)
         if categoría   == 'Cuota completa':
             cartelera += encabezado_cuota_completa.format(wa_bold, wa_bold)
@@ -618,7 +629,7 @@ for categoría in categorías:
         # Para cada registro en la categoría actual,
         inicio_dirección = ''
         for index, row in df_subset.iterrows():
-            if inicio_dirección != row['Dirección'][: 3]:
+            if inicio_dirección != row['Dirección'][: 3] and not ordenado:
                 inicio_dirección = row['Dirección'][: 3]
                 cartelera += '\n'
             cartelera += ajusta_nombre_y_dirección(row['Beneficiario'] + ', ' + row['Dirección'])
@@ -626,7 +637,7 @@ for categoría in categorías:
                 # cartelera += '. ' + str(row['Pendiente'])
                 cartelera += str(row['Pendiente'])
             cartelera += '\n'
-            if inicio_dirección != row['Dirección'][: 3]:
+            if inicio_dirección != row['Dirección'][: 3] and not ordenado:
                 inicio_dirección = row['Dirección'][: 3]
                 cartelera += '\n'
             if whatsapp:

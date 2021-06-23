@@ -168,17 +168,7 @@ if len(sys.argv) > 1:
 #
 
 def esVigilancia(x):
-    return x == 'Vigilancia'
-
-# def get_street(address):
-#     return address.index(' ', address.index(' ') + 1)
-
-def get_street(address):
-    # return address.index(' ', address.index(' ') + 1)
-    grupos = re.findall(r'\w+', address)
-    if grupos[0].lower() == "av":
-        return "Avenida"
-    return grupos[1] if len(grupos) > 0 else ''
+    return x == GyG_constantes.CATEGORIA_VIGILANCIA
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
@@ -239,76 +229,6 @@ def desviación(r):
     else:
         desv_est = std(dif_fechas)
     return desv_est
-    
-
-# meses            = ['enero',      'febrero', 'marzo',     'abril',
-#                     'mayo',       'junio',   'julio',     'agosto',
-#                     'septiembre', 'octubre', 'noviembre', 'diciembre']
-# meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-#                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-# conectores       = ['a', '-']
-# textos_anticipos = ['adelanto', 'anticipo'   ]
-# textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-# modificadores    = ['anticipo', 'saldo']
-
-# tokens_validos = meses + meses_abrev + conectores
-
-# def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-#     tokens_validos = meses + meses_abrev + conectores + modificadores
-
-#     mensaje = re.sub("\([^()]*\)", "", mensaje)
-#     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-#     for token in textos_anticipos:
-#         mensaje.replace(token, modificadores[0])
-#     for token in textos_saldos:
-#         mensaje.replace(token, modificadores[1])
-#     mensaje = re.sub(r"\W ", " ", mensaje).split()
-#     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-#     last_year = None
-#     last_month = None
-#     acción = ''
-#     mensaje_anterior = None
-#     mensaje_final = list()
-#     maneja_conector = False
-#     for x in reversed(mensaje_ed):
-#         token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-#         if token.isdigit():
-#             if mensaje_anterior != None:
-#                 mensaje_final = mensaje_anterior + mensaje_final
-#             last_year = token
-#             last_month = None
-#             mensaje_anterior = None
-#         elif token in meses:
-#             if mensaje_anterior != None:
-#                 mensaje_final = mensaje_anterior + mensaje_final
-#             if maneja_conector:
-#                 try:
-#                     n_last_month = meses.index(last_month)
-#                 except:
-#                     continue    # ignora los mensajes que contienen textos del tipo:
-#                                 # "(saldo a favor: Bs. 69.862,95)"
-#                 n_token = meses.index(token)
-#                 for t in reversed(range(n_token + 1, n_last_month)):
-# #                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
-#                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-#                 maneja_conector = False
-#             last_month = token
-# #                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
-#             mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
-#         elif x in conectores:
-#             maneja_conector = True
-#         elif x in modificadores and muestra_modificador:
-# #                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
-#             mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-#             mensaje_anterior = None
-
-#     if mensaje_anterior != None:
-#         mensaje_final = mensaje_anterior + mensaje_final
-
-#     if as_string:
-#         mensaje_final = '|'.join(mensaje_final)
-
-#     return mensaje_final
 
 
 def fecha_ultimo_pago(beneficiario, str_mes_año):
@@ -342,7 +262,7 @@ def no_participa_desde(r):
         if notnull(r.iloc[idx]):
             break
         x = idx
-        sum_cuotas += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
+        sum_cuotas += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_INPC=aplica_INPC) # cuotas[idx]
     this_col = columns[x] if isnull(r.iloc[last_col]) else columns[x]   # <<<=== anteriormente 'x+1' en lugar de 'x'
     fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
 
@@ -668,8 +588,8 @@ def distribución_de_pagos():
     # Lee la hoja con el detalle de los pagos recibidos, elimina aquellos cuya Referen-
     # cia no corresponda al pago de Vigilancia y estandariza la fecha de pago
     df_pagos = read_excel(excel_workbook, sheet_name=excel_worksheet_detalle)
-    #df_pagos = df_pagos[df_pagos['Categoría'] == 'Vigilancia']
-    df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != 'Vigilancia'], inplace=True)
+    #df_pagos = df_pagos[df_pagos['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA]
+    df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != GyG_constantes.CATEGORIA_VIGILANCIA], inplace=True)
     df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
     df_pagos.sort_values(by=['Beneficiario', 'Fecha'], inplace=True)
     #df_pagos.dropna(subset=['Fecha'], inplace=True)
@@ -774,8 +694,8 @@ solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_o
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
 
-# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
-aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
+# Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
+aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
@@ -888,7 +808,7 @@ rango_fechas_txt = ' entre el {} y el {}'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-ajuste_por_inflación = ' ajustados por inflación' if aplica_IPC else ''
+ajuste_por_inflación = ' ajustados por inflación' if aplica_INPC else ''
 análisis += f'GyG ANALISIS DE PAGOS{ajuste_por_inflación}, {fecha_análisis}\n({datetime.now():%d/%m/%Y %I:%M} {am_pm})\n\n'
 
 # Resumen

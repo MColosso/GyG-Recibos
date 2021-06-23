@@ -303,7 +303,7 @@ ws_saldos = ws_saldos.dropna()
 # Agrega columna 'Mes' para, posteriormente, filtrar por ella los valores requeridos, así como
 # la columna 'Categoría' (siempre igual a 'Vigilancia')
 ws_saldos['Mes'] = ws_saldos['Fecha'].apply(lambda x: datetime(x.year, x.month, 1))
-ws_saldos['Categoría'] = ['Vigilancia' for _ in range(ws_saldos.shape[0])]
+ws_saldos['Categoría'] = [GyG_constantes.CATEGORIA_VIGILANCIA for _ in range(ws_saldos.shape[0])]
 
 ws_saldos = ws_saldos[(ws_saldos['Mes'] < mes_actual) & \
                               (ws_saldos['Mes'] >= mes_inicial)]

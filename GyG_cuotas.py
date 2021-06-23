@@ -12,7 +12,7 @@
     -   
 
     HISTORICO
-    -   Se agregó el parámetro 'aplica_IPC' a las rutinas 'cuota_vigente()' y 'cuota_actual()'
+    -   Se agregó el parámetro 'aplica_INPC' a las rutinas 'cuota_vigente()' y 'cuota_actual()'
         para aplicar o no el ajuste por inflación en el cálculo de los saldos pendientes
         (26/01/2021)
     -   Corregir: En el resumen de cuotas, no se muestra el año final cuando es diferente al
@@ -55,26 +55,26 @@ class Cuota:
         columnas = [str.replace('CUOTA ', '') for str in self.df_cuotas.columns.to_list()]
         self.df_cuotas.columns = columnas
 
-    def cuota_vigente(self, beneficiario: str, fecha: datetime, aplica_IPC: bool=False):
+    def cuota_vigente(self, beneficiario: str, fecha: datetime, aplica_INPC: bool=False):
         """
         Cuota vigente para el vecino indicado en la fecha establecida.
         Empleado para determinar si la cuota fue totalmente cancelada para la fecha del
         último pago.
         """
         column_name = beneficiario if beneficiario in self.df_cuotas.columns.to_list() else 'CUOTA'
-        if (column_name == 'CUOTA') and aplica_IPC:
+        if (column_name == 'CUOTA') and aplica_INPC:
             column_name = 'Reexpr. por inflación'
         return self.df_cuotas[self.df_cuotas['Fecha'] <= fecha].iloc[-1][column_name]
 
-    def cuota_actual(self, beneficiario: str, fecha: datetime, aplica_IPC: bool=False):
+    def cuota_actual(self, beneficiario: str, fecha: datetime, aplica_INPC: bool=False):
         """
         Cuota a ser utilizada para el cálculo del saldo deudor.
         A partir del 1° de Septiembre 2019, se tomará como cuota actual la última registrada.
-        Si aplica_IPC es verdadero, los valores de las cuotas se reexpresarán en base al Indice de Precios
+        Si aplica_INPC es verdadero, los valores de las cuotas se reexpresarán en base al Indice de Precios
         al Consumidor (df_cuotas['Reexpr. por inflación'])
         """
         return self.cuota_vigente(beneficiario, fecha if fecha < GyG_constantes.fecha_de_corte else datetime.today(),
-                                  aplica_IPC=aplica_IPC)
+                                  aplica_INPC=aplica_INPC)
 
     def tasa_actual(self, fecha: datetime, redondeada: bool=True):
         """

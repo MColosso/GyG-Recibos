@@ -9,17 +9,17 @@
         1.6 GyG Recibos - Visor de Recibos de Pago
         ------------------------------------------
 
-        C:\Users\MColosso\Dropbox\GyG Recibos>python ./visor_de_recibos_GUI.py
+        C:/Users/MColosso/Dropbox/GyG Recibos>python ./visor_de_recibos_GUI.py
         Cargando hoja de cálculo "1.1. GyG Recibos.xlsm"...
         Cargando la lista de recibos...
         * Warning... no image specified in Image Element! *
+
         *ERROR laying out form.... Image Element has no image specified*
-
-
-        C:\Users\MColosso\AppData\Local\Programs\Python\Python38-32\lib\site-packages\PySimpleGUI\PySimpleGUI.py:2848: 
+        C:/Users/MColosso/AppData/Local/Programs/Python/Python38-32/lib/site-packages/PySimpleGUI/PySimpleGUI.py:2848: 
         UserWarning: You cannot Update element with key = -IMAGE- until the window has been Read or Finalized
           warnings.warn('You cannot Update element with key = {} until the window has been Read or Finalized'.format(self.Key), 
           UserWarning)
+
         Presione una tecla para continuar . . .
 
 
@@ -41,6 +41,7 @@ import PySimpleGUI as sg
 from pandas import read_excel, to_datetime
 from shutil import copyfile
 import GyG_constantes
+from GyG_utilitarios import edita_beneficiario
 import sys
 
 # Define algunas constantes
@@ -54,14 +55,6 @@ OUTPUT_PATH         = GyG_constantes.ruta_imagen_recibos    # 'C:/Users/MColosso
 #
 # RUTINAS DE UTILIDAD
 #
-
-def edita_beneficiario(beneficiario):
-    """ Ajusta el nombre del beneficiario eliminando el string 'Familia ' """
-    return beneficiario.replace('Familia ', '')
-
-def edita_dirección(dirección):
-    """ Ajusta la dirección del beneficiario eliminando los strings 'Calle' y 'Nro. ' """
-    return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
 
 def edita_categoría(str_categoría):
     """ Ajusta la categoría reduciendo su longitud y encerrándola entre corchetes """
@@ -87,6 +80,8 @@ def copia_recibo():
         FILE_FOLDER,
         GyG_constantes.img_recibo.format(recibo=nro_recibo)
     )
+    if sys.platform.startswith('win'):
+        filename  = filename.replace('/', '\\')
 
     try:
         copyfile(file_to_copy, os.path.join(output_path, output_filename))
@@ -136,8 +131,9 @@ file_list_column = [
 ]
 
 # For now will only show the name of the file that was chosen
+gyg_logo = os.path.join(os.getcwd(), 'GyG logo', 'GyG logo.png')
 image_viewer_column = [
-    [sg.Image(key="-IMAGE-", size=(712, 1))],
+    [sg.Image(filename=gyg_logo, key="-IMAGE-", size=(712, 0))],
     [sg.Text("<--  Seleccione un recibo a visualizar de la lista de la izquierda:", size=(100, 1), key="-TOUT-")],
 ]
 
@@ -165,6 +161,8 @@ while True:
             FILE_FOLDER,
             GyG_constantes.img_recibo.format(recibo=num_recibo)
         )
+        if sys.platform.startswith('win'):
+            filename  = filename.replace('/', '\\')
         try:
             window["-TOUT-"].update(filename)
             window["-IMAGE-"].update(filename=filename)

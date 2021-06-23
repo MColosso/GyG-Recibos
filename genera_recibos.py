@@ -4,6 +4,9 @@
 
 """
     POR HACER
+    -   
+
+    NOTAS
     -   Generar el código de seguridad como código de barras
          -> El código generado ('code128' para permitir mayúsculas y minúsculas) es muy largo
             y abarcaría todo el recibo para que sea legible

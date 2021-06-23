@@ -5,12 +5,17 @@
 #  . input_fecha(mensaje: str, valor_por_defecto) -> datetime
 #  . input_si_no(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str
 #  . input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=False)
+#  . edita_beneficiario(beneficiario: str) -> str
+#  . edita_dirección(dirección: str) -> str
+#  . edita_categoría(categoría: str) -> str:
+#  . alinea_texto(texto: str, anchura: int, alineación: str="derecha") -> str
 #  . edita_número(number, num_decimals: int=2) -> str
 #  . trunca_texto(texto: str, max_width: int) -> str
 #  . espacios(width: int=1, char: str=' ') -> str
 #  . is_numeric(valor) -> bool
 #  . remueve_acentos(text: str) -> str
-#  . separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False) -> list | str
+#  . separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False) -> list(str) | str
+#  . reagrupa_meses(mensaje: str, mes_completo: bool) -> str
 #  . _obscure(data: bytes) -> bytes
 #  . _unobscure(data: bytes) -> bytes
 #  . valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool
@@ -23,38 +28,42 @@
 
 """
     POR HACER
-    -   Cambiar de nombre a la rutina 'is_numeric()' a 'es_numérico()':
+     -  Cambiar el nombre de la rutina 'is_numeric()' a 'es_numérico()':
             [ ] saldos_pendientes.py        [ ] resumen_saldos.py
             [ ] analisis_de_pagos.py        [ ] cambios_de_categorias.py
             [ ] cartelera_virtual.py
-    -   Cambiar parámetro 'num_decimals' en la rutina 'edita_número()' a ???
-    -   Revisar la rutina 'separa_meses()' en:
+     -  Cambiar parámetro 'num_decimals' en la rutina 'edita_número()' a ???
+     -  Revisar la rutina 'separa_meses()' en:
             [√] resumen_saldos          [√] saldos_pendientes.py    [√] carterlera_virtual.py
             [√] graficas_GUI.py         [√] cambios_de_categoria.py [X] analisis_de_pagos.py
             [√] estadistica_pagos.py
         y modificarla para usar la versión de 'GyG_utilitarios'
-         -> 'graficas_GUI.py', 'cambios_de_categoria.py' y 'analisis_de_pagos.py' utilizan versiones
-            particulares de la rutina 'separa_meses()', por lo que, en primera instancia, no pueden ser
-            sustituidas por la versión en 'GyG_constantes'
+         -> 'analisis_de_pagos.py' utiliza una versión particular de esta rutina, por lo que,
+            en primera instancia, no puede ser sustituida por la versión en 'GyG_constantes'
          -> Ajustada en base a la versión encontrada en 'cambios_de_categoria.py'
 
      
     HISTORICO
-    -   Se incorporó la rutina 'separa_meses()' y se ajustó para permitir el manejo de las secuencias
+     -  Se ajustó la función 'trunca_texto()' para no finalizar el texto con puntos suspensivos si se
+        puede cortar el mismo en ese espacio: "Chá..." -> "Chávez" (22/05/2021)
+     -  Revisar la rutina "separa_meses()": El texto "Colaboración Vigilancia, meses de Agosto a Noviembre 
+        2020" se descompuso en ['11-2020', '08-2020', '09-2020', '10-2020', '11-2020'] 
+         -> Corregido (15/05/2021)
+     -  Se incorporó la rutina 'separa_meses()' y se ajustó para permitir el manejo de las secuencias
         «Mes» '-' «Año», ignorando el guión, y no como «Mes» 'a' «Año» (13/04/2021)
-    -   Se corrigió la rutina 'MontoEnLetras()' para añadir la partícula 'de' cuando el monto es en millones.
+     -  Se corrigió la rutina 'MontoEnLetras()' para añadir la partícula 'de' cuando el monto es en millones.
         (Ejemplos: 1.000.000,00 = Un Millón de Bolivares con 00/100
                      870.000,00 = Ochocientos Setenta Mil Bolívares con 00/100) (22/11/2020)
-    -   Se añadió la posibilidad de generar un recibo de pago con el monto expresado en dólares (19/11/2020)
-    -   Se corrigió la rutina genera_recibo(): Al incorporar la impresión del sello de la Asociación, se
+     -  Se añadió la posibilidad de generar un recibo de pago con el monto expresado en dólares (19/11/2020)
+     -  Se corrigió la rutina genera_recibo(): Al incorporar la impresión del sello de la Asociación, se
         produjo un error en la ubicación de los sellos en rojo («Anulado», etc.), quedando fuera del area
         visible (09/11/2020)
-    -   Se agrega el código de validación al recibo de pago y las rutinas para la generación y validación del
+     -  Se agrega el código de validación al recibo de pago y las rutinas para la generación y validación del
         mismo (18/08/2020)
         Las rutinas _obscure() y _deobscure() fueron tomadas de:
         "Simple way to encode a string according to a password?"
         (https://stackoverflow.com/questions/2490334/simple-way-to-encode-a-string-according-to-a-password/16321853)
-    -   Corregidos algunos acentos en rutina MontoEnLetras() (14/06/2020)
+     -  Corregidos algunos acentos en rutina MontoEnLetras() (14/06/2020)
     
 """
 
@@ -184,10 +193,50 @@ def input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=
         return valor_actual
 
 
+def edita_beneficiario(beneficiario: str) -> str:
+    # STOPWORDS = ['Familia ', 'Dr. ', 'Dra. ', 'Sr. ', 'Sra. ']
+    # for stopword in STOPWORDS:
+    #     beneficiario = beneficiario.replace(stopword, '')
+    # return beneficiario
+    return beneficiario.replace('Familia ', '').replace('Dr. ', '').replace('Dra. ', '') \
+                       .replace('Sr. ', '').replace('Sra. ', '')
+
+def edita_dirección(dirección: str) -> str:
+    return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
+
+
+def edita_categoría(categoría: str) -> str:
+    return categoría
+
+
+def get_street(address: str) -> str:
+    # return address.index(' ', address.index(' ') + 1)
+    grupos = re.findall(r'\w+', address)
+    if grupos[0].lower() == "av":
+        return "Avenida"
+    return grupos[1] if len(grupos) > 0 else ''
+
+
+def alinea_texto(texto: str, anchura: int, alineación: str="derecha") -> str:
+    if alineación in ['derecha', '>']:
+        return f"{texto:>{anchura}}"[-anchura:]
+    elif alineación in ['centro', '^']:
+        return f"{texto[:anchura]:^{anchura}}"
+    elif alineación in ['izquierda', '<']:
+        return f"{texto:<{anchura}}"[:anchura]
+    else:
+        return f"{trunca_texto('ALINEACION ERRADA', anchura)}"
+
+
 def edita_número(valor, num_decimals: int=2):
+    if valor is None or isinstance(valor, str):
+        return valor
     return locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True)
 
 def trunca_texto(texto: str, max_width: int) -> str:
+    last_space = texto[:max_width+1].rfind(' ')
+    if last_space > max_width - 3:
+        texto = texto[:last_space].strip()
     return texto[0: max_width - 3] + '...' if len(texto) > max_width else texto
 
 def espacios(width: int=1, char: str=' ') -> str:
@@ -245,6 +294,10 @@ def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=
 
     for x in reversed(mensaje_ed):
         token = GyG_constantes.meses[GyG_constantes.meses_abrev.index(x)] if x in GyG_constantes.meses_abrev else x
+        # print(f"----------\n{token = }, es conector = {maneja_conector}\n" + \
+        #       f"Año: inicial = {initial_year}, final = {last_year}; " + \
+        #       f"Mes: inicial = {initial_month}, final = {last_month}\n" + \
+        #       f"{mensaje_anterior = },\n{mensaje_final =    }")
         if token.isdigit():
             # print(f" -> {token}: AÑO")
             if mensaje_anterior != None:
@@ -259,6 +312,7 @@ def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=
             # print(f" -> {token}: MES")
             if mensaje_anterior != None:
                 mensaje_final = mensaje_anterior + mensaje_final
+                mensaje_anterior = None
             if maneja_conector:
                 if initial_year is None:
                     initial_year = last_year
@@ -281,13 +335,91 @@ def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=
             mensaje_final = [f"{GyG_constantes.meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
             mensaje_anterior = None
 
-    if mensaje_anterior != None:
+    if mensaje_anterior is not None:
         mensaje_final = mensaje_anterior + mensaje_final
 
     if as_string:
         mensaje_final = '|'.join(mensaje_final)
 
     return mensaje_final
+
+
+def reagrupa_meses(mensaje: str, mes_completo: bool=False) -> str:
+    strMeses = GyG_constantes.meses if mes_completo else GyG_constantes.meses_abrev
+    separador = ' ' if mes_completo else '-'
+
+    def une_lista(lista):
+        if not lista:
+            return ''
+        if len(lista) == 1:
+            return lista[0]
+        conjunción = ", " if " y " in lista[-1] else " y "
+        return f"{', '.join(lista[:-1])}{conjunción}{lista[-1]}"
+
+    def procesa_meses(fecha_1, fecha_2, año):
+        if fecha_1 is None or fecha_2 is None:
+            return año
+        if fecha_1 == fecha_2:
+            lista_meses.insert(0, ''.join([
+                        strMeses[int(fecha_1[-2:])-1],
+                        f"{separador}{fecha_1[:4]}" if fecha_1[:4] != año else "",
+                ]))
+        else:
+            lista_meses.insert(0, ''.join([
+                    strMeses[int(fecha_1[-2:])-1],
+                    f"{separador}{fecha_1[:4]}" if fecha_1[:4] != fecha_2[:4] else "",
+                    " y " if son_consecutivos(fecha_1, fecha_2) else " a ",
+                    strMeses[int(fecha_2[-2:])-1],
+                    f"{separador}{fecha_2[:4]}" if fecha_2[:4] != año else "",
+                ]))
+        return fecha_1[:4]
+
+    def son_consecutivos(mes_inicial, mes_final) -> bool:
+        if mes_inicial is None or mes_final is None:
+            return False
+        return datetime.strptime(mes_inicial, "%Y-%m") + relativedelta(months=1) == \
+                    datetime.strptime(mes_final, "%Y-%m")
+
+    # obtiene un string del tipo "05-2019|06-2019|07-2019|07-2019" con posibles duplicados
+    meses = separa_meses(mensaje, muestra_modificador=True, as_string=True)
+    # obtiene los grupos separados por '|' y elimina los duplicados
+    meses = list(set(meses.split('|')))
+    # convierte al formato 'yyyy-mm' y lo ordena de menor a mayor
+    # meses = [f[3:] + '-' + f[:2] for f in reversed(meses)]
+    meses = [f"{f[3:7]}-{f[:2]}{f[7:]}" for f in reversed(meses)]
+    meses.sort()
+
+    # convierte los meses al tipo "may., jun. y jul. 2019"
+    lista_meses = list()
+    último_año = None
+    mes_actual = mes_siguiente = último_mes = None
+    en_consecutivos = False
+    for mes in reversed(meses):
+        fecha = mes[:7]
+        prefijo = mes[8:]
+        año = fecha[:4]
+        if len(prefijo) > 0:
+            prefijo += ' '
+            último_año = procesa_meses(mes_siguiente, último_mes, último_año)
+            lista_meses.insert(0, ''.join([
+                    f"{prefijo}{strMeses[int(fecha[-2:])-1]}",
+                    f"{separador}{año}" if año != último_año else ''
+                ]))
+            último_año = año
+            último_mes = mes_siguiente = None
+        elif último_mes is not None:
+            if son_consecutivos(mes, mes_siguiente):
+                mes_siguiente = mes
+            else:
+                último_año = procesa_meses(mes_siguiente, último_mes, último_año)
+                mes_siguiente = último_mes = mes
+        else:
+            mes_siguiente = último_mes = mes
+        mes_actual = fecha
+
+    último_año = procesa_meses(mes_actual, último_mes, último_año)
+
+    return une_lista(lista_meses)
 
 
 def MontoEnLetras(número: float, mostrar_céntimos: bool=True, céntimos_en_letras: bool=False, moneda: str='Bolívar') -> str:

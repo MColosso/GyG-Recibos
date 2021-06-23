@@ -134,7 +134,9 @@ if __name__ == '__main__':
                     'Dirección':    r['Dirección'],
                     'Monto':        r['Monto'],
                     'Concepto':     r['Concepto'],
-                    'Categoría':    r['Categoría']
+                    'Categoría':    r['Categoría'],
+                    'Monto $':      r['Monto $'],
+                    '$':            r['$']
                 }
                 genera_recibo(recibo_a_generar)
             else:

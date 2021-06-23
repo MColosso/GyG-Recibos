@@ -8,6 +8,13 @@
     -   
 
     HISTORICO
+    -   Revisar por qué se está tratando de enviar el recibo en formato .pdf en lugar de .png:
+            X  Recibo 03865 no enviado a Familia Jiménez Navarro: '../GyG Archivos/Recibos de Pago/GyG
+               Recibo_03865.pdf' is not a valid filepath
+         -> Probablemente, en la rutina 'attachment_name()' no se encontró el archivo .png, por lo
+            que asumió la existencia del archivo .pdf
+             -> Probablemente no se había ejecutado la generación de los recibos de pago antes del
+                envío de los mismos (30/04/2021)
     -   Definir una opción para copiar a Temporales los archivos a ser enviados por WhatsApp
         (19/05/2020)
     -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro de
@@ -112,7 +119,7 @@ excel_resumen   = GyG_constantes.pagos_ws_resumen      # 'RESUMEN VIGILANCIA'
 excel_cuotas    = GyG_constantes.pagos_ws_cuotas       # 'CUOTA'
 
 email_subject   = 'Cuadra Segura GyG - Recibos de Pago'
-email_body_hdr  = '{saludo}<br><br>Anexamos {el_los} recibo{s} de pago de {beneficiario} correspondiente{s} a'
+email_body_hdr  = '{saludo}<br><br>Anexamos {el_los} recibo{s} de pago {beneficiario} correspondiente{s} a'
 email_body_1    = ' "{concepto}"<br>'
 email_body_n    = ':<ul>'
 email_body_det  = '<li> {fecha:%d/%m/%Y}  "{concepto}"</li>'
@@ -122,7 +129,7 @@ email_footer    = '<i>Equipo de cobranza, Junta Directiva GyG</i>'
 wa_message      = 'Si desea recibir sus recibos de pago por correo electrónico, envíe un mensaje ' + \
                   'con sus datos a CuadraSeguraGyG@gmail.com'
 
-msg_enviado_anteriormente = 'x  Recibo{s} {filename} enviado{s} anteriormente a {beneficiario}\n'
+msg_enviado_anteriormente = 'x  Recibo{s} {filename} enviado{s} anteriormente {beneficiario}\n'
 msg_no_email_or_phone     = 'x  Recibo{s} {filename} no enviado{s} a {beneficiario}: No se ha indicado e-mail o celular\n'
 
 whatsapp_loaded = False
@@ -148,6 +155,31 @@ def saludo():
 #        return 'Buenas tardes'
 #    else:                             # 7:00 pm -> 05:59 am del día siguiente
 #        return 'Buenas noches'
+
+def género(de_la, beneficiario):
+    if de_la == 'de':
+        if any(b in beneficiario for b in ['Familia', 'Sra.', 'Dra.']):
+            return f'de la {beneficiario}'
+        elif any(b in beneficiario for b in ['Colegio', 'Sr.', 'Dr.']):
+            return f'del {beneficiario}'
+        else:
+            return f'de {beneficiario}'
+    elif de_la == 'la':
+        if any(b in beneficiario for b in ['Familia', 'Sra.', 'Dra.']):
+            return f'la {beneficiario}'
+        elif any(b in beneficiario for b in ['Sr.', 'Dr.']):
+            return f'el {beneficiario}'
+        else:
+            return f'{beneficiario}'
+    elif de_la == 'a':
+        if any(b in beneficiario for b in ['Familia', 'Sra.', 'Dra.']):
+            return f'a la {beneficiario}'
+        elif any(b in beneficiario for b in ['Sr.', 'Dr.']):
+            return f'al {beneficiario}'
+        else:
+            return f'a {beneficiario}'
+    else:
+        return f"{de_la} {beneficiario}"
 
 def attachment_name(idx):
     img_filename = os.path.join(attach_path, attach_img_name.format(recibo=idx))
@@ -373,44 +405,7 @@ def sendWhatsApp(message_to, message, attachments=[]):
 
     return True, ''
 
-# def envia_archivo(attachment, email_o_celular, beneficiario, fecha, shared_link, concepto):
 def envia_archivo(beneficiario, email_o_celular, sub_lista):
-
-    # def convierte_en_imagenes(anexos):
-
-    #     img_anexos = list()
-    #     for anexo in anexos:
-    #         img_anexo = os.path.join(os.path.dirname(anexo),
-    #                                  os.path.basename(anexo).split('.')[0] + tipo_imagen)
-
-    #         if not os.path.lexists(img_anexo):
-    #             try:
-    #                 pages = convert_from_path(anexo)
-    #             except:
-    #                 error_msg  = str(sys.exc_info()[1])
-    #                 if sys.platform.startswith('win'):
-    #                     error_msg  = error_msg.replace('\\', '/')
-    #                 print(f'*** Error convirtiendo {os.path.basename(anexo)}: {error_msg}')
-    #                 continue
-
-    #             try:
-    #                 pages[0].save(img_anexo)
-    #             except:
-    #                 error_msg  = str(sys.exc_info()[1])
-    #                 if sys.platform.startswith('win'):
-    #                     error_msg  = error_msg.replace('\\', '/')
-    #                 print(f'*** Error generando {img_anexo}: {error_msg}')
-    #                 continue
-
-    #             if crop_image:
-    #                 img_recibo = Image.open(img_anexo)
-    #                 img_recibo = img_recibo.resize(size=(712, 363), box=(108, 84, 1570, 825), resample=Image.HAMMING)
-    #                 img_recibo.save(img_anexo)
-
-    #         img_anexos.append(img_anexo)
-
-    #     return img_anexos
-
 
     anexos = [recibo_fmt.format(recibo=df.loc[i, 'Nro. Recibo']) for i in sub_lista]
     anexos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(anexos))
@@ -440,7 +435,7 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
             for send_to in email_o_celular:
                 to.update({send_to: beneficiario})
             subject = email_subject
-            body = email_body_hdr.format(saludo=saludo(), beneficiario=beneficiario,
+            body = email_body_hdr.format(saludo=saludo(), beneficiario=género('de', beneficiario),
                                          el_los='el' if len(sub_lista) == 1 else 'los',
                                          s='s' if len(sub_lista) > 1 else '')
             if len(sub_lista) == 1:
@@ -477,15 +472,11 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
                                          beneficiario=beneficiario,
                                          phone=list_to_string(email_o_celular)))
             archivo_enviado = False
-#        elif shared_link == None:
-#            logfile.write(msg_no_shared_link.format(filename=attachment))
-#            archivo_enviado = False
         else:
             if not whatsapp_loaded:
                 loadWhatsAppWeb()
             message_to = beneficiario
             message = wa_message
-#            attachment = attachment.replace('/', '\\')  # Convertir Slashes en Backslashes (estándar de Windows)
             # archivo_enviado, error_msg = sendWhatsApp(message_to, message,
             #                                           attachments=img_anexos)
             archivo_enviado, error_msg = sendWhatsApp(message_to, message,
@@ -591,7 +582,7 @@ for sub_lista in pagos_por_beneficiario:
     if isnull(email_o_celular):
         logfile.write(msg_no_email_or_phone.format(s='s' if len(sub_lista) > 1 else '',
                                                    filename=recibos,
-                                                   beneficiario=beneficiario))
+                                                   beneficiario=género('a', beneficiario)))
     else:
         enviados = [idx for idx in sub_lista if notnull(df.loc[idx, 'Enviado'])]
         no_enviados = [idx for idx in sub_lista if idx not in enviados]
@@ -600,7 +591,7 @@ for sub_lista in pagos_por_beneficiario:
             recibos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(recibos))
             logfile.write(msg_enviado_anteriormente.format(s='s' if len(enviados) > 1 else '',
                                                            filename=recibos,
-                                                           beneficiario=beneficiario))
+                                                           beneficiario=género('a', beneficiario)))
         if len(no_enviados) > 0:
             for send_to in decode_email_o_celular(email_o_celular):
                 if envia_archivo(beneficiario, send_to, no_enviados):

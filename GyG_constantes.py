@@ -20,7 +20,7 @@ pagos_ws_cuotas             = 'CUOTAS'
 pagos_ws_otros              = 'RESUMEN OTROS'
 pagos_ws_vecinos            = 'Vecinos'
 
-resumen_workbook            = '4.2. GyG Resúmenes - Control resúmenes.xlsx'
+resumen_workbook            = '4.2. GyG Resumenes - Control resumenes.xlsx'
 resumen_worksheet           = 'A solicitud'
 
 
@@ -47,7 +47,10 @@ pdf_resumen                 = 'GyG Resumen {resumen:0Xd}.pdf'.replace('X', str(l
 txt_analisis_de_pago        = "GyG Analisis de Pagos {:%Y-%m (%b)}.txt"
 txt_cartelera_virtual       = "GyG Cartelera Virtual {:%Y-%m (%b)}.txt"
 txt_cambios_de_categoría    = "GyG Cambios de Categoría {:%Y-%m (%b)}.txt"
-txt_estadistica_de_pagos    = "GyG Estadistica de Pagos {:%Y-%m (%b)}.txt"
+txt_estadistica_de_pagos    = "GyG Distribucion de Pagos {:%Y-%m (%b)}.txt"
+txt_aporte_vigilantes       = "GyG Pagos Adicionales {:%Y-%m (%b)}.txt"
+txt_saldos_pendientes       = "GyG Saldos pendientes {:%Y-%m (%b)}.txt"
+tx_resumen_saldos           = "GyG Resumen de saldos a la fecha.txt"
 
 recibo_fmt                  = "{recibo:0Xd}".replace('X', str(long_num_archivo))
 
@@ -110,6 +113,21 @@ rec_fuentes                 = './recursos/fuentes'
 rec_plantillas              = './recursos/plantillas'
 
 plantilla_recibos           = os.path.join(rec_plantillas, 'plantilla_recibos.png')
+
+
+# CATEGORÍAS DE PAGO (1.1. GyG Recibos.xlsm > Vigilancia)
+     # Categorías usuales
+CATEGORIA_VIGILANCIA        = 'Vigilancia'
+CATEGORIA_APORTE_VIGILANTES = 'Aporte Vigilantes'
+     # Proyectos
+     #   'Reparación Portón', 'Caseta Vigilancia',   'Reja CC',          'Reparación Portón 2',
+     #   'Aporte caseta',     'Teléfono Vigilancia', 'Cesta de Navidad', 'Comida Vigilantes',
+     # Otros Ingresos
+     #   'Control',           'Logo',                'Ingresos por Ventas',
+     # Otros
+     #   'ANULADO',           'SOLVENTE',            'ANTICIPO',         'DONACION',
+     #   'REVERSADO',         'DEPOSITO'
+
 
 
 # OTRAS CONSTANTES

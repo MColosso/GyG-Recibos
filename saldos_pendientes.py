@@ -56,7 +56,7 @@ if len(sys.argv) > 1:
 # DEFINE CONSTANTES
 #
 
-nombre_análisis  = "GyG Saldos pendientes {:%Y-%m (%B)}.txt"
+nombre_análisis  = GyG_constantes.txt_saldos_pendientes    # "GyG Saldos pendientes {:%Y-%m (%b)}.txt"
 attach_path      = GyG_constantes.ruta_saldos_pendientes   # ./GyG Recibos/Saldos Pendientes
 # attach_path      = GyG_constantes.ruta_analisis_de_pagos   # "C:/Users/MColosso/Google Drive/GyG Recibos/Análisis de Pago/"
 
@@ -72,27 +72,10 @@ excel_saldos     = GyG_constantes.pagos_ws_saldos          # 'Saldos'
 #
 
 def esVigilancia(x):
-    return x == 'Vigilancia'
+    return x == GyG_constantes.CATEGORIA_VIGILANCIA
 
 def get_filename(filename):
     return os.path.basename(filename)
-
-# def get_street(address):
-#     return address.index(' ', address.index(' ') + 1)
-
-def get_street(address):
-    # return address.index(' ', address.index(' ') + 1)
-    grupos = re.findall(r'\w+', address)
-    if grupos[0].lower() == "av":
-        return "Avenida"
-    return grupos[1] if len(grupos) > 0 else ''
-
-def edita_número(number, num_decimals=2):
-#    return f"{number:,.{num_decimals}f}".replace(',', 'x').replace('.', ',').replace('x', '.')
-    return locale.format_string(f'%.{num_decimals}f', number, grouping=True, monetary=True)
-
-def edita_dirección(dirección):
-    return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
 
 def edita_categoría(categoría):
     return "" if categoría in ['Cuota completa', 'Colaboración'] else f" ({categoría})"
@@ -174,7 +157,7 @@ def no_participa_desde(r):
             ultimo_mes_con_pagos = idx
             break
         x = idx
-        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
+        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_INPC=aplica_INPC) # cuotas[idx]
     if ultimo_mes_con_pagos == None:
         ultimo_mes_con_pagos = this_col = f_desde
         fecha_txt = '2016'
@@ -280,8 +263,8 @@ mes_año = input_mes_y_año('Indique el mes y año a analizar', mes_actual, toma
 # Selecciona si se muestran sólo los saldos deudores o no
 solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_opciones_por_defecto)
 
-# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
-aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
+# Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
+aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
@@ -370,7 +353,7 @@ mensaje = ' - {}, {}{}: {}{}{}\n'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-ajuste_por_inflación = ' ajustados por inflación' if aplica_IPC else ''
+ajuste_por_inflación = ' ajustados por inflación' if aplica_INPC else ''
 análisis = f"GyG SALDOS PENDIENTES{ajuste_por_inflación}, {fecha_análisis}\n" + \
            f"({datetime.now():%d/%m/%Y %I:%M} {am_pm})\n\n"
 

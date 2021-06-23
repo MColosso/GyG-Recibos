@@ -59,9 +59,8 @@ if len(sys.argv) > 1:
 # DEFINE CONSTANTES
 #
 
-nombre_análisis  = "GyG Resumen de saldos a la fecha.txt"
+nombre_análisis  = GyG_constantes.tx_resumen_saldos        # "GyG Resumen de saldos a la fecha.txt"
 attach_path      = GyG_constantes.ruta_saldos_pendientes   # ./GyG Recibos/Saldos Pendientes
-#attach_path      = GyG_constantes.ruta_analisis_de_pagos   # "C:/Users/MColosso/Google Drive/GyG Recibos/Análisis de Pago/"
 
 excel_workbook   = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
 excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
@@ -71,32 +70,34 @@ excel_saldos     = GyG_constantes.pagos_ws_saldos          # 'Saldos'
 
 formato_mes      = "%b%Y" if sys.platform.startswith('win') else "%b.%Y"
 
+LONG_BENEFICIARIO = 20
+
 
 #
 # DEFINE ALGUNAS RUTINAS UTILITARIAS
 #
 
 def esVigilancia(x):
-    return x == 'Vigilancia'
+    return x == GyG_constantes.CATEGORIA_VIGILANCIA
 
 def get_filename(filename):
     return os.path.basename(filename)
 
-def get_street(address):
-    # return address.index(' ', address.index(' ') + 1)
-    grupos = re.findall(r'\w+', address)
-    if grupos[0].lower() == "av":
-        return "Avenida"
-    return grupos[1] if len(grupos) > 0 else ''
+# def get_street(address):
+#     # return address.index(' ', address.index(' ') + 1)
+#     grupos = re.findall(r'\w+', address)
+#     if grupos[0].lower() == "av":
+#         return "Avenida"
+#     return grupos[1] if len(grupos) > 0 else ''
 
-def edita_beneficiario(beneficiario):
-    return beneficiario.replace('Familia ', '')
+# def edita_beneficiario(beneficiario):
+#     return beneficiario.replace('Familia ', '')
 
-def edita_dirección(dirección):
-    return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
+# def edita_dirección(dirección):
+#     return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
 
-def edita_categoría(categoría):
-    return categoría
+# def edita_categoría(categoría):
+#     return categoría
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
@@ -174,7 +175,7 @@ def no_participa_desde(r):
             ultimo_mes_con_pagos = idx
             break
         x = idx
-        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_IPC=aplica_IPC) # cuotas[idx]
+        cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_INPC=aplica_INPC) # cuotas[idx]
     if ultimo_mes_con_pagos == None:
         ultimo_mes_con_pagos = this_col = f_desde
         fecha_txt = '2016'
@@ -265,8 +266,8 @@ ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_def
 # Selecciona si se muestra la columna de saldos a favor
 muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_opciones_por_defecto)
 
-# Selecciona si se aplica el ajuste por inflación (IPC - Indice de Precios al Consumidor)
-aplica_IPC = input_si_no("Aplica ajuste por inflación (IPC)", 'sí', toma_opciones_por_defecto)
+# Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
+aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
@@ -340,8 +341,9 @@ df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 df_resumen['Beneficiario'] = df_resumen['Beneficiario'].apply(lambda benef: edita_beneficiario(benef))
 
 if ordenado:
-    df_resumen['Benef_sort'] = df_resumen['Beneficiario'].apply(lambda benef: remueve_acentos(benef))
-    df_resumen.sort_values(by='Benef_sort', inplace=True)
+    df_resumen['_benef_sort_'] = df_resumen['Beneficiario'] \
+            .apply(lambda benef: trunca_texto(edita_beneficiario(remueve_acentos(benef)), max_width=LONG_BENEFICIARIO))
+    df_resumen.sort_values(by='_benef_sort_', inplace=True)
 
 
 # ANÁLISIS DE SALDOS PENDIENTES
@@ -354,7 +356,7 @@ mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>11} | {}\n'
 
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
-ajuste_por_inflación = 'ajustados por inflación ' if aplica_IPC else ''
+ajuste_por_inflación = 'ajustados por inflación ' if aplica_INPC else ''
 análisis = f"GyG RESUMEN DE SALDOS {ajuste_por_inflación}al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
             "Vecino               | Dirección      | Categoría     |" + \
            ("       Deuda |   A favor |" if muestra_saldos else "   Pendiente |") + \
@@ -376,13 +378,13 @@ for index, r in df_resumen.iterrows():
             dirección_anterior = get_street(r['Dirección'])
         if muestra_saldos:
             análisis += mensaje_con_saldo.format(
-                    trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
+                    trunca_texto(edita_beneficiario(r['Beneficiario']), LONG_BENEFICIARIO),
                     trunca_texto(edita_dirección(r['Dirección']), 14),
                     trunca_texto(edita_categoría(r['Categoría']), 13),
                     info_deuda, info_saldo, info_pago)
         else:
             análisis += mensaje_sin_saldo.format(
-                    trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
+                    trunca_texto(edita_beneficiario(r['Beneficiario']), LONG_BENEFICIARIO),
                     trunca_texto(edita_dirección(r['Dirección']), 14),
                     trunca_texto(edita_categoría(r['Categoría']), 13),
                     info_deuda, info_pago)

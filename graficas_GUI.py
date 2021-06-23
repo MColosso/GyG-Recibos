@@ -1634,7 +1634,8 @@ if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos 
 df_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
 
 # Selecciona los pagos de vigilancia entre la fecha de referencia y el 1ro. de enero de 2017
-df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == 'Vigilancia')  & \
+df_vigilancia = df_vigilancia[(df_vigilancia['Enviado'] == 'ü')  & \
+                              (df_vigilancia['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA)  & \
                               (df_vigilancia['Fecha'] <= fecha_de_referencia) & \
                               (df_vigilancia['Fecha'] >= datetime(2017, 1, 1))]
 df_vigilancia = df_vigilancia[['Beneficiario', 'Fecha', 'Monto', 'Concepto', 'Día', 'Mes']]
