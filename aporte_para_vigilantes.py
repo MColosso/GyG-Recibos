@@ -6,16 +6,19 @@
 
 """
     PENDIENTES POR HACER
-      - Agregar parámetro '--meses=n' con la cantidad de meses a mostrar por defecto. En caso de
-        no estar presente, tomar '1' como opción por defecto.
+      - 
 
     NOTAS
-      √ ¿Se incluye el campo 'Dirección', existente en la versión original?
       - Añadir opción para seleccionar la categoría a analizar; no solicitarla en caso de haber
         sólo una categoría posible.
          -> Revisar título del reporte: "GyG PAGOS ADICIONALES PARA VIGILANTES, Mayo/2021"
 
     HISTORICO
+      √ ¿Se incluye el campo 'Dirección', existente en la versión original?
+         -> Se omite la dirección cuando se muestran dos o más meses (22-06-2021)
+      √ Agregar parámetro '--meses=n' con la cantidad de meses a mostrar por defecto. En caso de
+        no estar presente, tomar '1' como opción por defecto. Igualmente se agregó la opción
+        '--mes_actual' para tomar el mes actual como referencia y no el mes anterior (22/06/2021)
       - Se reescribe el código para permitir el despliegue de múltiples columnas de aportes,
         facilitando la comparación con meses anteriores (16/06/2021)
       - Se añade la opción para generar las tablas de detalle en fuente monoespaciada para ser
