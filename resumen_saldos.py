@@ -1,35 +1,37 @@
 # GyG RESUMEN DE SALDOS
 #
-# Determina los saldos pendientes por cancelar a la fecha y muestra todos,
-# o sólo aquellos con saldos pendientes, ordenados alfabéticamente o no.
+# Determina los saldos pendientes por cancelar a la fecha y muestra todos, o sólo aquellos
+# con saldos pendientes, ordenados alfabéticamente o no.
 
 """
     PENDIENTE POR HACER
-    -   Incluir una opción para omitir o no los saldos de los vecinos que tienen cuenta
+     -  Incluir una opción para omitir o no los saldos de los vecinos que tienen cuenta
 
 
     HISTORICO
-    -   Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
+     -  Se añadió una opción para generar la tabla de detalle en fuente monoespaciada para ser
+        enviadas por WhatsApp (24/06/2921)
+     -  Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
         pendientes (26/01/2021)
-    -   Se corrigió la rutina 'get_street(address)' para devolver correctamente el nombre de la calle
+     -  Se corrigió la rutina 'get_street(address)' para devolver correctamente el nombre de la calle
         para corregir un "salto" inadecuado ("Guacara, terreno baldío") (25/01/2021)
-    -   Ajustado el tamaño de los campos de Deuda y Pendiente en el encabezado para mostrar adecua-
+     -  Ajustado el tamaño de los campos de Deuda y Pendiente en el encabezado para mostrar adecua-
         damente montos superiores a 10 millones (10/10/2020)
-    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
-    -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
+     -  Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
+     -  Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
         implementando la opción '--toma_opciones_por_defecto' en la linea de comandos (08/12/2019)
-    -   Ajustar los mensajes para hacer más claro su contenido (04/11/2019)
-    -   Ajustar la selección de registros para igualarla a la utilizada en analisis_de_pagos.py
+     -  Ajustar los mensajes para hacer más claro su contenido (04/11/2019)
+     -  Ajustar la selección de registros para igualarla a la utilizada en analisis_de_pagos.py
         (03/11/2019)
-    -   Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
+     -  Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
         Windows
           -> Se generan archivos con codificaciones 'UTF-8' (Apple) y 'cp1252' (Windows) en carpetas
              separadas (29/10/2019)
-    -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro
+     -  Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro
         de la carpeta actual para compatibilidad entre Windows y macOS (21/10/2019)
-    -   Mostrar el saldo disponible para aquellos vecinos que tengan un depósito administrado
+     -  Mostrar el saldo disponible para aquellos vecinos que tengan un depósito administrado
         por la Asociación (Del Negro Palermo, etc.) y su saldo sea mayor que cero (30/09/2019)
-    -   Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas)
+     -  Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas)
         (29/09/2019)
     
 """
@@ -269,6 +271,13 @@ muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_o
 # Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
 aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
+# Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
+whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
+
+# Prepara los caracteres de negrita, italizado y monoespaciado para los textos, en caso de WhatsApp
+wa_bold, wa_italic, wa_table = ('*', '_', '```') if whatsapp else ('', '', '')
+
+
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])
 fecha_referencia = datetime(año, mes, 1)
@@ -357,10 +366,13 @@ mensaje_sin_saldo = '{:<20} | {:<14} | {:<13} | {:>11} | {}\n'
 # Encabezado
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
 ajuste_por_inflación = 'ajustados por inflación ' if aplica_INPC else ''
-análisis = f"GyG RESUMEN DE SALDOS {ajuste_por_inflación}al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n\n" + \
-            "Vecino               | Dirección      | Categoría     |" + \
-           ("       Deuda |   A favor |" if muestra_saldos else "   Pendiente |") + \
-            " Período\n"
+análisis = ''.join([
+                f"GyG RESUMEN DE SALDOS {ajuste_por_inflación}al {datetime.now():%d/%m/%Y %I:%M} {am_pm}\n",
+                wa_table, '\n',
+                "Vecino               | Dirección      | Categoría     |",
+               ("       Deuda |   A favor |" if muestra_saldos else "   Pendiente |"),
+                " Período\n"
+            ])
 
 análisis += espacios(97 if muestra_saldos else 85, '-') + '\n'
 
@@ -388,6 +400,7 @@ for index, r in df_resumen.iterrows():
                     trunca_texto(edita_dirección(r['Dirección']), 14),
                     trunca_texto(edita_categoría(r['Categoría']), 13),
                     info_deuda, info_pago)
+análisis += wa_table
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)
 filename = os.path.join(attach_path, 'Apple', nombre_análisis.format(datetime(año, mes, 1)))
