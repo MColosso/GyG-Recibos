@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "7.4 GyG Propuestas de cambio de categoría"
+echo "5.3 GyG Propuestas de cambio de categoría"
 echo "-----------------------------------------"
 
 python3 ./cambios_de_categoria.py

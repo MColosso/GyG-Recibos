@@ -260,10 +260,10 @@ mes_año = fecha_análisis.strftime('%m-%Y')
 print()
 
 # Selecciona si se muestran sólo los saldos deudores o no
-solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'no', toma_opciones_por_defecto)
+solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se ordenan alfabéticamente los vecinos
-ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
+ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se muestra la columna de saldos a favor
 muestra_saldos = input_si_no("Muestra columna de 'saldos a favor'", 'no', toma_opciones_por_defecto)

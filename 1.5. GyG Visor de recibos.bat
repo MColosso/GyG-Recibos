@@ -4,7 +4,7 @@
 :: GyG Archivos/Recibos de Pago
 
 
-@echo 1.6 GyG Recibos - Visor de Recibos de Pago
+@echo 1.5 GyG Recibos - Visor de Recibos de Pago
 @echo ------------------------------------------
 
 python ./visor_de_recibos_GUI.py

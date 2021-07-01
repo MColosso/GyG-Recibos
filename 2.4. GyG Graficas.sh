@@ -7,7 +7,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "7.1 GyG Gráficas"
+echo "2.4 GyG Gráficas"
 echo "----------------"
 
 python3 ./graficas_GUI.py

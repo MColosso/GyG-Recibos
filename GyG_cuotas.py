@@ -183,19 +183,24 @@ class Cuota:
                 else:
                     separador = "" if (len(fechas) == 0) or lista else EOL * 2
                 cuota_a_mostrar = self.cuota_vigente(beneficiario, datetime.today())
-                cuota_a_mostrar = locale.format_string(f'%.2f', cuota_a_mostrar, grouping=True, monetary=True).replace(',00', '')
-                txtCuotasMensuales += separador + \
-                              "Las cuotas pendientes por pagar hasta Agosto 2019 se cancelarán según los montos fijos " + \
-                              "ya establecidos. A partir del 1° de Septiembre de dicho año, toda cuota atrasada " + \
-                              "se cancelará en base a la cuota vigente " + \
-                             f"(Bs. {cuota_a_mostrar} al {datetime.today().strftime('%d/%m/%Y')})"
-                             #  "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
-                             #  "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \
-                             # f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar." + EOL + \
+                cuota_a_mostrar = locale.format_string(f'%.2f', cuota_a_mostrar,
+                                                       grouping=True, monetary=True).replace(',00', '')
+                txtCuotasMensuales += ' '.join([
+                            separador,
+                            "Las cuotas pendientes por pagar hasta Agosto 2019 se cancelarán según los montos fijos",
+                            "ya establecidos. A partir del 1° de Septiembre de dicho año, toda cuota atrasada",
+                            "se cancelará en base a la cuota vigente.",
+                            # f"(Bs. {cuota_a_mostrar} a la fecha de este reporte)",
+                            # f"(Bs. {cuota_a_mostrar} al {datetime.today().strftime('%d/%m/%Y')})"
 
-                             #  "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
-                             #  "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
-                             #  "con la tasa de la semana en curso."
+                            #  "A partir del 1° de Septiembre 2019, las cuotas mensuales han sido fijadas " + \
+                            #  "en dólares, pagaderas en divisas o en bolívares a la tasa de cambio semanal publicada " + \
+                            # f"por el Banco Central. A la fecha, la misma es de Bs. {str_tasa} por dólar." + EOL + \
+
+                            #  "Las cuotas pendientes por cancelar hasta Agosto 2019 quedarán en los montos fijos " + \
+                            #  "ya establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará " + \
+                            #  "con la tasa de la semana en curso."
+                        ])
 
             txtCuotasMensuales += EOL * 2
 

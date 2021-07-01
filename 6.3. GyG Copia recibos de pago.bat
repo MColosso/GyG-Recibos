@@ -9,7 +9,7 @@
 ::              en la carpeta "Imágenes" en el directorio actual.
 
 
-@echo 1.8 GyG Recibos - Copia Recibos de Pago
+@echo 6.3 GyG Recibos - Copia Recibos de Pago
 @echo ---------------------------------------
 
 python copia_recibos.py

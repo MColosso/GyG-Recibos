@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "7.3 GyG Mantenimiento de espacio en disco"
+echo "5.2 GyG Mantenimiento de espacio en disco"
 echo "-----------------------------------------"
 
 python3 ./mantenimiento_GUI.py

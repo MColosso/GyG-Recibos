@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.6 GyG Recibos - Visor de Recibos de Pago"
+echo "1.5 GyG Recibos - Visor de Recibos de Pago"
 echo "------------------------------------------"
 
 python3 ./visor_de_recibos_GUI.py

@@ -263,11 +263,12 @@ mes_año = input_mes_y_año('Indique el mes y año a analizar', mes_actual, toma
 # Selecciona si se muestran sólo los saldos deudores o no
 solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_opciones_por_defecto)
 
+# Selecciona si se ordenan alfabéticamente los vecinos
+ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
+
 # Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
 aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
-# Selecciona si se ordenan alfabéticamente los vecinos
-ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
 
 año = int(mes_año[3:7])
 mes = int(mes_año[0:2])

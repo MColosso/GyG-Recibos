@@ -11,7 +11,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.8 GyG Recibos - Copia Recibos de Pago"
+echo "6.3 GyG Recibos - Copia Recibos de Pago"
 echo "---------------------------------------"
 
 python3 ./copia_recibos.py

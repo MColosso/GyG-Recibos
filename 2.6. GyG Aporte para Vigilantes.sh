@@ -12,6 +12,7 @@
 #   --mes_actual                 -  Finalizando en el mes actual
 #   --toma_opciones_por_defecto  -  No interactúa solicitando parámetros
 
+
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
 echo "2.6 GyG Aporte para Vigilantes"

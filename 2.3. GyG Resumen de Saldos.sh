@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "3.4 GyG Resumen de Saldos a la fecha"
+echo "2.3 GyG Resumen de Saldos a la fecha"
 echo "------------------------------------"
 
 python3 ./resumen_saldos.py

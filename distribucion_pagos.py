@@ -11,6 +11,8 @@
       - 
 
     HISTORICO
+      - Se ajustó la descripción de los pagos con monto superior a la cuota en el resumen de
+        vigilancia (27/06/2021)
       - Se incorporó una comparación del total de cuotas de vigilancia respecto al estimado de
         gastos del mes (25/05/2021)
       - Hay una discrepancia entre los resultados mostrados por la Relación de Ingresos y la gráfica
@@ -69,10 +71,10 @@ excel_vigilancia = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 fmt_fecha        = "%m-%Y"
 
 # tabla_encabezado = "Vecino               | Dirección      |      Pago   | Sobre cuota\n"
-tabla_encabezado = "Vecino               | Dirección      |     Monto   |   Excedente\n"
+tabla_encabezado = "Vecino               | Dirección      |    Monto    |   Excedente\n"
 tabla_separador  = "-" * 66 + "\n"
 tabla_detalle    = "{:<20} | {:<14} | {:>11} | {:>11}\n"
-tabla_encabezado_sin_sobrecuota = "Vecino               | Dirección      |     Monto\n"
+tabla_encabezado_sin_sobrecuota = "Vecino               | Dirección      |    Monto\n"
 tabla_separador_sin_sobrecuota  = "-" * 52 + "\n"
 tabla_detalle_sin_sobrecuota    = "{:<20} | {:<14} | {:>11}{}\n"
 
@@ -237,8 +239,15 @@ def genera_resumen_vigilancia():
                     txt_descripción_categoría = "con monto inferior a la cuota"
             else:
                 txt_descripción_categoría = f"con monto {nivel.lower()} a la cuota"
-            txt_aporte_adicional = f"(de los cuales, Bs. {str_sobreumbral} corresponden a aportes adicionales,\n" + \
-                                    "        entre cuotas atrasadas y excedentes a la misma)"
+            # txt_aporte_adicional = f"(de los cuales, Bs. {str_sobreumbral} corresponden a aportes adicionales,\n" + \
+            #                         "        entre cuotas atrasadas y excedentes a la misma)"
+            txt_aporte_adicional = bloque_de_texto(
+                ' '.join([
+                        f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=0)} en cuotas del mes,',
+                        f'más Bs. {str_sobreumbral}',
+                        'entre cuotas atrasadas y excedentes a la misma)'
+                    ]),
+                anchura=70, margen=8, continuacion='')
             análisis += ''.join([
                     '  - ',
                     f"{num_pagos:>3} pago{s} {txt_descripción_categoría} ",
@@ -253,10 +262,15 @@ def genera_resumen_vigilancia():
     num_pagos = df_subset.shape[0]
     mto_pagos = df_subset['Monto'].sum()
     s = 's' if num_pagos != 1 else ''
-    análisis += ''.join([
-                    f"Total: {num_pagos} pagos recibidos para un total de Bs. {edita_número(mto_pagos, num_decimals=0)} ",
-                    f"({int(mto_pagos / estimado_de_gastos * 100)}% del\n       estimado)\n"
-                ])
+    # análisis += ''.join([
+    #                 f"Total: {num_pagos} pagos recibidos para un total de Bs. {edita_número(mto_pagos, num_decimals=0)} ",
+    #                 f"({int(mto_pagos / estimado_de_gastos * 100)}% del\n       estimado)\n"
+    #             ])
+    análisis += bloque_de_texto(' '.join([
+            f"Total: {num_pagos} pagos recibidos para un total de",
+            f"Bs. {edita_número(mto_pagos, num_decimals=0)}",
+            f"({int(mto_pagos / estimado_de_gastos * 100)}% del estimado)"
+        ]), anchura=71, margen=7) + '\n'
 
     if muestra_comparación:
         mto_sobrecuotas = df_subset['Sobrecuota'].sum()

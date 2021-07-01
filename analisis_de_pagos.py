@@ -140,6 +140,8 @@ excel_worksheet_saldos  = GyG_constantes.pagos_ws_saldos               # 'Saldos
 nMeses                  = 3     # Meses a analizar para propuestas de cambio de categoría
 nMeses_resumen          = 6     # Meses a mostrar en el cuadro resumen al inicio del análisis
 
+wrapper = None                  # Wrapper para la división de líneas
+
 VERBOSE = False                 # Despliega tabla de distribución de pagos
 
 
@@ -169,6 +171,7 @@ if len(sys.argv) > 1:
 
 def esVigilancia(x):
     return x == GyG_constantes.CATEGORIA_VIGILANCIA
+
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
@@ -692,7 +695,7 @@ mes_año = input_mes_y_año('Indique el mes y año a analizar', mes_actual, toma
 solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se ordenan alfabéticamente los vecinos
-ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
+ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
 aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
@@ -799,11 +802,11 @@ print('')
 
 análisis = ""
 
-mensaje = '* {}, {}{}\n' + \
-          '  {}{} usualmente hacia el día {}\n' + \
-          '  Su último pago fue el {} y {}{}{}{}{}\n\n'
-mensaje_2 = '* {}, {}{}\n' + \
-            '  {}{}{}{}\n\n'
+# mensaje = '* {}, {}{}\n' + \
+#           '  {}{} usualmente hacia el día {}\n' + \
+#           '  Su último pago fue el {} y {}{}{}{}{}\n\n'
+# mensaje_2 = '* {}, {}{}\n' + \
+#             '  {}{}{}{}\n\n'
 rango_fechas_txt = ' entre el {} y el {}'
 
 # Encabezado
@@ -867,14 +870,27 @@ for index, r in df_resumen.iterrows():
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
                 análisis += '\n'
                 dirección_anterior = get_street(r['Dirección'])
-            análisis += mensaje.format(
-                        r['Beneficiario'], r['Dirección'], telefonos,
-                        tipo_pago, rango_fechas, fecha_usual,
-                        último_pago,
-                        info_pago, info_deuda,
-                        mas_de_un_mes(r['Beneficiario']),
-                        programa_de_comida(r['Comida']),
-                        propuesta_de_cambio(r['Beneficiario']))
+            # análisis += mensaje.format(
+            #             r['Beneficiario'], r['Dirección'], telefonos,
+            #             tipo_pago, rango_fechas, fecha_usual,
+            #             último_pago,
+            #             info_pago, info_deuda,
+            #             mas_de_un_mes(r['Beneficiario']),
+            #             programa_de_comida(r['Comida']),
+            #             propuesta_de_cambio(r['Beneficiario']))
+            análisis += ''.join([
+                            f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
+                            # f"  {tipo_pago}{rango_fechas} usualmente hacia el día {fecha_usual}", "\n",
+                            f"  {tipo_pago} hacia el día {fecha_usual} (+/- {int(round(r['Variación']))} días)", "\n",
+                            bloque_de_texto(''.join([
+                                                f"Su último pago fue el {último_pago} ",
+                                                f"y {info_pago}{info_deuda}",
+                                            ]), anchura=100, margen=2, margen_1ra_linea=True),
+                            # f"  Su último pago fue el {último_pago} y {info_pago}{info_deuda}",
+                            f"{mas_de_un_mes(r['Beneficiario'])}",
+                            f"{programa_de_comida(r['Comida'])}",
+                            f"{propuesta_de_cambio(r['Beneficiario'])}\n\n"
+                    ])
     else:
         v = df_vecinos[df_vecinos['Beneficiario'] == r['Beneficiario']]
         tlf_sms = tlf_wapp = ''
@@ -925,11 +941,17 @@ for index, r in df_resumen.iterrows():
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
                 análisis += '\n'
                 dirección_anterior = get_street(r['Dirección'])
-            análisis += mensaje_2.format(
-                        r['Beneficiario'], r['Dirección'], telefonos,
-                        tipo_pago, detalles_pago,
-                        programa_de_comida(r['Comida']),
-                        propuesta_de_cambio(r['Beneficiario']))
+            # análisis += mensaje_2.format(
+            #             r['Beneficiario'], r['Dirección'], telefonos,
+            #             tipo_pago, detalles_pago,
+            #             programa_de_comida(r['Comida']),
+            #             propuesta_de_cambio(r['Beneficiario']))
+            análisis += ''.join([
+                            f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
+                            f"  {tipo_pago}{detalles_pago}",
+                            f"{programa_de_comida(r['Comida'])}",
+                            f"propuesta_de_cambio(r['Beneficiario'])", "\n\n"
+                        ])
     df_categoría = df_categoría[df_categoría['Beneficiario'] != r['Beneficiario']]
 
 # Otras propuestas de cambio de categoría

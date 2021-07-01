@@ -1,13 +1,12 @@
-# GyG Gráficas
+# GyG Resumen de Ingresos
 #
-# Genera las gráficas de Gestión de Cobranzas y Pagos 100% equivalentes
-# en base a los valores de la pestaña 'Cobranzas' de la hoja de cálculo
-# '1.1. GyG Recibos.xlsm'
+# Genera un resumen de todos los ingresos del mes, agrupados por
+# categoría para el período seleccionado
 
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "7.2 GyG Resumen de ingresos"
+echo "3.1 GyG Resumen de ingresos"
 echo "---------------------------"
 
 python3 ./resumen_de_ingresos_GUI.py

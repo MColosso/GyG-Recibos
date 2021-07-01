@@ -6,7 +6,7 @@
 :: momento y regenerados a voluntad.
 
 
-@echo 1.7 GyG - Genera los recibos solicitados
+@echo 6.2 GyG - Genera los recibos solicitados
 @echo ----------------------------------------
 
 @echo Ejemplos de recibos individuales o rangos a generar:

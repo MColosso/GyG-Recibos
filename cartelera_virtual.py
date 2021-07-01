@@ -658,8 +658,7 @@ for categoría in categorías:
             cartelera += ' '.join([
                 'Si usted',
                 'paga la totalidad de la cuota, o más,' if seña == 1 else 'colabora con un monto inferior a la cuota',
-                'y no aparece en este listado, significa que se encuentra solvente a la',
-                'fecha de este reporte.\n\n'
+                'y no aparece en este listado, significa que se encuentra solvente a la fecha del mismo.\n\n'
             ])
 
         cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)

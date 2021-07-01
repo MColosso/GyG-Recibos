@@ -1,10 +1,10 @@
-:: GyG Cambios de Categoría
+:: GyG Mantenimiento
 ::
-:: Genera un reporte con las propuestas de cambio de categoría en base al
-:: análisis de los pagos recibidos en los últimos 'n' meses
+:: Borra los archivos anteriores a la fecha indicada, los cuales pueden ser
+:: reproducidos nuevamente, a fin de mantener espacio libre en disco
 
 
-@echo 7.4 GyG Propuestas de cambio de categoría
+@echo 5.3 GyG Propuestas de cambio de categoría
 @echo -----------------------------------------
 
 python ./cambios_de_categoria.py

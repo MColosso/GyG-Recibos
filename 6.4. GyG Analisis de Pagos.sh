@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "3.1 GyG Analisis de Pagos"
+echo "6.4 GyG Analisis de Pagos"
 echo "-------------------------"
 
 python3 ./analisis_de_pagos.py

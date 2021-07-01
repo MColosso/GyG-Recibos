@@ -9,7 +9,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "3.3 GyG Saldos pendientes"
+echo "2.2 GyG Saldos pendientes"
 echo "-------------------------"
 
 python3 ./saldos_pendientes.py

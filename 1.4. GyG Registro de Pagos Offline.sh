@@ -7,10 +7,9 @@
 # se deba recalcular la hoja off-line con Excel.
 
 
-
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.10 GyG Recibos - Registro de Pagos Off-Line"
+echo "1.4 GyG Recibos - Registro de Pagos Off-Line"
 echo "---------------------------------------------"
 
 python3 ./registro_de_pagos_offline.py

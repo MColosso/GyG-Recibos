@@ -46,7 +46,7 @@ pdf_resumen                 = 'GyG Resumen {resumen:0Xd}.pdf'.replace('X', str(l
 
 txt_analisis_de_pago        = "GyG Analisis de Pagos {:%Y-%m (%b)}.txt"
 txt_cartelera_virtual       = "GyG Cartelera Virtual {:%Y-%m (%b)}.txt"
-txt_cambios_de_categoría    = "GyG Cambios de Categoría {:%Y-%m (%b)}.txt"
+txt_cambios_de_categoría    = "GyG Cambios de Categoria {:%Y-%m (%b)}.txt"
 txt_estadistica_de_pagos    = "GyG Distribucion de Pagos {:%Y-%m (%b)}.txt"
 txt_aporte_vigilantes       = "GyG Pagos Adicionales {:%Y-%m (%b)}.txt"
 txt_saldos_pendientes       = "GyG Saldos pendientes {:%Y-%m (%b)}.txt"

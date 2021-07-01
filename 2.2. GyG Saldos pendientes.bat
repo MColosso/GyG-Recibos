@@ -6,7 +6,8 @@
 :: saldo pendiente
 ::    Ejemplo: "python saldos_pendientes.py --solo_deudores"
 
-@echo 3.3 GyG Saldos pendientes
+
+@echo 2.2 GyG Saldos pendientes
 @echo -------------------------
 
 python saldos_pendientes.py

@@ -6,7 +6,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.9 GyG Recibos - Valida recibos"
+echo "1.6 GyG Recibos - Valida recibos"
 echo "--------------------------------"
 
 python3 ./valida_recibos_de_pago.py

@@ -3,6 +3,7 @@
 :: Genera los resúmenes de pagos recibidos de las familias seleccionadas
 :: en el período indicado
 
+
 @echo 4.1 GyG Resumenes de Pago
 @echo -------------------------
 

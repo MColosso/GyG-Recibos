@@ -7,7 +7,7 @@
 
 cd $HOME/Dropbox/"GyG Recibos"/ > /dev/null
 echo ""
-echo "1.5 GyG Recibos - Busca vecinos"
+echo "6.1 GyG Recibos - Busca vecinos"
 echo "-------------------------------"
 
 python3 ./busca_vecinos.py

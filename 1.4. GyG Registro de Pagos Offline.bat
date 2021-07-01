@@ -6,7 +6,8 @@
 :: Para reemplazar la hoja de cálculo original con la versión off-line, primeramente
 :: se deba recalcular la hoja off-line con Excel.
 
-@echo 1.10 GyG Recibos - Registro de Pagos Off-Line
+
+@echo 1.4 GyG Recibos - Registro de Pagos Off-Line
 @echo ---------------------------------------------
 
 python registro_de_pagos_offline.py

@@ -12,6 +12,8 @@
 #  . edita_número(number, num_decimals: int=2) -> str
 #  . trunca_texto(texto: str, max_width: int) -> str
 #  . espacios(width: int=1, char: str=' ') -> str
+#  . def bloque_de_texto(texto: str, anchura: int=80, margen: int=0, margen_1ra_linea: bool=False,
+#                        continuacion:str=" > ", formato_lista:bool=False) -> list(str) | str
 #  . is_numeric(valor) -> bool
 #  . remueve_acentos(text: str) -> str
 #  . separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False) -> list(str) | str
@@ -44,6 +46,8 @@
 
      
     HISTORICO
+     -  Añadida función 'bloque_de_texto()' para separar texto en líneas de una anchura determinada
+        (28/06/2021)
      -  Se ajustó la función 'trunca_texto()' para no finalizar el texto con puntos suspensivos si se
         puede cortar el mismo en ese espacio: "Chá..." -> "Chávez" (22/05/2021)
      -  Revisar la rutina "separa_meses()": El texto "Colaboración Vigilancia, meses de Agosto a Noviembre 
@@ -73,6 +77,7 @@ from re import match
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from unicodedata import normalize
+import textwrap
 import numbers
 import locale
 
@@ -84,12 +89,16 @@ from base64 import (
     urlsafe_b64decode as b64dec)
 
 
+# ---------------------------------------------------------
+
 def _obscure(data: bytes) -> bytes:
     return b64enc(zlib.compress(data, level=zlib.Z_BEST_COMPRESSION))
 
 def _unobscure(obscured: bytes) -> bytes:
     return zlib.decompress(b64dec(obscured))
 
+
+# ---------------------------------------------------------
 
 def input_mes_y_año(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str:
     """
@@ -109,6 +118,9 @@ def input_mes_y_año(mensaje: str, valor_por_defecto: str, toma_opción_por_defe
             else:
                 print('  > Seleccione un mes y año correctos (2017+), con un guión como separador')
         return valor_actual
+
+
+# ---------------------------------------------------------
 
 def input_fecha(mensaje: str, valor_por_defecto: bool=None) -> datetime:
     """
@@ -137,6 +149,9 @@ def input_fecha(mensaje: str, valor_por_defecto: bool=None) -> datetime:
         print("  > Seleccione una fecha correcta: 2017+, formato 'dd-mm-yyyy' o 'dd/mm/yyyy'")
     return fecha
 
+
+# ---------------------------------------------------------
+
 def input_si_no(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: bool=False) -> str:
     """
     Lee del standard input 'sí' o 'no' como respuesta a la pregunta formulada
@@ -156,6 +171,9 @@ def input_si_no(mensaje: str, valor_por_defecto: str, toma_opción_por_defecto: 
             else:
                 print("  > Indique 'sí' o 'no'")
         return valor_actual
+
+
+# ---------------------------------------------------------
 
 def input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=False):
     """
@@ -193,6 +211,8 @@ def input_valor(mensaje: str, valor_por_defecto, toma_opción_por_defecto: bool=
         return valor_actual
 
 
+# ---------------------------------------------------------
+
 def edita_beneficiario(beneficiario: str) -> str:
     # STOPWORDS = ['Familia ', 'Dr. ', 'Dra. ', 'Sr. ', 'Sra. ']
     # for stopword in STOPWORDS:
@@ -201,13 +221,20 @@ def edita_beneficiario(beneficiario: str) -> str:
     return beneficiario.replace('Familia ', '').replace('Dr. ', '').replace('Dra. ', '') \
                        .replace('Sr. ', '').replace('Sra. ', '')
 
+
+# ---------------------------------------------------------
+
 def edita_dirección(dirección: str) -> str:
     return dirección.replace('Calle ', '').replace('Nros. ', '').replace('Nro. ', '')
 
 
+# ---------------------------------------------------------
+
 def edita_categoría(categoría: str) -> str:
     return categoría
 
+
+# ---------------------------------------------------------
 
 def get_street(address: str) -> str:
     # return address.index(' ', address.index(' ') + 1)
@@ -216,6 +243,8 @@ def get_street(address: str) -> str:
         return "Avenida"
     return grupos[1] if len(grupos) > 0 else ''
 
+
+# ---------------------------------------------------------
 
 def alinea_texto(texto: str, anchura: int, alineación: str="derecha") -> str:
     if alineación in ['derecha', '>']:
@@ -228,10 +257,15 @@ def alinea_texto(texto: str, anchura: int, alineación: str="derecha") -> str:
         return f"{trunca_texto('ALINEACION ERRADA', anchura)}"
 
 
+# ---------------------------------------------------------
+
 def edita_número(valor, num_decimals: int=2):
     if valor is None or isinstance(valor, str):
         return valor
     return locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True)
+
+
+# ---------------------------------------------------------
 
 def trunca_texto(texto: str, max_width: int) -> str:
     last_space = texto[:max_width+1].rfind(' ')
@@ -239,16 +273,44 @@ def trunca_texto(texto: str, max_width: int) -> str:
         texto = texto[:last_space].strip()
     return texto[0: max_width - 3] + '...' if len(texto) > max_width else texto
 
+
+# ---------------------------------------------------------
+
 def espacios(width: int=1, char: str=' ') -> str:
     return char * width
 
+
+# ---------------------------------------------------------
+
+_wrapper = None
+
+def bloque_de_texto(texto, anchura=80, margen=0, margen_1ra_linea=False, continuacion=" > ", formato_lista=False):
+    global _wrapper
+
+    if _wrapper is None:
+        _wrapper = textwrap.TextWrapper()
+    _wrapper.width = anchura
+    _wrapper.initial_indent = espacios(margen) if margen_1ra_linea else ''
+    _wrapper.subsequent_indent = espacios(margen) + continuacion
+
+    return _wrapper.wrap(texto) if formato_lista else _wrapper.fill(texto)
+
+
+# ---------------------------------------------------------
+
 def is_numeric(valor) -> bool:
     return isinstance(valor, numbers.Number)
+
+
+# ---------------------------------------------------------
 
 def valida_codigo_seguridad(recibo, fecha: datetime, codigo: str) -> bool:
     nro_recibo = f"{recibo:0{GyG_constantes.long_num_recibo}d}" if isinstance(recibo, int) else recibo
     str_fecha = fecha.strftime("%d/%m/%Y")
     return str(_obscure(bytes(' '.join([nro_recibo, str_fecha]), 'UTF-8')), 'UTF-8') == codigo
+
+
+# ---------------------------------------------------------
 
 def remueve_acentos(texto: str) -> str:
     # -> NFD y eliminar diacríticos
@@ -259,6 +321,8 @@ def remueve_acentos(texto: str) -> str:
     # -> NFC
     return normalize( 'NFC', s)
 
+
+# ---------------------------------------------------------
 
 def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False):     # -> list | str
  
@@ -344,6 +408,8 @@ def separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=
     return mensaje_final
 
 
+# ---------------------------------------------------------
+
 def reagrupa_meses(mensaje: str, mes_completo: bool=False) -> str:
     strMeses = GyG_constantes.meses if mes_completo else GyG_constantes.meses_abrev
     separador = ' ' if mes_completo else '-'
@@ -422,6 +488,8 @@ def reagrupa_meses(mensaje: str, mes_completo: bool=False) -> str:
     return une_lista(lista_meses)
 
 
+# ---------------------------------------------------------
+
 def MontoEnLetras(número: float, mostrar_céntimos: bool=True, céntimos_en_letras: bool=False, moneda: str='Bolívar') -> str:
     #
     # Constantes
@@ -497,6 +565,8 @@ def MontoEnLetras(número: float, mostrar_céntimos: bool=True, céntimos_en_let
     else:
         return f'ERROR: El número {edita_número(número, num_decimals=2)} excede los límites admitidos.'
 
+
+# ---------------------------------------------------------
 
 def genera_recibo(r, sella_recibo: bool=False, codigo_de_seguridad: bool=False, codigo_texto: bool=True):
     """ genera_recibo(r, sella_recibo=False)

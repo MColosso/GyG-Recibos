@@ -5,7 +5,7 @@
 :: '1.1. GyG Recibos.xlsm'
 
 
-@echo 7.1 GyG Gráficas
+@echo 2.4 GyG Gráficas
 @echo ----------------
 
 python ./graficas_GUI.py

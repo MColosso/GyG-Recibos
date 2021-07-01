@@ -4,7 +4,8 @@
 :: Estos criterios pueden indicarse en la línea de comandos o en el prompt indicado
 :: en la aplicación.
 
-@echo 1.5 GyG Recibos - Busca vecinos
+
+@echo 6.1 GyG Recibos - Busca vecinos
 @echo -------------------------------
 
 python busca_vecinos.py
