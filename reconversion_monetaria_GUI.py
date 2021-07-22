@@ -1,13 +1,24 @@
 # GyG RECONVERSIÓN MONETARIA
 #
-# Modifica los pagos en las hojas 'Vigilancia', 'Resumen Vigilancia' y 'Saldos'
-# para llevarlos al nuevo cono monetario
+# Modifica los pagos en las hojas 'Vigilancia', 'Resumen Vigilancia', 'Saldos'
+# y 'Cuota' para llevarlos al nuevo cono monetario
 
 """
     POR HACER
     -   
 
+    NOTAS
+    -   Cambiar fórmula de redondeo de la cuota del Colegio El Trigal en las pestañas
+        'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)':
+            REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)
+
     HISTORICO
+    -   Ajustada la reconversión de las cuotas en US$ (hoja 'CUOTAS'): columnas 'Tasa Bs./US$',
+        'CUOTA', 'CUOTA La Casita Encantada' y 'CUOTA Colegio El Trigal' (07/07/2021)
+    -   Al hacer la reconversión de la hoja RESUMEN VIGILANCIA, no reconvertir las fórmulas
+        encontradas en las celdas correspondientes a 'CUOTAS MENSUALES', 'CUOTA La Casita
+        Encantada', 'CUOTA Colegio El Trigal' y 'PAGO ESTIMADO DE VIGILANCIA (Vigilantes,
+        Pasivos y Consumibles)' (06/07/2021)
     -   Incluir en la reconversión la hoja 'CUOTAS' (04/01/2020)
     -   Desplegar en la línea de status las acciones realizadas. Al inicio de cada rutina se
         actualiza el contenido de esta línea, pero la misma no se muestra sino hasta el final.
@@ -27,9 +38,16 @@ import numbers
 import warnings
 warnings.simplefilter("ignore", category=UserWarning)
 from pyparsing import Word, Regex, Literal, OneOrMore, ParseException
+import re
 import os
 import sys
 
+
+# Define algunas constantes
+excel_ws_vigilancia = GyG_constantes.pagos_ws_vigilancia
+excel_ws_resumen    = GyG_constantes.pagos_ws_resumen
+excel_ws_saldos     = GyG_constantes.pagos_ws_saldos
+excel_ws_cuotas     = GyG_constantes.pagos_ws_cuotas
 
 # Gramática de expresiones aritméticas
 operator  = Regex(r'(?<!--[\+\-\^\*/%])[\+\-]|[\^\*/%!]')
@@ -48,7 +66,7 @@ lexAllOnly = OneOrMore(lexOnly)
 advertencia = """Revisar la conversión de cuotas de La Casita Encantada y
 el Colegio El Trigal: Los redondeos aplicados en la hoja de
 cálculo 'RESUMEN VIGILANCIA' pueden afectar el despliegue
-de los resultados"""
+de los resultados."""
 
 default_fct      = 100000
 default_cono     = 'VBS'
@@ -58,13 +76,22 @@ old_workbook     = None
 new_workbook     = None
 
 
+def es_fórmula(value):
+    return isinstance(value, str) and len(value) > 0 and value[0] == '='
+
+def cell_formula(value):
+    """ Retorna cierto si el argumento es de la forma "=H25" """
+    if not es_fórmula(value):
+        return False
+    return re.search("^\$?[a-zA-Z]+\$?[0-9]+$", value[1:]) is not None
+
 def convierte_Vigilancia():
     global workbook, step
 #    event, values = window.read()
     window.Element('_status_line_').Update(value="Convirtiendo 'Vigilancia' ...")
     print("Convirtiendo 'Vigilancia' ...")
 
-    worksheet = workbook['Vigilancia']
+    worksheet = workbook[excel_ws_vigilancia]
 
     for row in worksheet.rows:
         str_monto = row[4].value
@@ -81,7 +108,7 @@ def convierte_RESUMEN_VIGILANCIA():
     window.Element('_status_line_').Update(value="Convirtiendo 'RESUMEN VIGILANCIA' ...")
     print("Convirtiendo 'RESUMEN VIGILANCIA' ...")
 
-    worksheet = workbook['RESUMEN VIGILANCIA']
+    worksheet = workbook[excel_ws_resumen]
 
     num_rows = 0
     ignora_filas = False
@@ -101,7 +128,10 @@ def convierte_RESUMEN_VIGILANCIA():
             continue
         for col in range(first_col, last_col):
             str_monto = row[col].value
-            row[col].value = convierte_monto(str_monto, analisis_lexicografico=(not skip_conversion))
+            if row[2].value in [None, ''] and es_fórmula(str_monto):
+                pass
+            else:
+                row[col].value = convierte_monto(str_monto, analisis_lexicografico=(not skip_conversion))
 
     progress_bar.UpdateBar(step := step + 1)
 
@@ -112,7 +142,7 @@ def convierte_Saldos():
     window.Element('_status_line_').Update(value="Convirtiendo 'Saldos' ...")
     print("Convirtiendo 'Saldos' ...")
 
-    worksheet = workbook['Saldos']
+    worksheet = workbook[excel_ws_saldos]
 
     columna_H = 7
     num_rows = 0
@@ -135,7 +165,7 @@ def convierte_CUOTAS():
     window.Element('_status_line_').Update(value="Convirtiendo 'CUOTAS' ...")
     print("Convirtiendo 'CUOTAS' ...")
 
-    worksheet = workbook['CUOTAS']
+    worksheet = workbook[excel_ws_cuotas]
 
     for row in worksheet.rows:
         moneda = row[2].value
@@ -144,10 +174,19 @@ def convierte_CUOTAS():
         if moneda == 'VEB':
             row[1].value = convierte_monto(row[1].value)    # 'Cantidad'
         elif moneda == 'USD':
-            row[3].value = convierte_monto(row[3].value)    # 'Tasa Bs./US$'
+            celda = row[7].value
+            if not cell_formula(celda):
+                row[7].value = f"=({celda[1:]})/{fct_reconversion}"
+            elif not es_fórmula(celda):
+                row[7].value = f"={celda}/{fct_reconversion}"
+        celda = row[9].value     # 'CUOTA La Casita Encantada'
+        if celda not in [None, ''] and not es_fórmula(celda):
+            row[9].value = f"={celda}/{fct_reconversion}"
+        celda = row[11].value    # 'CUOTA Colegio El Trigal'
+        if celda not in [None, ''] and not es_fórmula(celda):
+            row[11].value = f"={celda}/{fct_reconversion}"
 
     progress_bar.UpdateBar(step := step + 1)
-
 
 def convierte_monto(str_monto, analisis_lexicografico=True):
     if isinstance(str_monto, numbers.Number):

@@ -114,8 +114,9 @@ attach_path     = GyG_constantes.ruta_recibos          # './GyG Recibos/Recibos 
 recibo_fmt      = GyG_constantes.recibo_fmt            # "{recibo:05d}"
 
 excel_workbook  = GyG_constantes.pagos_wb_estandar     # '1.1. GyG Recibos.xlsm'
+# excel_workbook  = GyG_constantes.pagos_wb_estandar_N     # '1.1. GyG Recibos.xlsm'
 excel_worksheet = GyG_constantes.pagos_ws_vigilancia   # 'Vigilancia'
-excel_resumen   = GyG_constantes.pagos_ws_resumen      # 'RESUMEN VIGILANCIA'
+# --- excel_resumen   = GyG_constantes.pagos_ws_resumen      # 'RESUMEN VIGILANCIA'
 excel_cuotas    = GyG_constantes.pagos_ws_cuotas       # 'CUOTA'
 
 email_subject   = 'Cuadra Segura GyG - Recibos de Pago'
@@ -514,14 +515,14 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
 # Abre la hoja de cálculo de Recibos de Pago
 print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook ))
 
-df = read_excel(excel_workbook , sheet_name=excel_resumen)
+# --- df = read_excel(excel_workbook , sheet_name=excel_resumen)
 
 # Inicializa el handler para el manejo de las cuotas
 cuotas_obj = Cuota(excel_workbook)
 
 #df_cuotas = df[df['Beneficiario'] == 'CUOTAS MENSUALES']
 
-df.loc[df[isnull(df['Beneficiario'])].index, 'Beneficiario'] = ' '
+# --- df.loc[df[isnull(df['Beneficiario'])].index, 'Beneficiario'] = ' '
 #df2 = df[df['Beneficiario'].str.startswith('CUOTA ')]
 
 # Carga la hoja de cálculo con los pagos

@@ -65,7 +65,9 @@ nombre_análisis  = GyG_constantes.tx_resumen_saldos        # "GyG Resumen de sa
 attach_path      = GyG_constantes.ruta_saldos_pendientes   # ./GyG Recibos/Saldos Pendientes
 
 excel_workbook   = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
-excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook   = GyG_constantes.pagos_wb_estandar_N        # '1.1. GyG Recibos.xlsm'
+excel_resumen    = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
 excel_detalle    = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
 excel_cuotas     = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
 excel_saldos     = GyG_constantes.pagos_ws_saldos          # 'Saldos'

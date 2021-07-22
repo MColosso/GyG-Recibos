@@ -186,9 +186,9 @@ class Cuota:
                 cuota_a_mostrar = locale.format_string(f'%.2f', cuota_a_mostrar,
                                                        grouping=True, monetary=True).replace(',00', '')
                 txtCuotasMensuales += ' '.join([
-                            separador,
-                            "Las cuotas pendientes por pagar hasta Agosto 2019 se cancelarán según los montos fijos",
-                            "ya establecidos. A partir del 1° de Septiembre de dicho año, toda cuota atrasada",
+                           f"{separador}Las cuotas pendientes por pagar hasta Agosto 2019 se cancelarán",
+                            "según los montos fijos ya establecidos.",
+                            "A partir del 1° de Septiembre de dicho año, toda cuota atrasada",
                             "se cancelará en base a la cuota vigente.",
                             # f"(Bs. {cuota_a_mostrar} a la fecha de este reporte)",
                             # f"(Bs. {cuota_a_mostrar} al {datetime.today().strftime('%d/%m/%Y')})"

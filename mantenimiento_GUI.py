@@ -6,12 +6,14 @@
 
 """
     POR HACER
-    -   
+     -  
 
     HISTORICO
-    -   Incluir el mantenimiento de la carpeta Graficas, eliminando archivos con más de
+     -  Se agregó la opción '--toma_opciones_por_defecto' para facilitar su ejecución en
+        un archivo de comandos (02/07/2021)
+     -  Incluir el mantenimiento de la carpeta Graficas, eliminando archivos con más de
         tres meses (09/06/2020)
-    -   Versión inicial (17/04/2020)
+     -  Versión inicial (17/04/2020)
 
 
 """
@@ -22,24 +24,38 @@ import PySimpleGUI as sg
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import os
+import sys, os
 import locale
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 
 
 # Constantes
 
-FORMATO_MES =      '%b. %Y'
-ANCHURA_TEXTOS =   30
+FORMATO_MES =       '%b. %Y'
+ANCHURA_TEXTOS =    30
 OFFSET_IZQUIERDO =  3
-CALENDAR_ICON =    os.path.join(GyG_constantes.rec_imágenes, '62925-spiral-calendar-icon.png')
-# CALENDAR_ICON =    os.path.join(GyG_constantes.rec_imágenes, 'icons8-calendar-27-64.png')
+CALENDAR_ICON =     os.path.join(GyG_constantes.rec_imágenes, '62925-spiral-calendar-icon.png')
+# CALENDAR_ICON =     os.path.join(GyG_constantes.rec_imágenes, 'icons8-calendar-27-64.png')
+
+# Opciones: <Opción>, <Nro de meses>, <Carpeta>
+opciones =  [['Recibos de pago',       '1',  GyG_constantes.ruta_recibos],
+             ['Análiis de pago',       '3',  GyG_constantes.ruta_analisis_de_pagos],
+             ['Cartelera virtual',     '3',  GyG_constantes.ruta_cartelera_virtual],
+             ['Relación de ingresos',  '3',  GyG_constantes.ruta_relacion_ingresos],
+             ['Resúmenes de pago',    '24',  GyG_constantes.ruta_resumenes],
+             ['Saldos pendientes',     '3',  GyG_constantes.ruta_saldos_pendientes],
+             ['Gráficas',              '3',  GyG_constantes.ruta_graficas],
+             ['Cambios de categoría',  '3',  GyG_constantes.ruta_cambios_de_categoría],
+
+             ['Archivos temporales',   '3',  GyG_constantes.ruta_temporales],
+            ]
+
 
 #
 # RUTINAS DE UTILIDAD
 #
 
-def maantenimiento(título, meses, carpeta):
+def mantenimiento(título, meses, carpeta):
     print(f" - Manteniendo {título}... ", end="")
 
     anterior_a = fecha_de_referencia - relativedelta(months=meses)
@@ -62,77 +78,82 @@ def maantenimiento(título, meses, carpeta):
 # PROCESO
 #
 
-print("Generando layout ...")
+# Maneja argumentos de la linea de comandos
+toma_opciones_por_defecto = False
+if len(sys.argv) > 1:
+    toma_opciones_por_defecto = sys.argv[1] == '--toma_opciones_por_defecto'
+    if not toma_opciones_por_defecto:
+        print(f"Uso: {sys.argv[0]} [--toma_opciones_por_defecto]")
+        sys.exit(1)
+
 
 ahora = datetime.now()
 fecha_de_referencia = datetime(ahora.year, ahora.month, 1)
 
-# Opciones: <Opción>, <Nro de meses>, <Carpeta>
-opciones =  [['Recibos de pago',       '1',  GyG_constantes.ruta_recibos],
-             ['Análiis de pago',       '3',  GyG_constantes.ruta_analisis_de_pagos],
-             ['Cartelera virtual',     '3',  GyG_constantes.ruta_cartelera_virtual],
-             ['Relación de ingresos',  '3',  GyG_constantes.ruta_relacion_ingresos],
-             ['Resúmenes de pago',    '24',  GyG_constantes.ruta_resumenes],
-             ['Saldos pendientes',     '3',  GyG_constantes.ruta_saldos_pendientes],
-             ['Gráficas',              '3',  GyG_constantes.ruta_graficas],
-             ['Cambios de categoría',  '3',  GyG_constantes.ruta_cambios_de_categoría],
+if not toma_opciones_por_defecto:
 
-             ['Archivos temporales',   '3',  GyG_constantes.ruta_temporales],
-            ]
+    print("Generando layout ...")
 
-layout = [  [sg.Text("Mes de referencia:"),
-             sg.InputText(key='_fecha_referencia_', size=(10,1),
-                          default_text=fecha_de_referencia.strftime(FORMATO_MES)),
-             sg.CalendarButton(button_text='Seleccione otra fecha',
-                               image_filename=CALENDAR_ICON, image_size=(16, 16), image_subsample=8,
-                               tooltip='Seleccione otra fecha',
-                               default_date_m_d_y=(fecha_de_referencia.month, fecha_de_referencia.day, fecha_de_referencia.year),
-                               target='_fecha_referencia_', format=FORMATO_MES,
-                               close_when_date_chosen=True)],
+    layout = [  [sg.Text("Mes de referencia:"),
+                 sg.InputText(key='_fecha_referencia_', size=(10,1),
+                              default_text=fecha_de_referencia.strftime(FORMATO_MES)),
+                 sg.CalendarButton(button_text='Seleccione otra fecha',
+                                   image_filename=CALENDAR_ICON, image_size=(16, 16), image_subsample=8,
+                                   tooltip='Seleccione otra fecha',
+                                   default_date_m_d_y=(fecha_de_referencia.month,
+                                                       fecha_de_referencia.day,
+                                                       fecha_de_referencia.year),
+                                   target='_fecha_referencia_', format=FORMATO_MES,
+                                   close_when_date_chosen=True)],
 
-            [sg.Text("")],
-            [sg.Text("Indique la cantidad de meses remanentes luego del mantenimiento:")],
+                [sg.Text("")],
+                [sg.Text("Indique la cantidad de meses remanentes luego del mantenimiento:")],
 
-            # Punto de inserción: índice = 3
+                # Punto de inserción: índice = 3
 
-            [sg.Text('_'*60)],
-            [sg.Button('Realiza mantenimientos'), sg.Button('Finaliza')],
-         ]
+                [sg.Text('_'*60)],
+                [sg.Button('Realiza mantenimientos'), sg.Button('Finaliza')],
+             ]
 
-# Inserta en el layout las distintas opciones
-posición = 3
-chk_opcion = '_chk_opcion_'
-val_opcion = '_val_opcion_'
-lista_cantidad_meses = [str(i) for i in range(1, 25)]
-for idx, opcion in enumerate(opciones):
-    layout.insert(posición + idx,
-            [   sg.Text(" "*OFFSET_IZQUIERDO),
-                sg.Checkbox(opcion[0], key=f"{chk_opcion}{idx}", size=(ANCHURA_TEXTOS, 1), default=True),
-                sg.Spin(key=f"{val_opcion}{idx}", values=lista_cantidad_meses, initial_value=opcion[1], size=(3, 1)),
-                sg.Text("meses")
-            ])
+    # Inserta en el layout las distintas opciones
+    posición = 3
+    chk_opcion = '_chk_opcion_'
+    val_opcion = '_val_opcion_'
+    lista_cantidad_meses = [str(i) for i in range(1, 25)]
+    for idx, opcion in enumerate(opciones):
+        layout.insert(posición + idx,
+                [   sg.Text(" "*OFFSET_IZQUIERDO),
+                    sg.Checkbox(opcion[0], key=f"{chk_opcion}{idx}", size=(ANCHURA_TEXTOS, 1), default=True),
+                    sg.Spin(key=f"{val_opcion}{idx}", values=lista_cantidad_meses, initial_value=opcion[1], size=(3, 1)),
+                    sg.Text("meses")
+                ])
 
-# Create the Window
-window = sg.Window('GyG Mantenimiento', layout)
+    # Create the Window
+    window = sg.Window('GyG Mantenimiento', layout)
 
-# Event Loop to process "events"
-#    while True:             
-event, values = window.read()
-if event in (None, 'Finaliza'):
-    pass    # break
-elif event == 'Realiza mantenimientos':
-    fecha_de_referencia = datetime.strptime(values['_fecha_referencia_'], FORMATO_MES)
+    # Event Loop to process "events"
+    #    while True:             
+    event, values = window.read()
+    if event in (None, 'Finaliza'):
+        pass    # break
+    elif event == 'Realiza mantenimientos':
+        fecha_de_referencia = datetime.strptime(values['_fecha_referencia_'], FORMATO_MES)
 
-    # from pprint import pprint
-    # pprint(values)
+        # from pprint import pprint
+        # pprint(values)
 
-    for opcion in values.keys():
-        if opcion.startswith(chk_opcion):
-            if values[opcion]:
-                indice = int(opcion[len(chk_opcion):])
-#                print(f"DEBUG: {indice=}, {val_opcion+str(indice)=}, {values[val_opcion+str(indice)]=}")
-                meses = int(values[val_opcion+str(indice)])
-                maantenimiento(opciones[indice][0], meses, opciones[indice][2])
+        for opcion in values.keys():
+            if opcion.startswith(chk_opcion):
+                if values[opcion]:
+                    indice = int(opcion[len(chk_opcion):])
+                    # print(f"DEBUG: {indice=}, {val_opcion+str(indice)=}, {values[val_opcion+str(indice)]=}")
+                    meses = int(values[val_opcion+str(indice)])
+                    # print(f"DEBUG: mantenimiento({opciones[indice][0]}, {meses}, {opciones[indice][2]})")
+                    mantenimiento(opciones[indice][0], meses, opciones[indice][2])
 
+    else:
+        print(f'*** ERROR: Se recibió el evento "{event}", no esperado')
 else:
-    print(f'*** ERROR: Se recibió el evento "{event}", no esperado')
+    for opcion in opciones:
+        # print(f"DEBUG: mantenimiento({opcion[0]}, {int(opcion[1])}, {opcion[2]})")
+        mantenimiento(opcion[0], int(opcion[1]), opcion[2])

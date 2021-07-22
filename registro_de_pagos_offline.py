@@ -68,8 +68,7 @@ dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 # 
 
 excel_workbook_std = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
-excel_workbook     = "1.1. GyG Recibos OFF-LINE.xlsm"
-hoja_resumen_reord = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+excel_workbook     = GyG_constantes.pagos_wb_offline              # '1.1. GyG Recibos OFF-LINE.xlsm'
 hoja_resumen       = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
 hoja_vigilancia    = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 
@@ -166,7 +165,7 @@ def indexa_listado_de_vecinos() -> list:
     último_día_del_mes = datetime.today() + relativedelta(months=1, day=1) - relativedelta(days=1)
 
     # Abre la hoja de cálculo de Recibos de Pago
-    df_worksheet = read_excel(excel_workbook_std, sheet_name=hoja_resumen_reord)
+    df_worksheet = read_excel(excel_workbook_std, sheet_name=hoja_resumen)
 
     # Elimina los registros que no tienen una categoría definida
     df_worksheet.dropna(subset=['Categoría'], inplace=True)

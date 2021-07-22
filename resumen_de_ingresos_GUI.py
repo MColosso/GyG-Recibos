@@ -49,14 +49,6 @@ categorias_a_ignorar = ['ANULADO', 'DEPOSITO', 'DONACION', 'REVERSADO', 'SOLVENT
 
 # VERBOSE = False                         # Muestra mensajes adicionales
 
-toma_opciones_por_defecto = False
-if len(sys.argv) > 1:
-    toma_opciones_por_defecto = sys.argv[1] == '--toma_opciones_por_defecto'
-    if not toma_opciones_por_defecto:
-        print(f"Uso: {sys.argv[0]} [--toma_opciones_por_defecto]")
-        sys.exit(1)
-
-
 #
 # RUTINAS
 #
@@ -183,7 +175,8 @@ def despliega_resumen_pdf():
     primera_fila[1] = Paragraph(' Categorias', bodytextStyle)
     tabla.insert(0, primera_fila)
 
-    colwidths = [72 for _ in columns[1:]]
+    # colwidths = [72 for _ in columns[1:]]
+    colwidths = [80 for _ in columns[1:]]
     colwidths.insert(0, 60)
 
 
@@ -228,6 +221,14 @@ def despliega_resumen_pdf():
 #
 # PROCESO
 #
+
+# Maneja argumentos de la linea de comandos
+toma_opciones_por_defecto = False
+if len(sys.argv) > 1:
+    toma_opciones_por_defecto = sys.argv[1] == '--toma_opciones_por_defecto'
+    if not toma_opciones_por_defecto:
+        print(f"Uso: {sys.argv[0]} [--toma_opciones_por_defecto]")
+        sys.exit(1)
 
 # Selecciona el período a reportar
 ahora = datetime.now()

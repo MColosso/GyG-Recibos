@@ -24,6 +24,8 @@
 
 
     HISTORICO
+    -   Se agregó validación para detectar si los recibos generados están en la hoja de
+        cálculo o no (18/07/2021)
     -   Se agregó código para habilitar el botón «A Temporales» al seleccionar un recibo
         y se ajustó el despliegue de resultados de la copia (08/11/2020)
     -   Agregado botón «A Temporales» para copiar el recibo seleccionado en la carpeta
@@ -111,11 +113,14 @@ for recibo in os.listdir(FILE_FOLDER):
     if recibo.endswith('.png'):
         nro_recibo = int(re.findall(r'.*_(.*)\.', recibo)[0])
         r = df_recibos.loc[df_recibos['Nro. Recibo'] == nro_recibo]
-        n_recibo = f"{r['Nro. Recibo'].values[0]:0{GyG_constantes.long_num_archivo}d}"
-        vecino = edita_beneficiario(r['Beneficiario'].values[0])
-        categoría = r['Categoría'].values[0][:3]
-        fecha = to_datetime(r['Fecha'].values[0]).strftime('%d/%m/%y')
-        file_list.append(f"{n_recibo} - [{categoría}. {fecha}] {vecino}")
+        if r.empty:
+            print(f"*** ERROR: '{recibo}' no está registrado en la hoja de cálculo")
+        else:
+            n_recibo = f"{r['Nro. Recibo'].values[0]:0{GyG_constantes.long_num_archivo}d}"
+            vecino = edita_beneficiario(r['Beneficiario'].values[0])
+            categoría = r['Categoría'].values[0][:3]
+            fecha = to_datetime(r['Fecha'].values[0]).strftime('%d/%m/%y')
+            file_list.append(f"{n_recibo} - [{categoría}. {fecha}] {vecino}")
 
 file_list.sort()
 

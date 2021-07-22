@@ -51,8 +51,10 @@ nombre_propuestas   = GyG_constantes.txt_cambios_de_categoría   # "GyG Cambio d
 attach_path         = GyG_constantes.ruta_cambios_de_categoría  # "../GyG Archivos/Otros"
 
 excel_workbook      = GyG_constantes.pagos_wb_estandar          # '1.1. GyG Recibos.xlsm'
+# excel_workbook      = GyG_constantes.pagos_wb_estandar_N          # '1.1. GyG Recibos.xlsm'
 excel_ws_vigilancia = GyG_constantes.pagos_ws_vigilancia
-excel_ws_resumen_r  = GyG_constantes.pagos_ws_resumen_reordenado
+# excel_ws_resumen_r  = GyG_constantes.pagos_ws_resumen_reordenado
+excel_ws_resumen_r  = GyG_constantes.pagos_ws_resumen
 
 nMeses              = 5  # Meses a analizar para propuestas de cambio de categoría
 
@@ -149,7 +151,7 @@ nMeses = input_valor('Número de meses a analizar', nMeses, toma_opciones_por_de
 sólo_propuestas = input_si_no('Sólo vecinos con propuestas de cambio', 'sí', toma_opciones_por_defecto)
 
 # # Selecciona si se ordenan alfabéticamente los vecinos
-ordenado = input_si_no('Ordenados alfabéticamente', 'no', toma_opciones_por_defecto)
+ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
 # Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
 whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)

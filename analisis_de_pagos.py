@@ -126,23 +126,24 @@ import locale
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 
 # Define textos
-nombre_análisis = GyG_constantes.txt_analisis_de_pago     # "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
-attach_path     = GyG_constantes.ruta_analisis_de_pagos   # "./GyG Recibos/Análisis de Pago"
+nombre_análisis  = GyG_constantes.txt_analisis_de_pago     # "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
+attach_path      = GyG_constantes.ruta_analisis_de_pagos   # "./GyG Recibos/Análisis de Pago"
 
-excel_workbook          = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
-excel_resumen           = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
-excel_worksheet_resumen = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
-excel_worksheet_detalle = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
-excel_worksheet_Vecinos = GyG_constantes.pagos_ws_vecinos              # 'Vecinos'
-excel_worksheet_cuotas  = GyG_constantes.pagos_ws_cuotas               # 'CUOTA'
-excel_worksheet_saldos  = GyG_constantes.pagos_ws_saldos               # 'Saldos'
+excel_workbook   = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
+# excel_ws_resumen = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook   = GyG_constantes.pagos_wb_estandar_N        # '1.1. GyG Recibos.xlsm'
+excel_ws_resumen = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
+excel_ws_detalle = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
+excel_ws_vecinos = GyG_constantes.pagos_ws_vecinos         # 'Vecinos'
+excel_ws_cuotas  = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
+excel_ws_saldos  = GyG_constantes.pagos_ws_saldos          # 'Saldos'
 
-nMeses                  = 3     # Meses a analizar para propuestas de cambio de categoría
-nMeses_resumen          = 6     # Meses a mostrar en el cuadro resumen al inicio del análisis
+nMeses           = 3       # Meses a analizar para propuestas de cambio de categoría
+nMeses_resumen   = 6       # Meses a mostrar en el cuadro resumen al inicio del análisis
 
-wrapper = None                  # Wrapper para la división de líneas
+wrapper          = None    # Wrapper para la división de líneas
 
-VERBOSE = False                 # Despliega tabla de distribución de pagos
+VERBOSE          = False   # Despliega tabla de distribución de pagos
 
 
 # Gramática de expresiones aritméticas
@@ -558,11 +559,11 @@ def distribución_de_pagos():
     # las fórmulas en las columnas y genera un dataframe de Pandas como resultado
 
     # Maneja la primera columna ('Beneficiario') como su valor asociado
-    df_resumen = read_excel(excel_workbook, sheet_name=excel_resumen, usecols=['Beneficiario'])
+    df_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen, usecols=['Beneficiario'])
 
     # Y el resto de las columnas como fórmulas
     wb = load_workbook(filename=excel_workbook)
-    ws = wb[excel_resumen]
+    ws = wb[excel_ws_resumen]
     col_value = None
     for idx, col in enumerate(ws.columns):
         if idx == 0:
@@ -590,7 +591,7 @@ def distribución_de_pagos():
 
     # Lee la hoja con el detalle de los pagos recibidos, elimina aquellos cuya Referen-
     # cia no corresponda al pago de Vigilancia y estandariza la fecha de pago
-    df_pagos = read_excel(excel_workbook, sheet_name=excel_worksheet_detalle)
+    df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_detalle)
     #df_pagos = df_pagos[df_pagos['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA]
     df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != GyG_constantes.CATEGORIA_VIGILANCIA], inplace=True)
     df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
@@ -712,7 +713,7 @@ distribución = distribución_de_pagos()
 # Abre la hoja de cálculo de Recibos de Pago
 print()
 print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook))
-df_resumen = read_excel(excel_workbook, sheet_name=excel_worksheet_resumen)
+df_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
 
 # Inicializa el handler para el manejo de las cuotas
 cuotas_obj = Cuota(excel_workbook)
@@ -739,7 +740,7 @@ df_resumen = df_resumen[df_resumen['F.Desde'] < f_ref_último_día]
 df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 
 # Lee la pestaña con el detalle de pagos
-df_pagos = read_excel(excel_workbook, sheet_name=excel_worksheet_detalle)
+df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_detalle)
 
 # Genera una columna con el resumen de los meses cancelados en cada pago
 meses_cancelados = df_pagos['Concepto'].swifter.progress_bar(False).apply(lambda x: separa_meses(x, as_string=True))
@@ -762,7 +763,7 @@ columnas = df_resumen.columns.values.tolist()
 df_categoría = genera_propuesta_categoría()
 
 # Toma los saldos a favor de algunos vecinos para forzar su selección en el paso siguiente
-df_saldos  = read_excel(excel_workbook, sheet_name=excel_worksheet_saldos, skiprows=[0, 1])
+df_saldos  = read_excel(excel_workbook, sheet_name=excel_ws_saldos, skiprows=[0, 1])
 df_saldos  = df_saldos[['Beneficiario', 'Dirección', 'Saldo']]
 df_saldos.dropna(subset=['Beneficiario'], inplace=True)
 
@@ -788,7 +789,7 @@ desv  = df_resumen.swifter.progress_bar(False).apply(desviación, axis=1)
 df_resumen.insert(column='Promedio',  value=prom, loc=df_resumen.shape[1])
 df_resumen.insert(column='Variación', value=desv, loc=df_resumen.shape[1])
 
-df_vecinos = read_excel(excel_workbook, sheet_name=excel_worksheet_Vecinos)
+df_vecinos = read_excel(excel_workbook, sheet_name=excel_ws_vecinos)
 df_vecinos = df_vecinos[['Beneficiario', 'SMS', 'WhatsApp']]
 
 columns = df_resumen.columns.values.tolist()

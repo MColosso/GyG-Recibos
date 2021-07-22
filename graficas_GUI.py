@@ -175,6 +175,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 # Define algunas constantes
 excel_workbook      = GyG_constantes.pagos_wb_estandar     # '1.1. GyG Recibos.xlsm'
+# excel_workbook      = GyG_constantes.pagos_wb_estandar_N     # '1.1. GyG Recibos.xlsm'
 # excel_ws_cobranzas  = GyG_constantes.pagos_ws_cobranzas
 excel_ws_vigilancia = GyG_constantes.pagos_ws_vigilancia
 excel_ws_resumen    = GyG_constantes.pagos_ws_resumen
@@ -230,82 +231,10 @@ def distribución_de_pagos(nro_meses, corte_al_dia_de_referencia=False):
     import warnings
     warnings.simplefilter("ignore", category=UserWarning)
 
-    # meses            = ['enero',      'febrero', 'marzo',     'abril',
-    #                     'mayo',       'junio',   'julio',     'agosto',
-    #                     'septiembre', 'octubre', 'noviembre', 'diciembre']
-    # meses_abrev      = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    #                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-    # conectores       = ['a', '-']
-    # textos_anticipos = ['adelanto', 'anticipo'   ]
-    # textos_saldos    = ['ajuste',   'complemento', 'diferencia', 'saldo']
-    # modificadores    = ['anticipo', 'saldo']
-
-    # tokens_validos = meses + meses_abrev + conectores
-
-
     def ajusta_fecha(ref):
         """ ajusta_fecha toma una fecha 'ref' de la forma '%m-%Y' (ej. 'may.2019') y la convierte en
             '%Y-%m' ('2019-05') para facilitar su comparación """
         return f"{ref[3:7]}-{ref[0:2]}"
-
-    # def separa_meses(mensaje, as_string=False, muestra_modificador=False):
-    #     import re
-        
-    #     tokens_validos = meses + meses_abrev + conectores + modificadores
-
-    #     mensaje = re.sub("\([^()]*\)", "", mensaje)
-    #     mensaje = mensaje.lower().replace('-', ' a ').replace('/', ' ')
-    #     for token in textos_anticipos:
-    #         mensaje.replace(token, modificadores[0])
-    #     for token in textos_saldos:
-    #         mensaje.replace(token, modificadores[1])
-    #     mensaje = re.sub(r"\W ", " ", mensaje).split()
-    #     mensaje_ed = [x for x in mensaje if (x in tokens_validos) or x.isdigit()]
-    #     last_year = None
-    #     last_month = None
-    #     acción = ''
-    #     mensaje_anterior = None
-    #     mensaje_final = list()
-    #     maneja_conector = False
-    #     for x in reversed(mensaje_ed):
-    #         token = meses[meses_abrev.index(x)] if x in meses_abrev else x
-    #         if token.isdigit():
-    #             if mensaje_anterior != None:
-    #                 mensaje_final = mensaje_anterior + mensaje_final
-    #             last_year = token
-    #             last_month = None
-    #             mensaje_anterior = None
-    #         elif token in meses:
-    #             if mensaje_anterior != None:
-    #                 mensaje_final = mensaje_anterior + mensaje_final
-    #             if maneja_conector:
-    #                 try:
-    #                     n_last_month = meses.index(last_month)
-    #                 except:
-    #                     continue    # ignora los mensajes que contienen textos del tipo:
-    #                                 # "(saldo a favor: Bs. 69.862,95)"
-    #                 n_token = meses.index(token)
-    #                 for t in reversed(range(n_token + 1, n_last_month)):
-    # #                        mensaje_final = [f"{meses_abrev[t]}.{last_year}"] + mensaje_final
-    #                     mensaje_final = [f"{t+1:02}-{last_year}"] + mensaje_final
-    #                 maneja_conector = False
-    #             last_month = token
-    # #                mensaje_anterior = [f"{meses_abrev[meses.index(last_month)]}.{last_year}"]
-    #             mensaje_anterior = [f"{meses.index(last_month)+1:02}-{last_year}"]
-    #         elif x in conectores:
-    #             maneja_conector = True
-    #         elif x in modificadores and muestra_modificador:
-    # #                mensaje_final = [f"{meses_abrev[meses.index(last_month)]}.{last_year} {x}"] + mensaje_final
-    #             mensaje_final = [f"{meses.index(last_month)+1:02}-{last_year} {x}"] + mensaje_final
-    #             mensaje_anterior = None
-
-    #     if mensaje_anterior != None:
-    #         mensaje_final = mensaje_anterior + mensaje_final
-
-    #     if as_string:
-    #         mensaje_final = '|'.join(mensaje_final)
-
-    #     return mensaje_final
 
 
     def análisis_de_pagos(fecha_referencia):
@@ -532,7 +461,7 @@ def gráfica_1():
     ws_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
     # ws_cuotas_mensuales = ws_resumen[(ws_resumen['Beneficiario'] == 'CUOTAS MENSUALES')]
     ws_pago_estimado = ws_resumen[(ws_resumen['Beneficiario'] == \
-                                                    'PAGO ESTIMADO DE VIGILANCIA (Vigilantes, Pasivos y Consumibles)')]
+                                                    'PAGO ESTIMADO DE VIGILANCIA')]
 
 
     # Selecciona los pagos de vigilancia entre la fecha de referencia y g1_nro_meses atrás
@@ -560,10 +489,15 @@ def gráfica_1():
     ws_vigilancia['_% del estimado_'] = ws_vigilancia.apply(
                                             lambda ws: ws['Monto'] / ws_pago_estimado[ws['Mes']], axis=1)
 
+    # DEBUG ------------------------------------------------------------------------------
+    # ws_vigilancia.to_csv('grafica1.csv', sep='\t', decimal=",", date_format="%d/%m/%Y")
+    # ------------------------------------------------------------------------------------
+
     # Totaliza los pagos de vigilancia por día y mes
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Totaliza los pagos de vigilancia por día y mes')
-    ws_vigilancia = pivot_table(ws_vigilancia, values=['Monto', '_% del estimado_', '_num. cuotas_'], index=['Día', 'Mes'], aggfunc=sum)
-    ws_vigilancia = ws_vigilancia.reset_index() 
+    ws_vigilancia = pivot_table(ws_vigilancia, values=['Monto', '_% del estimado_', '_num. cuotas_'],
+                                               index=['Día', 'Mes'], aggfunc=sum)
+    ws_vigilancia = ws_vigilancia.reset_index()
 
     # Genera columnas a graficar
     if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Genera los datos del mes actual')

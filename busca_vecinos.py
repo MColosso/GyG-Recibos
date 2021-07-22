@@ -1,6 +1,6 @@
-# GyG CARTELERA VIRTUAL
+# GyG BUSCA VECINOS
 #
-# Elabora la Cartelera Virtual a partir de la hoja de cálculo de pagos
+# Busca todos los vecinos que se ajustan al patrón indicado
 
 """
     PENDIENTE POR HACER
@@ -52,9 +52,9 @@ dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 # 
 
 excel_workbook     = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
-# excel_workbook     = "1.1._GyG_Recibos_TEST.xlsm"
-excel_worksheet    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
-excel_resumen      = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
+# excel_worksheet    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook     = GyG_constantes.pagos_wb_estandar_N             # '1.1. GyG Recibos.xlsm'
+excel_worksheet    = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
 excel_pagos        = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 
 _índice_vecinos    = None

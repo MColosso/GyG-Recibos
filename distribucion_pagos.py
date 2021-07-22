@@ -8,7 +8,21 @@
       - 
 
     NOTAS
-      - 
+      - En los pagos por encima de la cuota se están reflejando los pagos de meses anteriores,
+        por lo que el "excedente" no es real: El pago de los Chan García corresponde a los meses
+        de junio y julio 2021, por lo que debe reflejarse como 2 x 9.600.000 en cuotas y 800.000
+        como excedente.
+         -> ¿Cómo debería mostrarse?
+
+            VECINOS CON PAGOS SUPERIORES A LA CUOTA
+
+            Vecino               | Dirección      |    Monto    |   Excedente
+            ------------------------------------------------------------------
+            Chan García          | Güigüe 89-106  |  20.000.000 |  10.400.000   <- junio y julio 2021
+            Triana González      | Guacara 90-61  |  10.000.000 |     400.000   √
+            ------------------------------------------------------------------
+            Subtotales           |        2 pagos |  30.000.000 |  10.800.000
+
 
     HISTORICO
       - Se ajustó la descripción de los pagos con monto superior a la cuota en el resumen de
@@ -65,7 +79,9 @@ nombre_análisis  = GyG_constantes.txt_estadistica_de_pagos      # "GyG Estadist
 attach_path      = GyG_constantes.ruta_analisis_de_pagos        # "./GyG Recibos/Análisis de Pago"
 
 excel_workbook   = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
-excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook   = GyG_constantes.pagos_wb_estandar_N             # '1.1. GyG Recibos.xlsm'
+excel_resumen    = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
 excel_vigilancia = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 
 fmt_fecha        = "%m-%Y"
@@ -113,6 +129,14 @@ def fecha_ultimo_pago(beneficiario, str_mes_año, categoría=GyG_constantes.CATE
 
 
 def analiza_pagos(df_subset):
+
+    def meses_afectados(conceptos):
+        """ Retorna la cantidad de meses relacionados en los conceptos """
+        meses = list()
+        for concepto in conceptos:
+            meses += separa_meses(concepto)
+        return len(set(meses))
+
     niveles_de_pago = list()
     montos = list()
     montos_sobre_umbral = list()
@@ -138,8 +162,11 @@ def analiza_pagos(df_subset):
         # cuota = cuotas_obj.cuota_vigente(r['Beneficiario'], fecha_referencia)
         cuota = cuotas_obj.cuota_vigente(r['Beneficiario'], f_pago)
         umbral = cuota * (1.0 + umbral_de_aceptación / 100.0)
-        monto = gt_or_zero(r['Monto'] - cuota)
-        monto_sobre_umbral = gt_or_zero(r['Monto'] - umbral)
+        subset_beneficiario = df_pagos_resumido[(df_pagos_resumido['Beneficiario'] == r['Beneficiario']) & \
+                                                (df_pagos_resumido['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA)]
+        nMeses = meses_afectados(subset_beneficiario['Concepto'])
+        monto = gt_or_zero(r['Monto'] - cuota * nMeses)
+        monto_sobre_umbral = gt_or_zero(r['Monto'] - umbral * nMeses)
 
         if r['Monto'] > umbral:
             niveles_de_pago.append('Superior')
@@ -243,18 +270,20 @@ def genera_resumen_vigilancia():
             #                         "        entre cuotas atrasadas y excedentes a la misma)"
             txt_aporte_adicional = bloque_de_texto(
                 ' '.join([
-                        f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=0)} en cuotas del mes,',
-                        f'más Bs. {str_sobreumbral}',
-                        'entre cuotas atrasadas y excedentes a la misma)'
+                        f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=0)} en cuotas del mes',
+                        f'y atrasadas, más Bs. {str_sobreumbral} como excedentes a la misma)'
                     ]),
                 anchura=70, margen=8, continuacion='')
-            análisis += ''.join([
-                    '  - ',
-                    f"{num_pagos:>3} pago{s} {txt_descripción_categoría} ",
-                    f"por Bs. {str_pago}",
-                    f"\n       {txt_aporte_adicional}" if nivel == "Superior" else "",
-                    '\n'
-                ])
+            if num_pagos > 0:
+                análisis += ''.join([
+                        '  - ',
+                        f"{num_pagos:>3} pago{s} {txt_descripción_categoría} ",
+                        f"por Bs. {str_pago}",
+                        f"\n       {txt_aporte_adicional}" if nivel == "Superior" else "",
+                        '\n'
+                    ])
+            else:
+                análisis += f"  -     No hay pagos con monto {nivel.lower()} a la cuota\n"
 
     if not muestra_detalle_vigilancia:
         análisis += '\n'
@@ -270,7 +299,7 @@ def genera_resumen_vigilancia():
             f"Total: {num_pagos} pagos recibidos para un total de",
             f"Bs. {edita_número(mto_pagos, num_decimals=0)}",
             f"({int(mto_pagos / estimado_de_gastos * 100)}% del estimado)"
-        ]), anchura=71, margen=7) + '\n'
+        ]), anchura=71, margen=7, continuacion="") + '\n'
 
     if muestra_comparación:
         mto_sobrecuotas = df_subset['Sobrecuota'].sum()
@@ -384,8 +413,8 @@ def genera_resumen_otros_pagos():
 # Determina el mes actual, a fin de utilizarlo como opción por defecto
 hoy = datetime.now()
 fecha_análisis = datetime(hoy.year, hoy.month, 1)
-# mes_actual = (fecha_análisis - relativedelta(days=1)).strftime('%m-%Y')
-mes_actual = fecha_análisis.strftime('%m-%Y')
+# mes_actual = fecha_análisis.strftime('%m-%Y')
+mes_actual = (fecha_análisis - relativedelta(days=1 if toma_opciones_por_defecto else 0)).strftime('%m-%Y')
 print()
 
 # Selecciona el mes y año a procesar
@@ -413,9 +442,9 @@ muestra_detalle_otros_pagos = input_si_no('Muestra el detalle de los otros pagos
 
 # Selecciona si se ordenan alfabéticamente los vecinos
 if muestra_detalle_vigilancia or muestra_detalle_otros_pagos:
-    ordenado = input_si_no(' -> vecinos ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
+    ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
     # Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
-    whatsapp = input_si_no(" -> para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
+    whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
 else:
     ordenado = False
     whatsapp = False
@@ -443,13 +472,13 @@ df_pagos = df_pagos[(df_pagos['Enviado'] == 'ü')  & \
                     (df_pagos['Mes'] == fecha_referencia)]
 
 # Restringe las columnas a utilizar
-df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Monto', 'Fecha', 'Categoría']]
+df_pagos_resumido = df_pagos[['Beneficiario', 'Dirección', 'Monto', 'Fecha', 'Categoría', 'Concepto']]
 
 # Sumariza los pagos por beneficiario y categoría, dejando como fecha de pago la
 # última fecha
-df_subset_monto = df_pagos[['Beneficiario', 'Dirección', 'Categoría', 'Monto']]
+df_subset_monto = df_pagos_resumido[['Beneficiario', 'Dirección', 'Categoría', 'Monto']]
 df_subset_monto = df_subset_monto.groupby(['Beneficiario', 'Dirección', 'Categoría']).sum().reset_index()
-df_subset_fecha = df_pagos[['Beneficiario', 'Dirección', 'Categoría', 'Fecha']]
+df_subset_fecha = df_pagos_resumido[['Beneficiario', 'Dirección', 'Categoría', 'Fecha']]
 df_subset_fecha = df_subset_fecha.groupby(['Beneficiario', 'Dirección', 'Categoría']).max().reset_index()
 
 df_pagos = merge(df_subset_fecha, df_subset_monto)

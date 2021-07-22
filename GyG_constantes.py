@@ -9,7 +9,10 @@ import os
 
 # HOJAS DE CÁLCULO
 pagos_wb_estandar           = '1.1. GyG Recibos.xlsm'
+pagos_wb_offline            = '1.1. GyG Recibos OFF-LINE.xlsm'
+# pagos_wb_estandar_N         = '1.1. GyG Recibos - NORMALIZADO.xlsm'
 pagos_wb_historico          = '1.1. GyG Recibos - SOLO CONSULTA.xlsm'
+pagos_wb_historico_patron   = '1.1. GyG Recibos - HISTORICO'
 
 pagos_ws_vigilancia         = 'Vigilancia'
 pagos_ws_resumen            = 'RESUMEN VIGILANCIA'

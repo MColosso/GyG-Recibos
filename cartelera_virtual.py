@@ -151,21 +151,32 @@ nombre_cartelera   = GyG_constantes.txt_cartelera_virtual         # "GyG Cartele
 attach_path        = GyG_constantes.ruta_cartelera_virtual        # "./GyG Recibos/Cartelera Virtual"
 
 excel_workbook     = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
-excel_worksheet    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_worksheet    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook     = GyG_constantes.pagos_wb_estandar_N             # '1.1. GyG Recibos.xlsm'
+excel_worksheet    = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
 excel_cuotas       = GyG_constantes.pagos_ws_cuotas               # 'CUOTA'
 excel_pagos        = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
 
 encabezado = 'CARTELERA VIRTUAL\n   CUADRA SEGURA GyG ({})\n' + \
              'al {:%d de %B de %Y}{}\n\n'
-encabezado_colaboración   = '{}Familias que colaboran con un monto inferior a la cuota establecida y tienen ' + \
-                            'pendiente el pago.{}\n'
-encabezado_cuota_completa = '{}Familias que pagan el 100% de la cuota y tienen retrasos en el pago{}.\n'
-# encabezado_no_participa   = 'Familias que se benefician del servicio de vigilancia gracias al aporte del resto ' + \
-#                             'de los vecinos que cancelan su cuota para la seguridad de la zona.\n'
-encabezado_no_participa   = '{}Familias que no contribuyen con el pago del servicio de vigilancia.{}\n'
-encabezado_al_día         = '{}Familias que pagan el 100% de la cuota o colaboran con dicho pago y se encuentran ' + \
-                            'al día en el mantenimiento del servicio de vigilancia.{}\n'
-encabezado_comida_vigilantes = '{}Familias que colaboran con almuerzos, cenas o agua para los vigilantes.{}\n'
+encabezado_colaboración   = ' '.join([
+                                    '{}Familias que colaboran con un monto inferior a la cuota establecida',
+                                    'y tienen pendiente el pago.{}\n\n'
+                                ]).upper()
+encabezado_cuota_completa = ' '.join([
+                                    '{}Familias que pagan el 100% de la cuota y tienen retrasos',
+                                    'en el pago{}.\n\n'
+                                ]).upper()
+# encabezado_no_participa   = ' '.join([
+#                                     'Familias que se benefician del servicio de vigilancia gracias al aporte del',
+#                                     'resto de los vecinos que cancelan su cuota para la seguridad de la zona.\n\n'
+#                                 ])
+encabezado_no_participa   = '{}Familias que no contribuyen con el pago del servicio de vigilancia.{}\n\n'.upper()
+encabezado_al_día         = ' '.join([
+                                    '{}Familias que pagan el 100% de la cuota o colaboran con dicho pago y se',
+                                    'encuentran al día en el mantenimiento del servicio de vigilancia.{}\n\n'
+                                ]).upper()
+encabezado_comida_vigilantes = '{}Familias que colaboran con almuerzos, cenas o agua para los vigilantes.{}\n\n'.upper()
 pie_cuota_completa = '<< Generado automáticamente >>'
 pie_no_participa   = 'Los invitamos a que se sumen a este esfuerzo. Ello nos ayudará a mantener la seguridad ' + \
                      'que hemos alcanzado en el sector. Tu contribución es importante.\n\n'
@@ -494,13 +505,13 @@ muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos 
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
-# Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
-whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
-
 # Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
 aplica_INPC = False
 if muestra_saldos_c_completa or muestra_saldos_no_participa:
     aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
+
+# Selecciona si se colocarán marcas adicionales para ser interpretadas por WhatsApp
+whatsapp = input_si_no("Para ser enviado por WhatsApp", 'no', toma_opciones_por_defecto)
 
 # Prepara los caracteres de negrita e italizado para los textos, en caso de WhatsApp
 wa_bold, wa_italic = ('*', '_') if whatsapp else ('', '')

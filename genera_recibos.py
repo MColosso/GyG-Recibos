@@ -162,6 +162,27 @@ genera_historico = False
 if selección_manual:
     print()
     genera_historico = input_si_no('Genera los recibos a partir del histórico', 'no')
+    wb_historico = ''
+    if genera_historico:
+        lista_historico = [file for file in os.listdir() if file.startswith(GyG_constantes.pagos_wb_historico_patron)]
+        lista_historico.sort()
+        if not lista_historico:
+            print("ERROR: No hay archivos históricos en esta carpeta")
+            sys.exit(1)
+        if len(lista_historico) == 1:
+            wb_historico = lista_historico[0]
+        else:
+            print("    Archivos históricos:")
+            for idx, filename in enumerate(lista_historico):
+                print(f"      [{idx+1}] {filename}")
+            while True:
+                indice_mas_1 = input_valor("Archivo histórico a utilizar", len(lista_historico))
+                if indice_mas_1 in range(1, len(lista_historico)+1):
+                    wb_historico = lista_historico[indice_mas_1 - 1]
+                    break
+                else:
+                    print(f"    *** {indice_mas_1} no es una opción válida")
+
     sella_recibos = input_si_no('Sella los recibos de pago', 'sí')
     codigo_de_seguridad = input_si_no('Con código de seguridad', 'sí')
     if codigo_de_seguridad:
@@ -169,7 +190,7 @@ if selección_manual:
         codigo_de_barras = False
     print()
 
-    excel_workbook = GyG_constantes.pagos_wb_historico if genera_historico else GyG_constantes.pagos_wb_estandar
+    excel_workbook = wb_historico if genera_historico else GyG_constantes.pagos_wb_estandar
     df = read_excel(excel_workbook, sheet_name=excel_worksheet, dtype={'Nro. Recibo': int})
     primer_recibo = 1
     ultimo_recibo = df.iloc[-1]['Nro. Recibo']

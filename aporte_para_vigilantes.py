@@ -41,7 +41,7 @@ import sys, os
 import locale
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 
-nMeses = 1
+nMeses = 3
 toma_opciones_por_defecto = False
 selecciona_mes_actual = False
 

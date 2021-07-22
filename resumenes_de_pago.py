@@ -9,9 +9,20 @@
     -   Fijar como celda superior izquierda de la hoja de cálculo 'A solicitud' unas 5 filas
         antes del último grupo generado
          -> Verificar si "openpyxl" tiene ahora una opción para ello
+
+    x   Ajustar las fechas de inicio y final del período a reportar en base a las fechas del workbook
+        seleccionado (spDesdeAño y spHastaAño: from_=2017, to=2020; spDesdeMes y spHastaMes:
+        values=nombreMeses √; spTxtHMes.set(nombreMeses[ahora.month - 1]); spIntHAño.set(ahora.year))
+         -> Para hacer esto, debería leerse la hoja de cálculo 'Vigilancia' al momento de seleccionar
+            el archivo a manejar, y determinar así las fechas máxima y mínima
     -   
 
     HISTORICO
+    -   En la rutina 'ckHistorico_Seleccion()', desplegar una ventana con una lista de archivos
+        históricos para seleccionar uno (o ninguno)
+         -> Se cambió el 'checkbox' para seleccionar el archivo histórico o el actual por un
+            'combobox' con la hoja de cálculo actual y la lista de hojas de cálculo históricos
+            (20/07/2021)
     -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro de
         la carpeta actual para compatibilidad entre Windows y macOS (21/10/2019)
     -   CORREGIR: Ajustar función "envia_por_correo()" para manejar múltiples destinatarios
@@ -88,6 +99,7 @@ pdf_path = GyG_constantes.ruta_resumenes   # 'C:/Users/MColosso/Google Drive/GyG
 
 excel_wb_historico = GyG_constantes.pagos_wb_historico   # '1.1. GyG Recibos - SOLO CONSULTA.xlsm'
 excel_wb_estandar  = GyG_constantes.pagos_wb_estandar    # '1.1. GyG Recibos.xlsm'
+# excel_wb_estandar  = GyG_constantes.pagos_wb_estandar_N    # '1.1. GyG Recibos.xlsm'
 
 consulta_historico = False
 despliega_saldos   = False
@@ -530,19 +542,29 @@ def ckOrigen_Seleccion():
     else:
         carga_lista_de_vecinos()
 
-def ckHistorico_Seleccion():
-    global consulta_historico, despliega_saldos, cambio_archivo_origen, excel_workbook
 
-    set_cursor_wait()
-    consulta_historico = (ckHistorico.get() == 1)
-    excel_workbook = excel_wb_historico if consulta_historico else excel_wb_estandar
-    abre_hoja_de_recibos_de_pago()
-    carga_lista_de_vecinos()
-    carga_saldos_de_cuentas()
-    cambio_archivo_origen = not cambio_archivo_origen
-    ckOrigen.set('Pagos')
-    despliega_saldos = False
-    set_cursor_standard()
+def busca_hojas_de_calculo():
+    lista_archivos = [file for file in os.listdir() if file.startswith(GyG_constantes.pagos_wb_historico_patron)]
+    lista_archivos.sort()
+    lista_archivos.insert(0, GyG_constantes.pagos_wb_estandar)
+    return lista_archivos
+
+
+
+def cbHojas_de_calculo_Seleccion(evento):
+    global cambio_archivo_origen, consulta_historico, despliega_saldos, excel_workbook
+
+    archivo_seleccionado = lista_hojas_de_calculo[cbHojas_de_calculo.current()]
+    cambio_archivo_origen = excel_workbook != archivo_seleccionado
+    if cambio_archivo_origen:
+        excel_workbook = archivo_seleccionado
+        set_cursor_wait()
+        abre_hoja_de_recibos_de_pago()
+        carga_lista_de_vecinos()
+        carga_saldos_de_cuentas()
+        consulta_historico = cbHojas_de_calculo.current() > 0
+        despliega_saldos = False
+        set_cursor_standard()
 
 
 def onselect(evt):
@@ -668,7 +690,8 @@ def linea_de_separacion(num_linea):
 
 def genera_interfase():
     global ventana_ppal, ckSelTodo, lbVecinos, cbSelTodo, txStatus
-    global spDesdeMes, spDesdeAño, spHastaMes, spHastaAño, ckOrigen, ckHistorico, ckCuotas, ckCorreo, ckSolicitado, btAcepta
+    global spDesdeMes, spDesdeAño, spHastaMes, spHastaAño, ckOrigen, cbHojas_de_calculo, ckCuotas
+    global ckCorreo, ckSolicitado, btAcepta
     global imgCheck, imgWarn, imgError, imgInfo, imgStop, imgPdf, imgEmail
     global stDelimiters, stImages, stPattern
     global geometria
@@ -760,9 +783,10 @@ def genera_interfase():
     txBlank_3   = tk.Label(frOrigen, text='------------------------------', bg=background, height=0)
     txBlank_3.config(font=("Courier", 2))
 
-    ckHistorico = tk.IntVar()
-    cbHistorico = tk.Checkbutton(frOrigen, text='Histórico en Bs.F', bg=background, pady=0,
-                                           variable=ckHistorico, command=ckHistorico_Seleccion)
+    cbHojas_de_calculo = tk.IntVar()
+    cbHojas_de_calculo = ttk.Combobox(frOrigen, values=display_hojas_de_calculo)
+    cbHojas_de_calculo.current(0)
+    cbHojas_de_calculo.bind("<<ComboboxSelected>>", cbHojas_de_calculo_Seleccion)
 
     ckCuotas   = tk.IntVar()
     cbCuotas   = tk.Checkbutton(banda3, text='Incluye cuotas mens.', bg=background, pady=0,
@@ -836,7 +860,7 @@ def genera_interfase():
     cbOrigen_P.grid(row=2, column=0, sticky=tk.W)
     cbOrigen_S.grid(row=3, column=0, sticky=tk.W)
     txBlank_3.grid(row=1, column=0, sticky=tk.W)
-    cbHistorico.grid(row=0, column=0, sticky=tk.W)
+    cbHojas_de_calculo.grid(row=0, column=0, sticky=tk.W)
 
     # FRAME frStatus:
     txStatus.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -979,10 +1003,22 @@ def carga_saldos_de_cuentas():
                                      'Monto':        montos,
                                      'Saldo':        saldos})
 
+def genera_display(lista):
+    display = []
+    for archivo in lista:
+        s = archivo.replace('.xlsm', '')
+        if archivo.startswith(GyG_constantes.pagos_wb_historico_patron):
+            s = s.replace(GyG_constantes.pagos_wb_historico_patron, 'HISTORICO')
+        display.append(s)
+    return display
+
 
 #
 # PROCESO
 #
+
+lista_hojas_de_calculo = busca_hojas_de_calculo()
+display_hojas_de_calculo = genera_display(lista_hojas_de_calculo)
 
 abre_hoja_de_recibos_de_pago()
 
