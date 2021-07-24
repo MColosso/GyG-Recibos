@@ -299,7 +299,7 @@ def genera_resumen_vigilancia():
             f"Total: {num_pagos} pagos recibidos para un total de",
             f"Bs. {edita_número(mto_pagos, num_decimals=0)}",
             f"({int(mto_pagos / estimado_de_gastos * 100)}% del estimado)"
-        ]), anchura=71, margen=7, continuacion="") + '\n'
+        ]), anchura=71, margen=0, continuacion="") + '\n'
 
     if muestra_comparación:
         mto_sobrecuotas = df_subset['Sobrecuota'].sum()

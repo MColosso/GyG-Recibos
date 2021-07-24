@@ -276,6 +276,19 @@ def aplica_reconversion_monetaria():
     progress_bar.UpdateBar(step := step + 1)
 
 
+def muestra_advertencia():
+    print()
+    print("NOTA:")
+    print(bloque_de_texto(' '.join([
+                                    "Cambiar la fórmula de redondeo de la cuota del Colegio El Trigal en las pestañas",
+                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)':"
+                                  ]),
+                          anchura=70, continuacion="", margen=4, margen_1ra_linea=True))
+    print()
+    print("    Ejemplo:")
+    print("        REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)")
+
+
 #
 # PROCESO
 #
@@ -313,7 +326,8 @@ while True:
     elif event == 'Reconvierte':
         if valida_parametros():
             aplica_reconversion_monetaria()
-            sg.Popup(advertencia, title="ADVERTENCIA")
+            # sg.Popup(advertencia, title="ADVERTENCIA")
+            muestra_advertencia()
 
 window.close()
 print()

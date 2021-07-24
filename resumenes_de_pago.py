@@ -1008,7 +1008,7 @@ def genera_display(lista):
     for archivo in lista:
         s = archivo.replace('.xlsm', '')
         if archivo.startswith(GyG_constantes.pagos_wb_historico_patron):
-            s = s.replace(GyG_constantes.pagos_wb_historico_patron, 'HISTORICO')
+            s = s.replace(GyG_constantes.pagos_wb_historico_patron, '«histórico»')
         display.append(s)
     return display
 
