@@ -26,6 +26,8 @@
 
     
     HISTORICO
+    -   A partir del 1ro. de agosto de 2021 se elimina el suministro de comidas a los vigilantes,
+        por lo que esta cartelera se marca como opcional (27/07/2021)
     -   Se agrega la opción para ordenar la lista de beneficiarios (12/06/2021)
     -   Se agrega la opción para añadir marcas de edición (negritas e itálicas) si la cartelera va a
         ser enviada por WhatsApp (25/04/2021)
@@ -433,9 +435,6 @@ def cartelera_vecinos_al_día():
     texto_cartelera += pie_cuota_completa
     texto_cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
     
-    # Genera una linea de separación entre categorías
-    texto_cartelera += '\n' + '-' * 25 + '\n\n'
-
     return texto_cartelera
 
 
@@ -483,6 +482,8 @@ print()
 # Selecciona el mes y año a procesar
 mes_año = input_mes_y_año('Indique el mes y año de la cartelera virtual', período_anterior, toma_opciones_por_defecto)
 
+print('***\n*** Carteleras:')
+
 # Selecciona si se muestra desde cuándo está pendiente el pago
 muestra_pend_desde_c_completa = input_si_no('  - Cuota completa: ¿Muestra pendiente desde?', 'sí', toma_opciones_por_defecto)
 # Selecciona si se muestra el último pago realizado
@@ -501,6 +502,10 @@ muestra_pend_desde_no_participa = input_si_no('  - No participa:   ¿Muestra pen
 muestra_u_pago_no_participa = input_si_no('                    ¿Muestra último pago?', 'no', toma_opciones_por_defecto)
 # Selecciona si se muestran los saldos deudores o no
 muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos pendientes?', 'no', toma_opciones_por_defecto)
+# Selecciona si se muestra la cartelera de comida
+muestra_cartelera_comida = input_si_no('  - Comida:         ¿Muestra esta cartelera?', 'no', toma_opciones_por_defecto)
+
+print('***')
 
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
@@ -591,8 +596,9 @@ cartelera_4 = cartelera_vecinos_al_día()
 # (selecciona aquellos registros donde la columna 'Comida' tenga UN espacio en blanco
 #  o esté vacía, en lugar de seleccionar aquellos que contengan específicamente una
 #  tilde (ü))
-df_comida = df.loc[list_nor(df['Comida'] == ' ', isnull(df['Comida']))]
-cartelera_5 = cartelera_comida_vigilantes(df_comida)
+if muestra_cartelera_comida:
+    df_comida = df.loc[list_nor(df['Comida'] == ' ', isnull(df['Comida']))]
+    cartelera_5 = cartelera_comida_vigilantes(df_comida)
 
 #
 # Genera el resto de las carteleras
@@ -677,9 +683,14 @@ for categoría in categorías:
         # Genera una linea de separación entre categorías
         cartelera += '\n' + '-' * 25 + '\n\n'
 
-# Imprime las carteleras de pagos al 100% y colaboración de comidas
+# Imprime la cartelera de pagos al 100%
 cartelera += cartelera_4
-cartelera += cartelera_5
+
+if muestra_cartelera_comida:
+    # Genera una linea de separación entre categorías
+    cartelera += '\n' + '-' * 25 + '\n\n'
+    # Imprime la cartelera de la colaboración de comidas
+    cartelera += cartelera_5
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)
 filename = os.path.join(attach_path, 'Apple', nombre_cartelera.format(f_ref_último_día))

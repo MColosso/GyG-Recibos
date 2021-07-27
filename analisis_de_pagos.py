@@ -871,14 +871,6 @@ for index, r in df_resumen.iterrows():
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
                 análisis += '\n'
                 dirección_anterior = get_street(r['Dirección'])
-            # análisis += mensaje.format(
-            #             r['Beneficiario'], r['Dirección'], telefonos,
-            #             tipo_pago, rango_fechas, fecha_usual,
-            #             último_pago,
-            #             info_pago, info_deuda,
-            #             mas_de_un_mes(r['Beneficiario']),
-            #             programa_de_comida(r['Comida']),
-            #             propuesta_de_cambio(r['Beneficiario']))
             análisis += ''.join([
                             f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
                             # f"  {tipo_pago}{rango_fechas} usualmente hacia el día {fecha_usual}", "\n",
@@ -886,7 +878,8 @@ for index, r in df_resumen.iterrows():
                             bloque_de_texto(''.join([
                                                 f"Su último pago fue el {último_pago} ",
                                                 f"y {info_pago}{info_deuda}",
-                                            ]), anchura=100, margen=2, margen_1ra_linea=True),
+                                            ]), anchura=95, margen=2, margen_1ra_linea=True,
+                                                continuacion="  ", separa_palabras=True),
                             # f"  Su último pago fue el {último_pago} y {info_pago}{info_deuda}",
                             f"{mas_de_un_mes(r['Beneficiario'])}",
                             f"{programa_de_comida(r['Comida'])}",
@@ -942,16 +935,11 @@ for index, r in df_resumen.iterrows():
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
                 análisis += '\n'
                 dirección_anterior = get_street(r['Dirección'])
-            # análisis += mensaje_2.format(
-            #             r['Beneficiario'], r['Dirección'], telefonos,
-            #             tipo_pago, detalles_pago,
-            #             programa_de_comida(r['Comida']),
-            #             propuesta_de_cambio(r['Beneficiario']))
             análisis += ''.join([
                             f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
                             f"  {tipo_pago}{detalles_pago}",
                             f"{programa_de_comida(r['Comida'])}",
-                            f"propuesta_de_cambio(r['Beneficiario'])", "\n\n"
+                            f"{propuesta_de_cambio(r['Beneficiario'])}", "\n\n"
                         ])
     df_categoría = df_categoría[df_categoría['Beneficiario'] != r['Beneficiario']]
 

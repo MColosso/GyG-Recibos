@@ -8,11 +8,11 @@
     -   
 
     NOTAS
-    -   Cambiar fórmula de redondeo de la cuota del Colegio El Trigal en las pestañas
-        'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)':
-            REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)
+    -   
 
     HISTORICO
+    -   Agregado recordatorios sobre cambio en el redondeo del Colegio El Trigal y la Casita
+        Encantada, así como cambiar el formato numérico a dos decimales (24/07/2021)
     -   Ajustada la reconversión de las cuotas en US$ (hoja 'CUOTAS'): columnas 'Tasa Bs./US$',
         'CUOTA', 'CUOTA La Casita Encantada' y 'CUOTA Colegio El Trigal' (07/07/2021)
     -   Al hacer la reconversión de la hoja RESUMEN VIGILANCIA, no reconvertir las fórmulas
@@ -258,7 +258,6 @@ def aplica_reconversion_monetaria():
 
     workbook = openpyxl.load_workbook(old_workbook, read_only=False, keep_vba=True)
     progress_bar.UpdateBar(step := 1)
-
     convierte_Vigilancia()
     progress_bar.UpdateBar(2)
     convierte_RESUMEN_VIGILANCIA()
@@ -271,22 +270,28 @@ def aplica_reconversion_monetaria():
 #    event, values = window.read()
     window.Element('_status_line_').Update(value=f"Guardando en '{new_workbook}' ...")
     print(f"Guardando en '{new_workbook}' ...")
+    progress_bar.UpdateBar(step := step + 1)
     workbook.save(new_workbook)
     window.Element('_status_line_').Update(value=f"Guardado en '{new_workbook}' ...")
-    progress_bar.UpdateBar(step := step + 1)
 
 
 def muestra_advertencia():
     print()
-    print("NOTA:")
+    print(f"{espacios(2)}POR HACER:")
     print(bloque_de_texto(' '.join([
-                                    "Cambiar la fórmula de redondeo de la cuota del Colegio El Trigal en las pestañas",
-                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)':"
+                                    espacios(3),
+                                    "- Cambiar el redondeo de la cuota del Colegio El Trigal",
+                                    "y de La Casita Encantada en las pestañas",
+                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)'"
                                   ]),
-                          anchura=70, continuacion="", margen=4, margen_1ra_linea=True))
-    print()
-    print("    Ejemplo:")
-    print("        REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)")
+                          anchura=70, continuacion="", margen=6, separa_palabras=True))
+    print(f"{espacios(7)}-> Ejemplo: REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)")
+    print(bloque_de_texto(' '.join([
+                                    espacios(3),
+                                    "- Añadir dos decimales al formato de los montos en las pestañas",
+                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)'"
+                                  ]),
+                          anchura=70, continuacion="", margen=6, separa_palabras=True))
 
 
 #
@@ -328,6 +333,7 @@ while True:
             aplica_reconversion_monetaria()
             # sg.Popup(advertencia, title="ADVERTENCIA")
             muestra_advertencia()
+            break
 
 window.close()
 print()

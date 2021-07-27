@@ -273,7 +273,7 @@ def genera_resumen_vigilancia():
                         f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=0)} en cuotas del mes',
                         f'y atrasadas, más Bs. {str_sobreumbral} como excedentes a la misma)'
                     ]),
-                anchura=70, margen=8, continuacion='')
+                anchura=72, margen=8, continuacion='', separa_palabras=True)
             if num_pagos > 0:
                 análisis += ''.join([
                         '  - ',
@@ -291,15 +291,11 @@ def genera_resumen_vigilancia():
     num_pagos = df_subset.shape[0]
     mto_pagos = df_subset['Monto'].sum()
     s = 's' if num_pagos != 1 else ''
-    # análisis += ''.join([
-    #                 f"Total: {num_pagos} pagos recibidos para un total de Bs. {edita_número(mto_pagos, num_decimals=0)} ",
-    #                 f"({int(mto_pagos / estimado_de_gastos * 100)}% del\n       estimado)\n"
-    #             ])
     análisis += bloque_de_texto(' '.join([
             f"Total: {num_pagos} pagos recibidos para un total de",
             f"Bs. {edita_número(mto_pagos, num_decimals=0)}",
             f"({int(mto_pagos / estimado_de_gastos * 100)}% del estimado)"
-        ]), anchura=71, margen=0, continuacion="") + '\n'
+        ]), anchura=80, margen=0, continuacion="", separa_palabras=True) + '\n'
 
     if muestra_comparación:
         mto_sobrecuotas = df_subset['Sobrecuota'].sum()

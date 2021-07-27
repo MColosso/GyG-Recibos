@@ -12,8 +12,8 @@
 #  . edita_número(number, num_decimals: int=2) -> str
 #  . trunca_texto(texto: str, max_width: int) -> str
 #  . espacios(width: int=1, char: str=' ') -> str
-#  . def bloque_de_texto(texto: str, anchura: int=80, margen: int=0, margen_1ra_linea: bool=False,
-#                        continuacion:str=" > ", formato_lista:bool=False) -> list(str) | str
+#  . bloque_de_texto(texto: str, anchura: int=80, margen: int=0, margen_1ra_linea: bool=False,
+#                    continuacion:str=" > ", formato_lista:bool=False) -> list(str) | str
 #  . is_numeric(valor) -> bool
 #  . remueve_acentos(text: str) -> str
 #  . separa_meses(mensaje: str, muestra_modificador: bool=False, as_string: bool=False) -> list(str) | str
@@ -26,6 +26,12 @@
 #      'r' es un diccionario, dataframe o serie con las siguientes claves:
 #        . 'Nro. Recibo',  'Fecha',     'Beneficiario',  'Dirección',
 #        . 'Monto',        'Concepto',  'Categoría',     'Monto $',    '$'
+#
+# Clases
+#  . MyTextWrapper - Basada en 'textwrap' para la separación en líneas, a la cual se le agrega el
+#                    parámetro 'separa_palabras' (default: Falso), para separar en sílabas las
+#                    palabras al final de las líneas y mejorar con ello el ajuste
+#  . Silabeador    - Separa en sílabas la palabra pasada como argumento a la instancia
 #
 
 """
@@ -77,7 +83,7 @@ from re import match
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from unicodedata import normalize
-import textwrap
+from textwrap import TextWrapper
 import numbers
 import locale
 
@@ -284,14 +290,16 @@ def espacios(width: int=1, char: str=' ') -> str:
 
 _wrapper = None
 
-def bloque_de_texto(texto, anchura=80, margen=0, margen_1ra_linea=False, continuacion=" > ", formato_lista=False):
+def bloque_de_texto(texto, anchura=80, margen=0, margen_1ra_linea=False, continuacion="  ",
+                           formato_lista=False, separa_palabras=False):
     global _wrapper
 
     if _wrapper is None:
-        _wrapper = textwrap.TextWrapper()
+        _wrapper = MyTextWrapper()
     _wrapper.width = anchura
     _wrapper.initial_indent = espacios(margen) if margen_1ra_linea else ''
     _wrapper.subsequent_indent = espacios(margen) + continuacion
+    _wrapper.separa_palabras = separa_palabras
 
     return _wrapper.wrap(texto) if formato_lista else _wrapper.fill(texto)
 
@@ -779,3 +787,228 @@ def genera_recibo(r, sella_recibo: bool=False, codigo_de_seguridad: bool=False, 
             error_msg  = error_msg.replace('\\', '/')
         print(f"*** Error guardando recibo {output_file.format(recibo=r['Nro. Recibo'])}: {error_msg}")
         return False
+
+
+# ---------------------------------------------------------
+
+class MyTextWrapper(TextWrapper):
+    """
+    Divide en sílabas la palabra al final de la línea a fin de lograr un mejor ajuste
+    """
+
+    def __init__(self, *kargs, separa_palabras=False):
+        self.separa_palabras = separa_palabras
+        self._silabeador = Silabeador() # if self.separa_palabras else None
+        TextWrapper.__init__(self, *kargs)
+
+    def _wrap_chunks(self, chunks):
+        """_wrap_chunks(chunks : [string]) -> [string]
+
+        Wrap a sequence of text chunks and return a list of lines of
+        length 'self.width' or less.  (If 'break_long_words' is false,
+        some lines may be longer than this.)  Chunks correspond roughly
+        to words and the whitespace between them: each chunk is
+        indivisible (modulo 'break_long_words'), but a line break can
+        come between any two chunks.  Chunks should not have internal
+        whitespace; ie. a chunk is either all whitespace or a "word".
+        Whitespace chunks will be removed from the beginning and end of
+        lines, but apart from that whitespace is preserved.
+        """
+
+        lines = []
+        if self.width <= 0:
+            raise ValueError("invalid width %r (must be > 0)" % self.width)
+        if self.max_lines is not None:
+            if self.max_lines > 1:
+                indent = self.subsequent_indent
+            else:
+                indent = self.initial_indent
+            if len(indent) + len(self.placeholder.lstrip()) > self.width:
+                raise ValueError("placeholder too large for max width")
+
+        # Arrange in reverse order so items can be efficiently popped
+        # from a stack of chucks.
+        chunks.reverse()
+
+        while chunks:
+
+            # Start the list of chunks that will make up the current line.
+            # cur_len is just the length of all the chunks in cur_line.
+            cur_line = []
+            cur_len = 0
+
+            # Figure out which static string will prefix this line.
+            if lines:
+                indent = self.subsequent_indent
+            else:
+                indent = self.initial_indent
+
+            # Maximum width for this line.
+            width = self.width - len(indent)
+
+            # First chunk on line is whitespace -- drop it, unless this
+            # is the very beginning of the text (ie. no lines started yet).
+            if self.drop_whitespace and chunks[-1].strip() == '' and lines:
+                del chunks[-1]
+
+            while chunks:
+                l = len(chunks[-1])
+
+                # Can at least squeeze this chunk onto the current line.
+                if cur_len + l <= width:
+                    cur_line.append(chunks.pop())
+                    cur_len += l
+
+                # Nope, this line is full.
+                else:
+                    break
+
+            # The current line is full, and the next chunk is too big to
+            # fit on *any* line (not just this one).
+            if chunks and len(chunks[-1]) > width:
+                self._handle_long_word(chunks, cur_line, cur_len, width)
+                cur_len = sum(map(len, cur_line))
+
+            # Verificar si se pueden agregar sílabas al final de la línea
+            # (ignorarlo si se trata de un número)
+            if chunks and self.separa_palabras:
+                silabas = self._silabeador(chunks[-1])
+                silabas.reverse()
+                any_pop = False
+                while silabas:
+                    l = len(silabas[-1])
+                    if cur_len + l + 1 <= width:
+                        cur_line.append(silabas.pop())
+                        cur_len += l
+                        any_pop = True
+                    else:
+                        if any_pop:
+                            cur_line.append('-')
+                            cur_len += 1
+                            silabas.reverse()
+                            chunks[-1] = ''.join(silabas)
+                        break
+
+            # If the last chunk on this line is all whitespace, drop it.
+            if self.drop_whitespace and cur_line and cur_line[-1].strip() == '':
+                cur_len -= len(cur_line[-1])
+                del cur_line[-1]
+
+            if cur_line:
+                if (self.max_lines is None or
+                    len(lines) + 1 < self.max_lines or
+                    (not chunks or
+                     self.drop_whitespace and
+                     len(chunks) == 1 and
+                     not chunks[0].strip()) and cur_len <= width):
+                    # Convert current line back to a string and store it in
+                    # list of all lines (return value).
+                    lines.append(indent + ''.join(cur_line))
+                else:
+                    while cur_line:
+                        if (cur_line[-1].strip() and
+                            cur_len + len(self.placeholder) <= width):
+                            cur_line.append(self.placeholder)
+                            lines.append(indent + ''.join(cur_line))
+                            break
+                        cur_len -= len(cur_line[-1])
+                        del cur_line[-1]
+                    else:
+                        if lines:
+                            prev_line = lines[-1].rstrip()
+                            if (len(prev_line) + len(self.placeholder) <=
+                                    self.width):
+                                lines[-1] = prev_line + self.placeholder
+                                break
+                        lines.append(indent + self.placeholder.lstrip())
+                    break
+
+        return lines
+
+
+# ---------------------------------------------------------
+
+# Silabeador: Basado en Mabodo's ipython notebook (https://github.com/mabodo/sibilizador)
+
+class Char_Line():
+    def __init__(self, word):
+        self.word = word
+        self.char_line = [(char, self.char_type(char)) for char in word]
+        self.type_line = ''.join(chartype for char, chartype in self.char_line)
+        
+    def char_type(self, char):
+        if char in set(['a', 'á', 'e', 'é', 'o', 'ó', 'í', 'ú']):
+            return 'V' #strong vowel
+        if char in set(['i', 'u', 'ü']):
+            return 'v' #week vowel
+        if char == 'x':
+            return 'x'
+        if char == 's':
+            return 's'
+        else:
+            return 'c'
+            
+    def find(self, finder):
+        return self.type_line.find(finder)
+        
+    def split(self, pos, where):
+        return Char_Line(self.word[0: pos+where]), Char_Line(self.word[pos + where: ])
+    
+    def split_by(self, finder, where):
+        split_point = self.find(finder)
+        if split_point != -1:
+            chl1, chl2 = self.split(split_point, where)
+            return chl1, chl2
+        return self, False
+     
+    def __str__(self):
+        return self.word
+    
+    def __repr__(self):
+        return repr(self.word)
+
+
+class Silabeador():
+    def __init__(self):
+        self.grammar = []
+        
+    def split(self, chars):
+        rules  = [
+                    ('VV', 1), ('cccc', 2), ('xcc', 1), ('ccx', 2), ('csc', 2), ('xc', 1), ('cc', 1), ('vcc', 2), 
+                    ('Vcc', 2), ('sc', 1), ('cs', 1), ('Vc', 1), ('vc', 1), ('Vs', 1), ('vs', 1)
+                 ]
+        for split_rule, where in rules:
+            first, second = chars.split_by(split_rule, where)
+            if second:
+                if first.type_line in set(['c', 's', 'x', 'cs']) or second.type_line in set(['c', 's', 'x', 'cs']):
+                    #'skip1', first.word, second.word, split_rule, chars.type_line
+                    continue
+                if first.type_line[-1] == 'c' and second.word[0] in set(['l', 'r']):
+                    continue
+                if first.word[-1] == 'l' and second.word[-1] == 'l':
+                    continue
+                if first.word[-1] == 'r' and second.word[-1] == 'r':
+                    continue
+                if first.word[-1] == 'c' and second.word[-1] == 'h':
+                    continue
+                return self.split(first) + self.split(second)
+        return [chars]
+        
+    def __call__(self, word):
+
+        def es_numerico(texto):
+            """
+            Utilitario para verificar si el string recibido corresponde
+            a un valor numérico luego de haber eliminado los caracteres
+            de formateo
+            """
+            for ch in ['.', ',', '+', '-']:
+                if ch in texto:
+                    texto = texto.replace(ch, '')
+            return texto.isnumeric()
+
+        if es_numerico(word):
+            return [word]
+        char_line_word = self.split(Char_Line(word))
+        str_line_word = [str(_) for _ in char_line_word]
+        return str_line_word
