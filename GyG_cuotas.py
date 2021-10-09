@@ -54,6 +54,7 @@ class Cuota:
         self.df_cuotas = self.df_cuotas[self.df_cuotas['Fecha'] <= datetime.today()]
         columnas = [str.replace('CUOTA ', '') for str in self.df_cuotas.columns.to_list()]
         self.df_cuotas.columns = columnas
+        self.ultima_tasa_de_cambio = None
 
     def cuota_vigente(self, beneficiario: str, fecha: datetime, aplica_INPC: bool=False):
         """
@@ -82,6 +83,8 @@ class Cuota:
         """
         return self.df_cuotas[self.df_cuotas['Fecha'] <= fecha].iloc[-1]['Tasa redondeada' if redondeada else 'Tasa Bs./US$']
 
+    def tasa_vigente(self):
+        return self.tasa_actual(datetime.today())
 
     def resumen_de_cuotas(self, beneficiario: str, fecha_final, 
                                 fecha_inicial=None, formato: str=fmtText, lista: bool=False):

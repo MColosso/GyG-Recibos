@@ -7,10 +7,26 @@
     POR HACER
     -   
 
+    
     NOTAS
-    -   
+    -   ajustar el valor del parámetro 'max' a '40' en openpyxl/styles/fonts.py; el valor estándar es '14'
+            family = NestedMinMax(min=0, max=40, allow_none=True)
+    -   Advertencia, cambiar a 'if shape_types is None:'
+            /Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/openpyxl/comments/shape_writer.py:74:
+            FutureWarning: The behavior of this method will change in future versions. Use specific 'len(elem)' or
+            'elem is not None' test instead.
+              if not shape_types:
+
 
     HISTORICO
+    -   Revisar en convierte_CUOTAS(): Si 'celda' contiene un valor (ej. 870.000), la segunda
+        linea genera un error indicando que un valor entero no es suscriptable.
+            if not cell_formula(celda):
+                row[7].value = f"=({celda[1:]})/{fct_reconversion}"
+        Corregido (01/10/2021)
+    -   En convierte_CUOTAS() convertir columna 3: Tasa Bs./US$. Corregido (01/10/2021)
+    -   Ajustado mensaje sobre acciones a realizar en la hoja de cálculo luego de la
+        reconversión monetaria (06/09/2021)
     -   Agregado recordatorios sobre cambio en el redondeo del Colegio El Trigal y la Casita
         Encantada, así como cambiar el formato numérico a dos decimales (24/07/2021)
     -   Ajustada la reconversión de las cuotas en US$ (hoja 'CUOTAS'): columnas 'Tasa Bs./US$',
@@ -171,13 +187,22 @@ def convierte_CUOTAS():
         moneda = row[2].value
         if moneda in ['Moneda', None]:
             continue
+        # print(f"DEBUG: fecha = {row[0]}, cuota = {row[7].value}")
+        # if isinstance(row[3].value, numbers.Number):
+        row[3].value = convierte_monto(row[3].value)    # 'Tasa Bs./US$'
         if moneda == 'VEB':
             row[1].value = convierte_monto(row[1].value)    # 'Cantidad'
         elif moneda == 'USD':
             celda = row[7].value
-            if not cell_formula(celda):
+            # if not cell_formula(celda):
+                # row[7].value = f"=({celda[1:]})/{fct_reconversion}"
+            # elif not es_fórmula(celda):
+            #     row[7].value = f"={celda}/{fct_reconversion}"
+            if cell_formula(celda):
+                row[7].value = f"={celda[1:]}/{fct_reconversion}"
+            elif es_fórmula(celda):
                 row[7].value = f"=({celda[1:]})/{fct_reconversion}"
-            elif not es_fórmula(celda):
+            else:
                 row[7].value = f"={celda}/{fct_reconversion}"
         celda = row[9].value     # 'CUOTA La Casita Encantada'
         if celda not in [None, ''] and not es_fórmula(celda):
@@ -282,14 +307,21 @@ def muestra_advertencia():
                                     espacios(3),
                                     "- Cambiar el redondeo de la cuota del Colegio El Trigal",
                                     "y de La Casita Encantada en las pestañas",
-                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)'"
+                                    "'Cuotas' y 'Resumen Vigilancia'"
                                   ]),
                           anchura=70, continuacion="", margen=6, separa_palabras=True))
-    print(f"{espacios(7)}-> Ejemplo: REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%;1)")
+    print(f"{espacios(7)}-> Ejemplo: REDONDEAR(H60*145%*2;-1)/2  ->  REDONDEAR(H60*145%*2;1)/2")
+    print(bloque_de_texto(' '.join([
+                                    espacios(3),
+                                    "- Cambiar el redondeo de la 'Tasa redondeada' en la pestaña",
+                                    "'Cuotas'"
+                                  ]),
+                          anchura=70, continuacion="", margen=6, separa_palabras=True))
+    print(f"{espacios(7)}-> Ejemplo: REDONDEAR.MAS(D85;-2)  ->  REDONDEAR(D85*2;1)/2")
     print(bloque_de_texto(' '.join([
                                     espacios(3),
                                     "- Añadir dos decimales al formato de los montos en las pestañas",
-                                    "'Cuotas', 'Resumen Vigilancia' y 'R. Vigilancia (reordenado)'"
+                                    "'Resumen Vigilancia' y 'R. Vigilancia (reordenado)'"
                                   ]),
                           anchura=70, continuacion="", margen=6, separa_palabras=True))
 

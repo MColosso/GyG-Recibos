@@ -464,8 +464,9 @@ print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook
 df_pagos = read_excel(excel_workbook, sheet_name=excel_vigilancia)
 
 # Elimina los pagos que no corresponden al mes de referencia
-df_pagos = df_pagos[(df_pagos['Enviado'] == 'ü')  & \
-                    (df_pagos['Mes'] == fecha_referencia)]
+# df_pagos = df_pagos[(df_pagos['Enviado'] == 'ü')  & \
+#                     (df_pagos['Mes'] == fecha_referencia)]
+df_pagos = df_pagos[(df_pagos['Mes'] == fecha_referencia)]
 
 # Restringe las columnas a utilizar
 df_pagos_resumido = df_pagos[['Beneficiario', 'Dirección', 'Monto', 'Fecha', 'Categoría', 'Concepto']]

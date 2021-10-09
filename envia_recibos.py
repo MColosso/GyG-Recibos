@@ -111,7 +111,7 @@ attach_pdf_name = GyG_constantes.pdf_recibo            # "GyG Recibo_{recibo:05d
 attach_img_name = GyG_constantes.img_recibo            # "GyG Recibo_{recibo:05d}.png"
 attach_path     = GyG_constantes.ruta_recibos          # './GyG Recibos/Recibos de Pago'
 
-recibo_fmt      = GyG_constantes.recibo_fmt            # "{recibo:05d}"
+fmt_recibo      = GyG_constantes.fmt_recibo            # "{recibo:05d}"
 
 excel_workbook  = GyG_constantes.pagos_wb_estandar     # '1.1. GyG Recibos.xlsm'
 # excel_workbook  = GyG_constantes.pagos_wb_estandar_N     # '1.1. GyG Recibos.xlsm'
@@ -408,7 +408,7 @@ def sendWhatsApp(message_to, message, attachments=[]):
 
 def envia_archivo(beneficiario, email_o_celular, sub_lista):
 
-    anexos = [recibo_fmt.format(recibo=df.loc[i, 'Nro. Recibo']) for i in sub_lista]
+    anexos = [fmt_recibo.format(recibo=df.loc[i, 'Nro. Recibo']) for i in sub_lista]
     anexos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(anexos))
 
     if email_o_celular == None:
@@ -578,7 +578,7 @@ for sub_lista in pagos_por_beneficiario:
     # fecha           = r['Fecha'].date()
     # shared_link     = r['Shared Link']
     # attachment      = attachment_name(r['Nro. Recibo'])
-    recibos = [recibo_fmt.format(recibo=idx) for idx in sub_lista]
+    recibos = [fmt_recibo.format(recibo=idx) for idx in sub_lista]
     recibos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(recibos))
     if isnull(email_o_celular):
         logfile.write(msg_no_email_or_phone.format(s='s' if len(sub_lista) > 1 else '',
@@ -588,7 +588,7 @@ for sub_lista in pagos_por_beneficiario:
         enviados = [idx for idx in sub_lista if notnull(df.loc[idx, 'Enviado'])]
         no_enviados = [idx for idx in sub_lista if idx not in enviados]
         if len(enviados) > 0:
-            recibos = [recibo_fmt.format(recibo=idx) for idx in enviados]
+            recibos = [fmt_recibo.format(recibo=idx) for idx in enviados]
             recibos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(recibos))
             logfile.write(msg_enviado_anteriormente.format(s='s' if len(enviados) > 1 else '',
                                                            filename=recibos,

@@ -216,8 +216,8 @@ if ordenado:
 am_pm = 'pm' if fecha_de_referencia.hour > 12 else 'm' if fecha_de_referencia.hour == 12 else 'am'
 propuestas = ''.join([
                     f"GyG PROPUESTAS DE CAMBIO DE CATEGORÍA\n",
-                    f"al {fecha_de_referencia:%d/%m/%Y %I:%M} {am_pm}\n", '\n\n',
-                    wa_table,
+                    f"al {fecha_de_referencia:%d/%m/%Y %I:%M} {am_pm}\n", '\n',
+                    wa_table, '\n',
                     "Vecino               | Dirección      | Categoría actual | Propuesta\n",
                     espacios(76, '-'), '\n'
                 ])

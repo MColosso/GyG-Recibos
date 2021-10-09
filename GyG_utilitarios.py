@@ -265,10 +265,14 @@ def alinea_texto(texto: str, anchura: int, alineación: str="derecha") -> str:
 
 # ---------------------------------------------------------
 
-def edita_número(valor, num_decimals: int=2):
+def edita_número(valor, num_decimals: int=2, anchura=None, alineación: str="derecha", sufijo: str=""):
     if valor is None or isinstance(valor, str):
         return valor
-    return locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True)
+    valor_editado = ''.join([
+                                locale.format_string(f'%.{num_decimals}f', valor, grouping=True, monetary=True),
+                                sufijo
+                            ])
+    return alinea_texto(valor_editado, anchura=anchura, alineación=alineación) if anchura else valor_editado
 
 
 # ---------------------------------------------------------
@@ -791,6 +795,9 @@ def genera_recibo(r, sella_recibo: bool=False, codigo_de_seguridad: bool=False, 
 
 # ---------------------------------------------------------
 
+vocales = ['a', 'á', 'e', 'é', 'i', 'í', 'o', 'ó', 'u', 'ú', 'ü', \
+           'A', 'Á', 'E', 'É', 'I', 'Í', 'O', 'Ó', 'U', 'Ú', 'Ü']
+
 class MyTextWrapper(TextWrapper):
     """
     Divide en sílabas la palabra al final de la línea a fin de lograr un mejor ajuste
@@ -873,6 +880,26 @@ class MyTextWrapper(TextWrapper):
             # (ignorarlo si se trata de un número)
             if chunks and self.separa_palabras:
                 silabas = self._silabeador(chunks[-1])
+
+                # Separación de palabras al final de una linea. Criterios a aplicar:
+                #   √  La división se realiza entre sílabas, nunca se separan las letras de una misma sílaba
+                #   √  Nunca se separa la primera sílaba si ésta es una sola vocal, ni la última sílaba si
+                #      también es una sola vocal
+                #   √  Tampoco se separan dos vocales juntas aunque pertenezcan a distintas sílabas (hiato)
+                if len(silabas) > 1 and len(silabas[0]) == 1:
+                    silabas[1] = ''.join(silabas[:2])
+                    _ = silabas.pop(0)
+                if len(silabas) > 1 and len(silabas[-1]) == 1:
+                    silabas[-2] = ''.join(silabas[-2:])
+                    _ = silabas.pop()
+
+                silabas_copia = [_ for _ in silabas]
+                for idx in reversed(range(len(silabas) - 1)):
+                    if silabas[idx][-1] in vocales and silabas[idx + 1][0] in vocales:
+                        silabas_copia[idx] = silabas_copia[idx] + silabas_copia[idx + 1]
+                        _ = silabas_copia.pop(idx+1)
+                silabas = silabas_copia
+
                 silabas.reverse()
                 any_pop = False
                 while silabas:
@@ -1002,7 +1029,7 @@ class Silabeador():
             a un valor numérico luego de haber eliminado los caracteres
             de formateo
             """
-            for ch in ['.', ',', '+', '-']:
+            for ch in ['.', ',', '+', '-', '(', ')']:
                 if ch in texto:
                     texto = texto.replace(ch, '')
             return texto.isnumeric()

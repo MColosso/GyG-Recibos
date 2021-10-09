@@ -5,28 +5,42 @@
 
 """
     PENDIENTE POR HACER
-    -   
-    
+     -  Revisar:
+         - Wilson Escamilla, Güigüe 89-89: Cuotas pendientes desde septiembre 2021 por Bs. 42,00 y
+           tiene un saldo a su favor de 2 dólares, ya descontado, el cual no cubre la deuda actual
+
+        Como tiene un saldo a favor, el mensaje desplegado no debería ser 'Diferencia pendiente en
+        agosto 2021 y meses subsiguientes', en lugar de 'Cuotas pendientes desde septiembre 2021'.
+        Igualmente ocurriría si la deuda correspondiese al mes actual: 'Pendiente octubre 2021',
+        debiéndo mostrarse 'Diferencia pendiente en octubre 2021'
+
+
     HISTORICO
-    -   Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
+     -  En la rutina 'no_participa_desde()', se añadió código para descontar los saldos en dólares
+        y en bolívares del saldo deudor y se reescribió el texto a desplegar (07/10/2021)
+     -  Corregido el monto de la cuota a considerar: En el caso de anticipos, si el monto del mismo
+        superaba el monto de la cuota en el mes en el cual se hizo el pago, se entendía que el mes
+        anticipado ya se encontraba pago, aunque fuese inferior al monto de la cuota para dicho mes
+        (17/08/2021)
+     -  Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
         pendientes (01/04/2021)
-    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
-    -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
+     -  Se corrió el ordenamiento alfabético para ignorar los acentos (18/09/2020)
+     -  Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
         implementando la opción '--toma_opciones_por_defecto' en la linea de comandos (08/12/2019)
-    -   Incluir en el total de la deuda cualquier saldo pendiente del último mes pagado (tomar Resumen
+     -  Incluir en el total de la deuda cualquier saldo pendiente del último mes pagado (tomar Resumen
         de Saldos a la fecha -resumen_saldos.py- como referencia) (14/11/2019)
-    -   Ajustar los mensajes para hacer más claro su contenido (04/11/2019)
-    -   Ajustar la selección de registros para igualarla a la utilizada en analisis_de_pagos.py
+     -  Se ajustaron los mensajes para hacer más claro su contenido (04/11/2019)
+     -  Se ajustó la selección de registros para igualarla a la utilizada en analisis_de_pagos.py
         (03/11/2019)
-    -   Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
+     -  Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
         Windows
           -> Se generan archivos con codificaciones 'UTF-8' (Apple) y 'cp1252' (Windows) en carpetas
              separadas (29/10/2019)
-    -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro
+     -  Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro
         de la carpeta actual para compatibilidad entre Windows y macOS (21/10/2019)
-    -   Mostrar el saldo disponible para aquellos vecinos que tengan un depósito administrado
+     -  Mostrar el saldo disponible para aquellos vecinos que tengan un depósito administrado
         por la Asociación (Del Negro Palermo, etc.) y su saldo sea mayor que cero (30/09/2019)
-    -   Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas)
+     -  Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas)
         (29/09/2019)
     
 """
@@ -56,17 +70,17 @@ if len(sys.argv) > 1:
 # DEFINE CONSTANTES
 #
 
-nombre_análisis  = GyG_constantes.txt_saldos_pendientes    # "GyG Saldos pendientes {:%Y-%m (%b)}.txt"
-attach_path      = GyG_constantes.ruta_saldos_pendientes   # ./GyG Recibos/Saldos Pendientes
-# attach_path      = GyG_constantes.ruta_analisis_de_pagos   # "C:/Users/MColosso/Google Drive/GyG Recibos/Análisis de Pago/"
+nombre_análisis   = GyG_constantes.txt_saldos_pendientes    # "GyG Saldos pendientes {:%Y-%m (%b)}.txt"
+attach_path       = GyG_constantes.ruta_saldos_pendientes   # ./GyG Recibos/Saldos Pendientes
 
-excel_workbook   = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
-# excel_resumen    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
-# excel_workbook   = GyG_constantes.pagos_wb_estandar_N        # '1.1. GyG Recibos.xlsm'
-excel_resumen    = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
-excel_detalle    = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
-excel_cuotas     = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
-excel_saldos     = GyG_constantes.pagos_ws_saldos          # 'Saldos'
+excel_workbook    = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
+excel_resumen     = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
+excel_detalle     = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
+excel_cuotas      = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
+excel_saldos      = GyG_constantes.pagos_ws_saldos          # 'Saldos'
+excel_saldos_usd  = GyG_constantes.pagos_ws_saldos_USD      # 'Saldos (US$)'
+
+epsilon           = 1.0e-6
 
 
 #
@@ -81,6 +95,15 @@ def get_filename(filename):
 
 def edita_categoría(categoría):
     return "" if categoría in ['Cuota completa', 'Colaboración'] else f" ({categoría})"
+
+def tabla_saldos(beneficiario, tabla):
+    saldo = 0.00
+    try:
+        saldo = float(tabla[tabla['Beneficiario'] == beneficiario]['Saldo'])
+    except:
+        pass
+    return saldo
+
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
@@ -112,8 +135,11 @@ def seleccionaRegistro(beneficiarios, categorías, montos):
     # Selecciona aquellos que tienen una cuenta con saldo a favor
     df_saldos_gt_0 = df_saldos[df_saldos['Saldo'] > 0]
     list_3 = [len(df_saldos_gt_0[df_saldos_gt_0['Beneficiario'] == b]) > 0 for b in beneficiarios]
+    # Selecciona aquellos que tienen una cuenta en dólares con saldo a favor
+    df_saldos_gt_0 = df_saldos_usd[df_saldos_usd['Saldo'] > 0]
+    list_4 = [len(df_saldos_gt_0[df_saldos_gt_0['Beneficiario'] == b]) > 0 for b in beneficiarios]
 
-    return list_or(list_1, list_or(list_2, list_3))
+    return list_or(list_1, list_or(list_2, list_or(list_3, list_4)))
 
 
 def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
@@ -135,6 +161,7 @@ def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
     else:
         return None
 
+
 #a_evaluar = ['Jocsan Orta Correa']
 
 def no_participa_desde(r):
@@ -154,7 +181,7 @@ def no_participa_desde(r):
     f_desde = columns.index(r['F.Desde'])
 
     for idx in reversed(range(f_desde, last_col+1)):
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1): idx: {idx}, cuota: {cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx])}, r.iloc[idx]: {r.iloc[idx]}")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1): idx: {idx}, cuota: {cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx])}, r.iloc[idx]: {r.iloc[idx]}")
         if notnull(r.iloc[idx]):
             ultimo_mes_con_pagos = idx
             break
@@ -166,23 +193,28 @@ def no_participa_desde(r):
     else:
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
         fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
-#    if r['Beneficiario'] in a_evaluar: print(f"  (1a): cuotas_pendientes: {cuotas_pendientes:,.2f}, this_col: {this_col}, fecha_txt: {fecha_txt}")
+    # if r['Beneficiario'] in a_evaluar: print(f"  (1a): cuotas_pendientes: {cuotas_pendientes:,.2f}, this_col: {this_col}, fecha_txt: {fecha_txt}")
 
     # Determina el saldo del último mes
     if ultimo_mes_con_pagos == None:
         saldo_ultimo_mes = 0.00
     elif r.iloc[ultimo_mes_con_pagos] == 'ü':       # 'check'
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1c): x = {ultimo_mes_con_pagos}, columns[x] = {columns[ultimo_mes_con_pagos]} - DEUDA SALDADA")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1c): x = {ultimo_mes_con_pagos}, columns[x] = {columns[ultimo_mes_con_pagos]} - DEUDA SALDADA")
         saldo_ultimo_mes = 0.00           # La mensualidad está saldada por completo
     else:
         f_ultimo_pago = fecha_ultimo_pago(r['Beneficiario'], columns[ultimo_mes_con_pagos].strftime('%m-%Y'))
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1b): fecha_ultimo_pago({r['Beneficiario']}, {columns[ultimo_mes_con_pagos].strftime('%m-%Y')}) = {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
-#        if r['Beneficiario'] in a_evaluar: print(f"  (1c): Fecha último pago: {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1b): fecha_ultimo_pago({r['Beneficiario']}, {columns[ultimo_mes_con_pagos].strftime('%m-%Y')}) = {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
+        # if r['Beneficiario'] in a_evaluar: print(f"  (1c): Fecha último pago: {f_ultimo_pago}, mes: '{columns[ultimo_mes_con_pagos]}'")
         if (f_ultimo_pago == None) or (r['Categoría'] == 'Colaboración'):
             saldo_ultimo_mes = 0.00   # Probablemente es un vecino que nunca ha pagado
         else:
-            cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], f_ultimo_pago)
-#            if r['Beneficiario'] in a_evaluar: print(f"  (3): Beneficiario: {r['Beneficiario']}, cuota actual: {cuota_actual}, pago: {r[columns[ultimo_mes_con_pagos]]}")
+            # ---------------------------------------------------------------------------------------
+            # La cuota a utilizar el la del mes a evaluar, y no la del mes en el cual se hizo el pago
+            # ---------------------------------------------------------------------------------------
+            # cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], f_ultimo_pago)
+            cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], columns[ultimo_mes_con_pagos])
+            # ---------------------------------------------------------------------------------------
+            # if r['Beneficiario'] in a_evaluar: print(f"  (3): Beneficiario: {r['Beneficiario']}, cuota actual: {cuota_actual}, pago: {r[columns[ultimo_mes_con_pagos]]}")
             saldo_ultimo_mes = cuota_actual - r[columns[ultimo_mes_con_pagos]]
             # Si el monto cancelado no cubre la cuota del período, recalcula el saldo del ultimo mes en base
             # a la última cuota
@@ -193,17 +225,26 @@ def no_participa_desde(r):
     if saldo_ultimo_mes < 0.00:
         saldo_ultimo_mes = 0.00
     deuda_actual = cuotas_pendientes + saldo_ultimo_mes
-#    if r['Beneficiario'] in a_evaluar: print(f"  (8): Deuda: actual: Bs. {edita_número(deuda_actual, num_decimals=0)}, " + \
-#                                             f"Saldo último mes: Bs. {edita_número(saldo_ultimo_mes, num_decimals=0)}")
+    # if r['Beneficiario'] in a_evaluar: print(f"  (8): Deuda: actual: Bs. {edita_número(deuda_actual, num_decimals=0)}, " + \
+    #                                          f"Saldo último mes: Bs. {edita_número(saldo_ultimo_mes, num_decimals=0)}")
+
+    saldo_a_favor_VEB = tabla_saldos(r['Beneficiario'], df_saldos)
+    saldo_a_favor_USD = tabla_saldos(r['Beneficiario'], df_saldos_usd)
+    saldo_a_favor_USD_Bs = saldo_a_favor_USD * cuotas_obj.tasa_actual(datetime.today())
+    saldo_a_favor_Bs = saldo_a_favor_VEB + saldo_a_favor_USD_Bs
+    deuda_actual -= saldo_a_favor_Bs
+
+    if deuda_actual < epsilon:
+        deuda_actual = 0.00
 
     info_deuda = ''
     if saldo_ultimo_mes == 0.00 and ultimo_mes_con_pagos < last_col and fecha_txt != '2016':
         ultimo_mes_con_pagos += 1
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
         fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
-#    if r['Beneficiario'] in a_evaluar: print(f"  (9): x: {ultimo_mes_con_pagos}, last_col: {last_col}, r[{fecha_referencia}]: {r[fecha_referencia]}, deuda: {saldo_ultimo_mes}")
-    if deuda_actual != 0.00:
-        if saldo_ultimo_mes != 0.00:
+    # if r['Beneficiario'] in a_evaluar: print(f"  (9): x: {ultimo_mes_con_pagos}, last_col: {last_col}, r[{fecha_referencia}]: {r[fecha_referencia]}, deuda: {saldo_ultimo_mes}")
+    if deuda_actual > 0.00:
+        if saldo_ultimo_mes > 0.00 or saldo_a_favor_Bs > 0.00:
             mensaje = 'Diferencia pendiente en ' + fecha_txt
             if ultimo_mes_con_pagos != last_col:
                 mensaje += ' y meses subsiguientes'
@@ -218,28 +259,44 @@ def no_participa_desde(r):
     else:
         mensaje = f"No tiene {'colaboraciones' if r['Categoría'] == 'Colaboración' else 'cuotas'} pendientes"
 
-    info_deuda = edita_número(deuda_actual, num_decimals=0) if (deuda_actual != 0.00) else ""
-    if (deuda_actual != 0.00):
+    info_deuda = edita_número(deuda_actual, num_decimals=GyG_constantes.num_decimales) if (deuda_actual != 0.00) else ""
+    if deuda_actual != 0.00:
         if saldo_pendiente:
             sep1, sep2 = (' por ', '')
-#            if x == last_col:
-#                sep1 = ' de '
+            # if x == last_col:
+            #     sep1 = ' de '
         else:
             sep1, sep2 = (' (', ')')
-        info_deuda = f"{sep1}Bs. {edita_número(deuda_actual, num_decimals=0)}{sep2}"
+        info_deuda = f"{sep1}Bs. {edita_número(deuda_actual, num_decimals=GyG_constantes.num_decimales)}{sep2}"
     else:
         info_deuda = ""
 
-    saldo_a_favor = df_saldos[df_saldos['Beneficiario'] == r['Beneficiario']]['Saldo']
-    if saldo_a_favor.empty:
+#--------------------------------
+    if saldo_a_favor_Bs < epsilon:
         info_saldo = ''
     else:
-        saldo_a_favor = saldo_a_favor.iloc[0]
-        if deuda_actual == 0.00:
-            info_saldo = f"  y tiene un saldo a su favor de Bs. {edita_número(saldo_a_favor, num_decimals=2)}"
-        else:
-            comparacion = 'no cubre' if saldo_a_favor < deuda_actual else 'supera' if saldo_a_favor > deuda_actual else 'es igual a'
-            info_saldo = f" (su saldo disponible -Bs. {edita_número(saldo_a_favor, num_decimals=2)}- {comparacion} esta cantidad)"
+        es = '' if saldo_a_favor_VEB == 1.00 else 'es'
+        txt_saldo_VEB = f'{edita_número(saldo_a_favor_VEB, num_decimals=2).replace(",00", "")} bolívar{es}'
+        es = '' if saldo_a_favor_USD == 1.00 else 'es'
+        txt_saldo_USD = f'{edita_número(saldo_a_favor_USD, num_decimals=2).replace(",00", "")} dólar{es}'
+        info_saldo = ''.join([
+                                f" y tiene un saldo a su favor de ",
+                                txt_saldo_VEB if saldo_a_favor_VEB > 0.00 else '',
+                                ' más ' if saldo_a_favor_VEB > 0.00 and saldo_a_favor_USD > 0.00 else '',
+                                txt_saldo_USD if saldo_a_favor_USD > 0.00 else '',
+                            ])
+        deuda_neta = cuotas_pendientes + saldo_ultimo_mes
+        saldo_neto = saldo_a_favor_VEB + saldo_a_favor_USD * cuotas_obj.tasa_actual(datetime.today())
+        if deuda_actual > 0.00:
+            info_saldo += ", ya descontado, el cual no cubre la deuda actual"
+        elif deuda_actual == 0.00:
+            pass
+        elif saldo_neto > deuda_neta:
+            info_saldo += ", el cual supera la deuda actual"
+#--------------------------------
+# comparacion = 'no cubre' if saldo_a_favor < deuda_actual else 'supera' if saldo_a_favor > deuda_actual else 'es igual a'
+#  info_saldo = f" (su saldo disponible -Bs. {edita_número(saldo_a_favor, num_decimals=2)}- {comparacion} esta cantidad)"
+#--------------------------------
 
 #    if r['Beneficiario'] in a_evaluar: print(f' (10): mensaje:    "{mensaje}",\n' + \
 #                                             f'       info_deuda: "{info_deuda}",\n' + \
@@ -297,7 +354,12 @@ hoy = datetime.now().day
 df_saldos = read_excel(excel_workbook, sheet_name=excel_saldos, skiprows=[0, 1])
 df_saldos = df_saldos[['Beneficiario', 'Dirección', 'Saldo']]
 df_saldos.dropna(subset=['Beneficiario'], inplace=True)
-df_saldos = df_saldos[df_saldos['Saldo'] > 0.0]
+df_saldos = df_saldos[df_saldos['Saldo'] > epsilon]
+
+df_saldos_usd = read_excel(excel_workbook, sheet_name=excel_saldos_usd, skiprows=[0, 1])
+df_saldos_usd = df_saldos_usd[['Beneficiario', 'Dirección', 'Saldo']]
+df_saldos_usd.dropna(subset=['Beneficiario'], inplace=True)
+df_saldos_usd = df_saldos_usd[df_saldos_usd['Saldo'] > epsilon]
 
 
 # Lee la hoja de cálculo con el detalle de los pagos
@@ -372,9 +434,10 @@ for index, r in df_resumen.iterrows():
         if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
             análisis += '\n'
             dirección_anterior = get_street(r['Dirección'])
-        análisis += mensaje.format(
-                r['Beneficiario'], edita_dirección(r['Dirección']), edita_categoría(r['Categoría']),
-                info_pago, info_deuda, info_saldo)
+        análisis += bloque_de_texto(mensaje.format(
+                        r['Beneficiario'], edita_dirección(r['Dirección']), edita_categoría(r['Categoría']),
+                        info_pago, info_deuda, info_saldo),
+                        anchura=90, continuacion=espacios(3), separa_palabras=True) + '\n'
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)
 filename = os.path.join(attach_path, 'Apple', nombre_análisis.format(datetime(año, mes, 1)))

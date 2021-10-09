@@ -4,105 +4,101 @@
 
 """
     POR HACER
-    -   Agrupar en "mangos bajitos", "alto impacto" y el resto, para facilitar la gestión de cobranza
+     -  
+
+
+    NOTAS
+     -  Agrupar en "mangos bajitos", "alto impacto" y el resto, para facilitar la gestión de cobranza
         (¿cómo poder establecer esta clasificación...?)
-    -   En agunos casos se ubicó a un vecino en una categoría particular, a fin de que se mostrase per-
+     -  En agunos casos se ubicó a un vecino en una categoría particular, a fin de que se mostrase per-
         manentemente en ese segmento de la Cartelera Virtual. Para estos casos, no mostrar una propuesta
         de cambio de categoría
-    -   ¿Hay vecinos cuyo comportamiento de pagos es similar al de otros? Ello pudiera ayudar para in-
+     -  ¿Hay vecinos cuyo comportamiento de pagos es similar al de otros? Ello pudiera ayudar para in-
         fluenciar sobre algunos de ellos para lograr un cambio en el grupo
-    -   Agregar al resumen:
+     -  Agregar al resumen:
           . Para aquellos vecinos que pagan la cuota completa, indicar los meses que están por debajo de
             la cuota (incluye meses no cancelados que quedaron "encerrados" entre otros)
-    -   Al cambiar la rutina "separa_meses()" a la versión de GyG_utilitarios, se encontró que a algunos
-        vecinos se les agregó una propuesta de cambio de categoría:
-            * Familia Durvelle Serrano, Calle Guacara Nro. 89-60
-              Paga cuota completa entre el 30 del mes anterior y el 18 del mes actual, usualmente hacia el día 9
-              Su último pago fue el 03 de abril (abr. 2021) y no tiene saldos pendientes
-              En el 5% de los casos (2 de 54), su pago correspondió a más de un mes
-              Se sugiere cambiar su categoría de pago a 'COLABORACIÓN'
-        ¿Por qué...?
-         -> Se estaba comparando el monto cancelado en el mes con la cuota vigente a la fecha en lugar
-            de la cuota vigente a la fecha de pago.
-             -> Se cambió la invocación a 'cuota_vigente()' por 'cuota_actual()' en la rutina
-                'genera_propuesta_categoría()'
 
 
     HISTORICO
-    -   Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
+     -  En la rutina 'no_participa_desde()', se añadió código para descontar los saldos en dólares
+        y en bolívares del saldo deudor y se reescribió el texto a desplegar (09/10/2021)
+     -  A partir del 1ro. de agosto de 2021, se elimina el programa de alimentación para los vigilantes,
+        por lo que
+     -  Se agregó una opción para aplicar o no el ajuste por inflación en el cálculo de los saldos
         pendientes (22/03/2021)
-    -   Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
-    -   Se incorpora la librería 'swifter' para acelerar el cálculo de las funciones 'apply' en Pandas
+     -  Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
+     -  Se incorpora la librería 'swifter' para acelerar el cálculo de las funciones 'apply' en Pandas
         (12/05/2020)
-    -   En el resumen de pagos se muestra adicionalmente el promedio de los 5 meses anteriores (24/04/2020)
-    -   Se corrigió un error de datos que generaba que, en la rutina 'meses_último_pago()', el último pago
+     -  En el resumen de pagos se muestra adicionalmente el promedio de los 5 meses anteriores (24/04/2020)
+     -  Se corrigió un error de datos que generaba que, en la rutina 'meses_último_pago()', el último pago
         estuviese vacío ('-'): El texto del 'Concepto' en la hoja 'Vigilancia' contenía un nombre de mes
         errado ('Febero' en lugar de 'Febrero'). Al ajustar todos los meses errados, ya no se presentó
         el error de ejecución (04/02/2020)
-    -   CORREGIR: La reconversión monetaria crea fórmulas más complejas que pudieran generar un error al
+     -  CORREGIR: La reconversión monetaria crea fórmulas más complejas que pudieran generar un error al
         realizar la distribución del pago en meses anteriores y posteriores al mes actual. (26/12/2019)
           . Se incorporó la librería PyParsing para la evaluación de las fórmulas.
           . Se unificaron los procedimientos 'separa_meses()' y 'separa_pagos()', corrigiendo adiciomal-
             mente algunos errores.
-    -   Al convertir los nombres de los beneficiarios en fórmulas en la hoja 'RESUMEN VIGILANCIA', se generó
+     -  Al convertir los nombres de los beneficiarios en fórmulas en la hoja 'RESUMEN VIGILANCIA', se generó
         un error en la rutina "distribución_de_pagos()": la columna 'Beneficiarios' contiene fórmulas.
           -> Convertida columna 'Beneficiarios' en valores, leyéndola con pandas.read_excel() y tomando el
              resto de las columnas con openpyxl.load_workbook() (13/12/2019)
-    -   Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
+     -  Cambiar la forma para la lectura de opciones desde el standard input, estandarizando su uso e
         implementando la opción '--toma_opciones_por_defecto' en la linea de comandos (08/12/2019)
-    -   Se agrega opción para ordenar o no los resultados, y hacerlo comparable con saldos_pendientes.py
+     -  Se agrega opción para ordenar o no los resultados, y hacerlo comparable con saldos_pendientes.py
         (02/11/2019)
-    -   Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
+     -  Ajustar la codificación de caracteres para que el archivo de saldos sea legible en Apple y
         Windows
           -> Se generan archivos con codificaciones 'UTF-8' (Apple) y 'cp1252' (Windows) en carpetas
              separadas (29/10/2019)
-    -   Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro de
+     -  Se cambiaron las ubicaciones de los archivos resultantes a la carpeta GyG Recibos dentro de
         la carpeta actual para compatibilidad entre Windows y macOS (21/10/2019)
-    -   Determinar la cantidad de pagos al 100% realizados comparando directamente el monto cancelado con
+     -  Determinar la cantidad de pagos al 100% realizados comparando directamente el monto cancelado con
         el que estaba vigente para la fecha de pago, y no tomarlo directamente del archivo Excel.
         (07/10/2019)
-    -   Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas) (25/07/2019)
-    -   "Buenos días vecinos, en reunión de Junta Directiva se estableció la cuota para el pago de la
+     -  Cambiar el manejo de cuotas para usar las rutinas en la clase Cuota (GyG_cuotas) (25/07/2019)
+     -  "Buenos días vecinos, en reunión de Junta Directiva se estableció la cuota para el pago de la
         vigilancia en un dolar en base a la tasa de cierre semanal del Banco Central, actualmente
         en Bs. 23.400
         Las cuotas pendientes por cancelar, hasta Agosto 2019, quedarán en los montos fijos ya
         establecidos. A partir del mes de Septiembre, toda cuota atrasada se cancelará con la tasa
         de la semana en curso"
           -> Ajustado (11/09/2019)
-    -   Ajustar a 3 la cantidad de meses a revisar para la proposición de cambio de categoría
+     -  Ajustar a 3 la cantidad de meses a revisar para la proposición de cambio de categoría
         (corregido 12/08/2019)  -- Se mantienen en 5 meses los reflejados en el cuadro de resumen
-    -   Los pagos recibidos en un mes en particular afectan a meses anteriores y siguientes, además del mes
+     -  Los pagos recibidos en un mes en particular afectan a meses anteriores y siguientes, además del mes
         en curso. ¿Cómo se distribuyen estos pagos? (24/07/2019)
-    -   Mostar saldo deudor en TODAS las categorías, no sólo en 'Cuota completa' (07/06/2019)
+     -  Mostar saldo deudor en TODAS las categorías, no sólo en 'Cuota completa' (07/06/2019)
           . La cuota del 'Colegio El Trigal' (y, anteriormente, la de 'La Casita Encantada'), no es la misma
             que la del resto de los vecinos, por lo que el monto indicado no es correcto (corregido 09/06/2019)
-    -   Ajustes de redacción en los mensajes (05/06/2019)
-    -   En genera_pagos_mensuales() hay que restar 4 del conteo de pagos por mes (probablemente corresponden
+     -  Ajustes de redacción en los mensajes (05/06/2019)
+     -  En genera_pagos_mensuales() hay que restar 4 del conteo de pagos por mes (probablemente corresponden
         a las lineas TOTAL, NÚMERO DE PAGOS, PAGOS 100% CUOTA y PAGOS 100% EQUIVALENTES) ¿cómo eliminar
         esta constante?
           . 'linea_totales' contiene el índice de la fila que contiene los totales, no el número físico de la
             linea. La diferencia es producto de las eliminaciones de renglones en el proceso de limpieza
           . Se reinició el índice para ubicar correctamente la linea de totales (corregido 15/05/2019)
-    -   Mostrar el saldo pendiente en bolívares en los vecinos que pagan cuota completa (29/04/2019)
-    -   En aquellos vecinos que parcicipan en el programa de comidas para los vigilantes, incluir un comen-
+     -  Mostrar el saldo pendiente en bolívares en los vecinos que pagan cuota completa (29/04/2019)
+     -  En aquellos vecinos que parcicipan en el programa de alimentación para los vigilantes, incluir un comen-
         tario al respecto (14/04/2019)
-    -   Mostrar la lista de vecinos en orden alfabético (09/04/2019)
-    -   Se muestran en el análisis los vecinos en fecha posterior a "F.Hasta" y "Categoría" no nula
+     -  Mostrar la lista de vecinos en orden alfabético (09/04/2019)
+     -  Se muestran en el análisis los vecinos en fecha posterior a "F.Hasta" y "Categoría" no nula
         -- Corregido 02/02/2019
-    -   Agregar al resumen:
+     -  Agregar al resumen:
           . Cantidad de pagos recibidos iguales o superiores a la cuota
           . Cantidad de pagos recibidos equivalentes a pagos al 100% de la cuota (total recaudado / cuota)
-    -   Mostrar el saldo a la fecha de aquellos vecinos quienes han hecho depósitos por adelantado
-    -   Manejar adecuadamente aquellos registros con Promedio o Variación == None (=> no se encontraron
+     -  Mostrar el saldo a la fecha de aquellos vecinos quienes han hecho depósitos por adelantado
+     -  Manejar adecuadamente aquellos registros con Promedio o Variación == None (=> no se encontraron
         suficientes pagos en un período de <nMeses> meses)
-    -   No eliminar los registros de aquellos vecinos que pagan cuota completa y el monto cancelado en el
+     -  No eliminar los registros de aquellos vecinos que pagan cuota completa y el monto cancelado en el
         mes de análisis sea inferior a la cuota del mes
         ( df_resumen = df_resumen.loc[isnull(df_resumen[datetime(año, mes, 1)])] )
-    -   Mostrar la cantidad de cuotas recaudadas, el monto total y el monto de la cuota de los últimos
+     -  Mostrar la cantidad de cuotas recaudadas, el monto total y el monto de la cuota de los últimos
         <nMeses>
-    -   Colocar la propuesta de cambio de categoría al final del análisis del vecino, si corresponde
-    -   Destacar las propuestas de cambio de categoría cuando la resultante sea diferente a "No participa"
-    -   Evaluar cambios de categoría: Cuota completa, Colaboración o No participa
+     -  Colocar la propuesta de cambio de categoría al final del análisis del vecino, si corresponde
+     -  Destacar las propuestas de cambio de categoría cuando la resultante sea diferente a "No participa"
+     -  Evaluar cambios de categoría: Cuota completa, Colaboración o No participa
         ("más de xx meses cancelando {cuota completa | colaboración}. Cambiar su clasificación a 'xxx'")
 
 """
@@ -126,24 +122,28 @@ import locale
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 
 # Define textos
-nombre_análisis  = GyG_constantes.txt_analisis_de_pago     # "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
-attach_path      = GyG_constantes.ruta_analisis_de_pagos   # "./GyG Recibos/Análisis de Pago"
+nombre_análisis   = GyG_constantes.txt_analisis_de_pago     # "GyG Analisis de Pagos {:%Y-%m (%B)}.txt"
+attach_path       = GyG_constantes.ruta_analisis_de_pagos   # "./GyG Recibos/Análisis de Pago"
 
-excel_workbook   = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
-# excel_ws_resumen = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
-# excel_workbook   = GyG_constantes.pagos_wb_estandar_N        # '1.1. GyG Recibos.xlsm'
-excel_ws_resumen = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
-excel_ws_detalle = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
-excel_ws_vecinos = GyG_constantes.pagos_ws_vecinos         # 'Vecinos'
-excel_ws_cuotas  = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
-excel_ws_saldos  = GyG_constantes.pagos_ws_saldos          # 'Saldos'
+excel_workbook    = GyG_constantes.pagos_wb_estandar        # '1.1. GyG Recibos.xlsm'
+# excel_resumen     = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
+# excel_workbook    = GyG_constantes.pagos_wb_estandar_N        # '1.1. GyG Recibos.xlsm'
+excel_resumen     = GyG_constantes.pagos_ws_resumen         # 'RESUMEN VIGILANCIA'
+excel_detalle     = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
+excel_vecinos     = GyG_constantes.pagos_ws_vecinos         # 'Vecinos'
+# excel_cuotas      = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
+excel_saldos      = GyG_constantes.pagos_ws_saldos          # 'Saldos'
+excel_saldos_usd  = GyG_constantes.pagos_ws_saldos_USD      # 'Saldos (US$)'
 
-nMeses           = 3       # Meses a analizar para propuestas de cambio de categoría
-nMeses_resumen   = 6       # Meses a mostrar en el cuadro resumen al inicio del análisis
+nMeses            = 3       # Meses a analizar para propuestas de cambio de categoría
+nMeses_resumen    = 6       # Meses a mostrar en el cuadro resumen al inicio del análisis
 
-wrapper          = None    # Wrapper para la división de líneas
+wrapper           = None    # Wrapper para la división de líneas
 
-VERBOSE          = False   # Despliega tabla de distribución de pagos
+VERBOSE           = False   # Despliega tabla de distribución de pagos
+
+epsilon           = 1.0e-6
+bullet            = '.'
 
 
 # Gramática de expresiones aritméticas
@@ -172,6 +172,15 @@ if len(sys.argv) > 1:
 
 def esVigilancia(x):
     return x == GyG_constantes.CATEGORIA_VIGILANCIA
+
+
+def tabla_saldos(beneficiario, tabla):
+    saldo = 0.00
+    try:
+        saldo = float(tabla[tabla['Beneficiario'] == beneficiario]['Saldo'])
+    except:
+        pass
+    return saldo
 
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
@@ -287,9 +296,13 @@ def no_participa_desde(r):
                 deuda = cuota_actual - r[columns[x]]
 
     deuda = sum_cuotas + (deuda if deuda > 0.00 else 0.00)
+    if deuda < epsilon:
+        deuda = 0.00
 
     info_deuda = ''
-    if deuda != 0.00:
+    if deuda == 0.00:
+        mensaje = 'no tiene saldos pendientes'
+    else:
         if last_col - x <= 0:   # <<<=== anteriormente '1' en lugar de '0'
             if notnull(r[datetime(año, mes, 1)]):
                 mensaje = 'tiene un saldo pendiente en ' + fecha_txt
@@ -299,18 +312,31 @@ def no_participa_desde(r):
         else:
             mensaje = 'tiene cuotas pendientes desde ' + fecha_txt
             saldo_pendiente = True
+
+    saldo_VEB = tabla_saldos(r['Beneficiario'], df_saldos)
+    saldo_USD = tabla_saldos(r['Beneficiario'], df_saldos_usd)
+    saldo_a_favor = saldo_VEB + saldo_USD * cuotas_obj.tasa_actual(datetime.today())
+
+    if saldo_a_favor > epsilon:
+        es = '' if saldo_VEB == 1.00 else 'es'
+        txt_saldo_VEB = f'{edita_número(saldo_VEB, num_decimals=2).replace(",00", "")} bolívar{es}'
+        es = '' if saldo_USD == 1.00 else 'es'
+        txt_saldo_USD = f'{edita_número(saldo_USD, num_decimals=2).replace(",00", "")} dólar{es}'
+        info_saldo = ''.join([
+                                f". Dispone de un saldo a su favor de ",
+                                txt_saldo_VEB if saldo_VEB > epsilon else '',
+                                ' más ' if saldo_VEB > epsilon and saldo_USD > epsilon else '',
+                                txt_saldo_USD if saldo_USD > epsilon else '',
+                                ', ya descontados,' if deuda > saldo_a_favor else '',
+                            ])
     else:
-        mensaje = 'no tiene saldos pendientes'
+        info_saldo = ""
 
-    # Valida si tiene un saldo a favor
-    if df_saldos['Beneficiario'].str.contains(r['Beneficiario'], regex=False).any():
-        saldo = float(df_saldos[df_saldos['Beneficiario'] == r['Beneficiario']]['Saldo'])   # .item()
-        saldo = edita_número(saldo, num_decimals=0)
-        if saldo != '0':
-            mensaje += f'\n  Dispone de un saldo a favor de Bs. {saldo}'
-            saldo_a_favor = True
+    deuda -= saldo_a_favor
 
-    if (deuda != 0.00):
+    if deuda < epsilon:
+        info_deuda = ""
+    else:
         if saldo_pendiente:
             sep1, sep2 = (' por ', '')
             if x == last_col:
@@ -319,11 +345,12 @@ def no_participa_desde(r):
             sep1, sep2 = (' (', ')')
         if saldo_a_favor:
             sep1, sep2 = (' y un saldo deudor de ', '')   # muestra saldo a favor y saldo deudor
-        info_deuda = f"{sep1}Bs. {edita_número(deuda, num_decimals=0)}{sep2}"
-    else:
-        info_deuda = ""
+        info_deuda = f"{sep1}Bs. {edita_número(deuda, num_decimals=GyG_constantes.num_decimales)}{sep2}"
 
-    return mensaje, info_deuda
+    # if r['Beneficiario'] in ['Familia Alonso Rojas', 'Familia Costermani Terrer', 'Familia Del Negro Palermo',
+    #                          'Familia Fermín Rivas', 'Wilson Escamilla']:
+    #     print(f"{r['Beneficiario']:30},", f'"{mensaje},"', f'"{info_saldo}"', f'"{info_deuda}"')
+    return mensaje, info_saldo, info_deuda
 
 def mas_de_un_mes(beneficiario):
     pagos_beneficiario = (df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']])['Concepto'].tolist()
@@ -336,10 +363,14 @@ def mas_de_un_mes(beneficiario):
     # convierte 'pct_pagos_multiples' en un entero múltiplo de 5
     pct_pagos_multiples = int(round(pct_pagos_multiples * 20) / 20 * 100)
     if num_pagos_multiples > 0:
-        return f'\n  En el {pct_pagos_multiples}% de los casos ({num_pagos_multiples} de {num_pagos}), ' + \
-                'su pago correspondió a más de un mes'
+        if pct_pagos_multiples == 0:
+            s = '' if num_pagos == 1 else 's'
+            mensaje = f"En sólo {num_pagos_multiples} de {num_pagos} caso{s}"
+        else:
+            mensaje = f"En el {pct_pagos_multiples}% de los casos ({num_pagos_multiples} de {num_pagos})"
+        return f'\n  {bullet} {mensaje}, su pago correspondió a más de un mes'
     else:
-        return "\n  Nunca ha pagado más de un mes simultáneamente"
+        return f"\n  {bullet} Nunca ha pagado más de un mes simultáneamente"
 
 def genera_pagos_mensuales():
     # Reinicia el índice para ubicar correctamente la linea de totales
@@ -366,14 +397,15 @@ def genera_resumen():
     for idx in range(last_col - nMeses_resumen + 1, last_col + 1):
         mes = format(columns[idx], '%b %Y')   #.capitalize()
         num_pagos = pagos_mensuales[idx]
-        tot_pagos = edita_número(totales_mensuales[idx], num_decimals=0)
+        tot_pagos = edita_número(totales_mensuales[idx], num_decimals=GyG_constantes.num_decimales)
 #       num_pagos_100_pct = int(num_100_pct[idx])   # <<<=== Determinar la cantidad de pagos al 100% realizados
                                                     #        comparando directamente el monto cancelado con el que
                                                     #        estaba vigente para la fecha de pago, y no tomarlo
                                                     #        directamente del archivo Excel.
 #       num_pagos_100_pct = cuenta_pagos_completos(columns[idx])
         num_pagos_100_pct = pagos_100_pct[dist_idx] # <<<=== Valores tomados antes de eliminar vecinos no seleccionados
-        promedio  = edita_número(round(totales_mensuales[idx] / pagos_mensuales[idx], -1), num_decimals=0)
+        promedio  = edita_número(round(totales_mensuales[idx] / pagos_mensuales[idx], -1),
+                                 num_decimals=GyG_constantes.num_decimales)
         if notnull(cuotas_mensuales[idx]):
             cuota = cuotas_mensuales[idx]
             num_pagos_eqv = round(totales_mensuales[idx] / cuota, 1)
@@ -382,11 +414,12 @@ def genera_resumen():
             cuota = 0
             num_pagos_eqv = 0
             # pct = 0
-        cuota_ed = edita_número(cuota, num_decimals=0)
+    #---------------------
+        cuota_ed = edita_número(cuota, num_decimals=GyG_constantes.num_decimales)
         num_pagos_eqv_ed = edita_número(num_pagos_eqv, num_decimals=1)
         total = sum(distribución[dist_idx][1:])
         dist_num_pagos = distribución[dist_idx][0]
-        dist_tot_pagos = edita_número(total, num_decimals=0)
+        dist_tot_pagos = edita_número(total, num_decimals=GyG_constantes.num_decimales)
         dist_pct_ant   = edita_número(distribución[dist_idx][1] / total * 100, num_decimals=1) + '%'
         dist_pct_mes   = edita_número(distribución[dist_idx][2] / total * 100, num_decimals=1) + '%'
         dist_pct_pos   = edita_número(distribución[dist_idx][3] / total * 100, num_decimals=1) + '%'
@@ -394,6 +427,13 @@ def genera_resumen():
                        f'{num_pagos_100_pct:>6}{num_pagos_eqv_ed:>9}' + \
                        f'{dist_num_pagos:>6}{dist_tot_pagos:>12}' + \
                        f'{dist_pct_ant:>7}{dist_pct_mes:>7}{dist_pct_pos:>7}\n'
+    #---------------------
+        # análisis += ''.join([
+        #     alinea_texto(mes, anchura=8, alineación="<"),
+        #     edita_número(totales_mensuales[idx], num_decimals=GyG_constantes.num_decimales, anchura=14),
+        #     '\n'
+        # ])
+    #---------------------
         df_tabla.loc[dist_idx] = [num_pagos,        totales_mensuales[idx],  round(totales_mensuales[idx] / pagos_mensuales[idx], -1), \
                                   cuota,            num_pagos_100_pct,       num_pagos_eqv, \
                                   dist_num_pagos,   total,                   distribución[dist_idx][1] / total * 100, \
@@ -401,13 +441,31 @@ def genera_resumen():
         if dist_idx == nMeses_resumen - 2:
             df_prom = list(df_tabla.mean())
             análisis += espacios(65, '-') + '  ' + espacios(36, '-') + '\n'
-            análisis += f'{"prom.":>9}' + \
-                        f'{edita_número(round(df_prom[ 0], 0), num_decimals=0):>4}{edita_número(round(df_prom[1], 0), num_decimals=0):>14}' + \
-                        f'{edita_número(round(df_prom[ 2], 0), num_decimals=0):>11}{edita_número(round(df_prom[3], 0), num_decimals=0):>11}' + \
-                        f'{edita_número(round(df_prom[ 4], 0), num_decimals=0):>6}{edita_número(round(df_prom[5], 1), num_decimals=1):>9}' + \
-                        f'{edita_número(round(df_prom[ 6], 0), num_decimals=0):>6}{edita_número(round(df_prom[7], 0), num_decimals=0):>12}' + \
-                        f'{edita_número(round(df_prom[ 8], 1), num_decimals=1)+"%":>7}{edita_número(round(df_prom[9], 1), num_decimals=1)+"%":>7}' + \
-                        f'{edita_número(round(df_prom[10], 1), num_decimals=1)+"%":>7}\n'
+    #---------------------
+            # análisis += f'{"prom.":>9}' + \
+            #             f'{edita_número(round(df_prom[ 0], 0), num_decimals=0):>4}{edita_número(round(df_prom[1], 0), num_decimals=0):>14}' + \
+            #             f'{edita_número(round(df_prom[ 2], 0), num_decimals=0):>11}{edita_número(round(df_prom[3], 0), num_decimals=0):>11}' + \
+            #             f'{edita_número(round(df_prom[ 4], 0), num_decimals=0):>6}{edita_número(round(df_prom[5], 1), num_decimals=1):>9}' + \
+            #             f'{edita_número(round(df_prom[ 6], 0), num_decimals=0):>6}{edita_número(round(df_prom[7], 0), num_decimals=0):>12}' + \
+            #             f'{edita_número(round(df_prom[ 8], 1), num_decimals=1)+"%":>7}{edita_número(round(df_prom[9], 1), num_decimals=1)+"%":>7}' + \
+            #             f'{edita_número(round(df_prom[10], 1), num_decimals=1)+"%":>7}\n'
+    #---------------------
+            análisis += ''.join([
+                alinea_texto("prom.", anchura=9),
+                edita_número(round(df_prom[ 0], 0), num_decimals=0, anchura=4),
+                edita_número(round(df_prom[ 1], 0), num_decimals=GyG_constantes.num_decimales, anchura=14),
+                edita_número(round(df_prom[ 2], 0), num_decimals=GyG_constantes.num_decimales, anchura=11),
+                edita_número(round(df_prom[ 3], 0), num_decimals=GyG_constantes.num_decimales, anchura=11),
+                edita_número(round(df_prom[ 4], 0), num_decimals=0, anchura=6),
+                edita_número(round(df_prom[ 5], 1), num_decimals=1, anchura=9),
+                edita_número(round(df_prom[ 6], 0), num_decimals=0, anchura=6),
+                edita_número(round(df_prom[ 7], 0), num_decimals=GyG_constantes.num_decimales, anchura=12),
+                edita_número(round(df_prom[ 8], 1), num_decimals=1, anchura=7, sufijo="%"),
+                edita_número(round(df_prom[ 9], 1), num_decimals=1, anchura=7, sufijo="%"),
+                edita_número(round(df_prom[10], 1), num_decimals=1, anchura=7, sufijo="%"),
+                '\n'
+            ])
+    #---------------------
             análisis += espacios(65, '-') + '  ' + espacios(36, '-') + '\n'
         dist_idx += 1
 
@@ -462,12 +520,12 @@ def propuesta_de_cambio(beneficiario):
     propuesta = r['Propuesta'].to_string(index=False)
     if propuesta != 'No participa':
         propuesta = propuesta.upper().strip()
-    return(f"\n  Se sugiere cambiar su categoría de pago a '{propuesta}'")
+    return(f"\n  {bullet} Se sugiere cambiar su categoría de pago a '{propuesta}'")
 
 def programa_de_comida(comida):
     txt = ''
-    if not(isnull(comida) or comida == ' '):
-        txt = '\n  Actualmente participa en el programa de comidas para los vigilantes'
+    if not(isnull(comida) or comida == ' ') and programa_de_alimentacion:
+        txt = f"\n  {bullet} Actualmente participa en el programa de alimentación para los vigilantes"
     return txt
 
 def get_filename(filename):
@@ -559,11 +617,11 @@ def distribución_de_pagos():
     # las fórmulas en las columnas y genera un dataframe de Pandas como resultado
 
     # Maneja la primera columna ('Beneficiario') como su valor asociado
-    df_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen, usecols=['Beneficiario'])
+    df_resumen = read_excel(excel_workbook, sheet_name=excel_resumen, usecols=['Beneficiario'])
 
     # Y el resto de las columnas como fórmulas
     wb = load_workbook(filename=excel_workbook)
-    ws = wb[excel_ws_resumen]
+    ws = wb[excel_resumen]
     col_value = None
     for idx, col in enumerate(ws.columns):
         if idx == 0:
@@ -591,7 +649,7 @@ def distribución_de_pagos():
 
     # Lee la hoja con el detalle de los pagos recibidos, elimina aquellos cuya Referen-
     # cia no corresponda al pago de Vigilancia y estandariza la fecha de pago
-    df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_detalle)
+    df_pagos = read_excel(excel_workbook, sheet_name=excel_detalle)
     #df_pagos = df_pagos[df_pagos['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA]
     df_pagos.drop(df_pagos.index[df_pagos['Categoría'] != GyG_constantes.CATEGORIA_VIGILANCIA], inplace=True)
     df_pagos = df_pagos[['Beneficiario', 'Dirección', 'Fecha', 'Monto', 'Concepto', 'Mes', 'Nro. Recibo']]
@@ -698,6 +756,11 @@ solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_o
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
+# Selecciona si se destaca la participación en el programa de alimentación para los vigilantes
+programa_de_alimentacion = input_si_no('Destaca la participación en el programa de alimentación',
+                                       'no',
+                                       toma_opciones_por_defecto)
+
 # Selecciona si se aplica el ajuste por inflación (INPC - Indice Nacional de Precios al Consumidor)
 aplica_INPC = input_si_no("Aplica ajuste por inflación (INPC)", 'sí', toma_opciones_por_defecto)
 
@@ -713,7 +776,7 @@ distribución = distribución_de_pagos()
 # Abre la hoja de cálculo de Recibos de Pago
 print()
 print('Cargando hoja de cálculo "{filename}"...'.format(filename=excel_workbook))
-df_resumen = read_excel(excel_workbook, sheet_name=excel_ws_resumen)
+df_resumen = read_excel(excel_workbook, sheet_name=excel_resumen)
 
 # Inicializa el handler para el manejo de las cuotas
 cuotas_obj = Cuota(excel_workbook)
@@ -740,7 +803,7 @@ df_resumen = df_resumen[df_resumen['F.Desde'] < f_ref_último_día]
 df_resumen = df_resumen[df_resumen['F.Hasta'] >= f_ref_último_día]
 
 # Lee la pestaña con el detalle de pagos
-df_pagos = read_excel(excel_workbook, sheet_name=excel_ws_detalle)
+df_pagos = read_excel(excel_workbook, sheet_name=excel_detalle)
 
 # Genera una columna con el resumen de los meses cancelados en cada pago
 meses_cancelados = df_pagos['Concepto'].swifter.progress_bar(False).apply(lambda x: separa_meses(x, as_string=True))
@@ -763,9 +826,20 @@ columnas = df_resumen.columns.values.tolist()
 df_categoría = genera_propuesta_categoría()
 
 # Toma los saldos a favor de algunos vecinos para forzar su selección en el paso siguiente
-df_saldos  = read_excel(excel_workbook, sheet_name=excel_ws_saldos, skiprows=[0, 1])
+df_saldos  = read_excel(excel_workbook, sheet_name=excel_saldos, skiprows=[0, 1])
 df_saldos  = df_saldos[['Beneficiario', 'Dirección', 'Saldo']]
 df_saldos.dropna(subset=['Beneficiario'], inplace=True)
+
+# Toma los saldos a favor de algunos vecinos para forzar su selección en el paso siguiente
+df_saldos = read_excel(excel_workbook, sheet_name=excel_saldos, skiprows=[0, 1])
+df_saldos = df_saldos[['Beneficiario', 'Dirección', 'Saldo']]
+df_saldos.dropna(subset=['Beneficiario'], inplace=True)
+df_saldos = df_saldos[df_saldos['Saldo'] > epsilon]
+
+df_saldos_usd = read_excel(excel_workbook, sheet_name=excel_saldos_usd, skiprows=[0, 1])
+df_saldos_usd = df_saldos_usd[['Beneficiario', 'Dirección', 'Saldo']]
+df_saldos_usd.dropna(subset=['Beneficiario'], inplace=True)
+df_saldos_usd = df_saldos_usd[df_saldos_usd['Saldo'] > epsilon]
 
 # Elimina los registros que no tienen una categoría definida, aquellos donde
 # el mes a evaluar ya está cancelado, y aquellos en los cuales el beneficiario
@@ -789,7 +863,7 @@ desv  = df_resumen.swifter.progress_bar(False).apply(desviación, axis=1)
 df_resumen.insert(column='Promedio',  value=prom, loc=df_resumen.shape[1])
 df_resumen.insert(column='Variación', value=desv, loc=df_resumen.shape[1])
 
-df_vecinos = read_excel(excel_workbook, sheet_name=excel_ws_vecinos)
+df_vecinos = read_excel(excel_workbook, sheet_name=excel_vecinos)
 df_vecinos = df_vecinos[['Beneficiario', 'SMS', 'WhatsApp']]
 
 columns = df_resumen.columns.values.tolist()
@@ -856,7 +930,7 @@ for index, r in df_resumen.iterrows():
             if notnull(v['WhatsApp']).bool():
                 tlf_wapp = ', WhatsApp: ' + v['WhatsApp'].to_string(index=False)
         telefonos = tlf_sms + tlf_wapp
-        info_pago, info_deuda = no_participa_desde(r)
+        info_pago, info_saldo, info_deuda = no_participa_desde(r)
         if (r['Categoría'] == 'Cuota completa'):
             tipo_pago = f"Paga {r['Categoría'].lower()}"
         else:
@@ -871,16 +945,18 @@ for index, r in df_resumen.iterrows():
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:
                 análisis += '\n'
                 dirección_anterior = get_street(r['Dirección'])
+            variacion = int(round(r['Variación']))
+            estimado_de_pago = f"los días {fecha_usual} de cada mes" if variacion == 0 else \
+                                    f"hacia el día {fecha_usual} (± {variacion} días)"
             análisis += ''.join([
                             f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
-                            # f"  {tipo_pago}{rango_fechas} usualmente hacia el día {fecha_usual}", "\n",
-                            f"  {tipo_pago} hacia el día {fecha_usual} (+/- {int(round(r['Variación']))} días)", "\n",
+                            f"  {bullet} {tipo_pago} {estimado_de_pago}", "\n",
                             bloque_de_texto(''.join([
-                                                f"Su último pago fue el {último_pago} ",
-                                                f"y {info_pago}{info_deuda}",
+                                                f"{bullet} Su último pago fue el {último_pago} ",
+                                                f"y {info_pago}{info_saldo}{info_deuda}",
                                             ]), anchura=95, margen=2, margen_1ra_linea=True,
                                                 continuacion="  ", separa_palabras=True),
-                            # f"  Su último pago fue el {último_pago} y {info_pago}{info_deuda}",
+                            # f"  Su último pago fue el {último_pago} y {info_pago}{info_saldo}{info_deuda}",
                             f"{mas_de_un_mes(r['Beneficiario'])}",
                             f"{programa_de_comida(r['Comida'])}",
                             f"{propuesta_de_cambio(r['Beneficiario'])}\n\n"
@@ -906,13 +982,13 @@ for index, r in df_resumen.iterrows():
         else:
             detalles_pago = ' y no se tienen pagos registrados'
 
-        info_pago, info_deuda = no_participa_desde(r)
+        info_pago, info_saldo, info_deuda = no_participa_desde(r)
         # # --- DEBUG ---------------------------------------------------------------
         # if r['Beneficiario'] in a_mostrar:
         #     print("\n-----------------------------------------------------")
         #     print(f"*** {r['Beneficiario'] = }")
         #     print(f"*** {r['Promedio'] = }, {r['Variación'] = }")
-        #     print(f"*** {info_pago = }, {info_deuda = }")
+        #     print(f"*** {info_pago = }, {info_saldo = }, {info_deuda = }")
         #     print("-----------------------------------------------------")
         # # --- END DEBUG -----------------------------------------------------------
         try:
@@ -928,7 +1004,7 @@ for index, r in df_resumen.iterrows():
             print("------------------------------------------------------------------\n")
             sys.exit(1)            
         if len(info_deuda) > 0:
-            detalles_pago += f"\n  Tiene cuotas pendientes por Bs. {info_deuda}"
+            detalles_pago += f"\n  {bullet} Tiene cuotas pendientes por Bs. {info_deuda}"
         if not(solo_deudores and len(info_deuda) == 0):
             if dirección_anterior == None:
                 dirección_anterior = get_street(r['Dirección'])
@@ -937,7 +1013,7 @@ for index, r in df_resumen.iterrows():
                 dirección_anterior = get_street(r['Dirección'])
             análisis += ''.join([
                             f"* {r['Beneficiario']}, {r['Dirección']}{telefonos}", "\n",
-                            f"  {tipo_pago}{detalles_pago}",
+                            f"  {bullet} {tipo_pago}{detalles_pago}",
                             f"{programa_de_comida(r['Comida'])}",
                             f"{propuesta_de_cambio(r['Beneficiario'])}", "\n\n"
                         ])

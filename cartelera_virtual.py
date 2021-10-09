@@ -4,15 +4,27 @@
 
 """
     PENDIENTE POR HACER
-    -   REVISAR: Cuando hay ordenamiento alfabético, no debe haber un salto de línea cuando
-        cambia la calle
-    -   Después de ajustar todos los programas para usar esta nueva clase, cambiar el título
-        de la columna "2016" en la hoja de Excel a "=fecha(2016;1;1)" y eliminar el cambio
-        de nombre en la rutina principal
+    √   El total de la deuda no contempla los saldos a favor:
+          - Wilson Escamilla, Güigüe 89-89. Tiene pendiente septiembre y octubre 2021 (Bs. 50,40)
+        debe decir:
+          - Wilson Escamilla, Güigüe 89-89. Tiene una diferencia pendiente en septiembre y la cuota
+            del mes de octubre 2021 (Bs. 42,00)
+        (07/10/2021)
+    -   Ajustar redacción: agregar 'Total' cuando el período deudor abarque más de un mes:
+          - Jiménez Salvatierra, Güigüe 89-45. Tiene cuotas pendientes desde septiembre 2018 (Total
+            Bs. 756,52)
+          - Paz Ozar, Güigüe 88-06. Tiene pendiente octubre 2021 (Bs. 25,20)
+          - Piñero Padilla, Güigüe 89-21. Tiene pendiente septiembre y octubre 2021 (Total Bs. 50,40)
+          - Puerta Burguillos, Guacara 87-100. Tiene pendiente octubre 2021 (Bs. 25,20)
+          - Wilson Escamilla, Güigüe 89-89. Tiene una diferencia pendiente en septiembre y la cuota
+            del mes de octubre 2021 (Total Bs. 42)
+          - Wu Acevedo, Guacara 88-A-10. Tiene una diferencia pendiente en octubre 2021 (Bs. 16,80)
+
+    NOTAS
     -   En ocasiones es necesario que el 'resumen_de_cuotas()' muestre también el monto de la
         cuota del mes en curso, y en otros no. ¿Cómo se determina cuando sí y cuándo no? o,
         ¿cómo se le indica...?
-    -   Revisar cálculo del saldo pendiente:
+    √   Revisar cálculo del saldo pendiente:
         El Colegio El Trigal quedó debiendo Bs. 20.000 en el mes de febrero 2021 (Bs. 5.220.000)
         y canceló por completo la cuota del mes de marzo 2021 (Bs. 5.500.000).
         Al ejecutar el reporte el 1ro de marzo, saldo pendiente mostrado es de Bs. 300.000.
@@ -24,8 +36,12 @@
              -> Hay un pago completo para el mes siguiente (marzo). ¿Debe reflejarse esto de alguna
                 forma...?
 
-    
     HISTORICO
+    -   Corregido el monto de la cuota a considerar: En el caso de anticipos, si el monto del mismo
+        superaba el monto de la cuota en el mes en el cual se hizo el pago, se entendía que el mes
+        anticipado ya se encontraba pago, aunque fuese inferior al monto de la cuota para dicho mes
+        (17/08/2021)
+    -   Corregida la redacción de algunos mensajes (17/08/2021)
     -   A partir del 1ro. de agosto de 2021 se elimina el suministro de comidas a los vigilantes,
         por lo que esta cartelera se marca como opcional (27/07/2021)
     -   Se agrega la opción para ordenar la lista de beneficiarios (12/06/2021)
@@ -154,10 +170,12 @@ attach_path        = GyG_constantes.ruta_cartelera_virtual        # "./GyG Recib
 
 excel_workbook     = GyG_constantes.pagos_wb_estandar             # '1.1. GyG Recibos.xlsm'
 # excel_worksheet    = GyG_constantes.pagos_ws_resumen_reordenado   # 'R.VIGILANCIA (reordenado)'
-# excel_workbook     = GyG_constantes.pagos_wb_estandar_N             # '1.1. GyG Recibos.xlsm'
+# excel_workbook     = GyG_constantes.pagos_wb_estandar_N           # '1.1. GyG Recibos.xlsm'
 excel_worksheet    = GyG_constantes.pagos_ws_resumen              # 'RESUMEN VIGILANCIA'
 excel_cuotas       = GyG_constantes.pagos_ws_cuotas               # 'CUOTA'
 excel_pagos        = GyG_constantes.pagos_ws_vigilancia           # 'Vigilancia'
+excel_saldos       = GyG_constantes.pagos_ws_saldos               # 'Saldos'
+excel_saldos_usd   = GyG_constantes.pagos_ws_saldos_USD           # 'Saldos (US$)'
 
 encabezado = 'CARTELERA VIRTUAL\n   CUADRA SEGURA GyG ({})\n' + \
              'al {:%d de %B de %Y}{}\n\n'
@@ -187,6 +205,8 @@ pie_de_página      = '\n{}Equipo de cobranza, Cuadra Segura GyG{}\n\n' + \
 
 nMeses             =  5   # Se muestran los <nMeses> últimos meses en el resumen de cuotas
 
+epsilon            = 1.0e-6
+
 dummy = locale.setlocale(locale.LC_ALL, 'es_es')
 
 toma_opciones_por_defecto = False
@@ -211,6 +231,20 @@ def list_and(l1, l2): return [a and b     for a, b in zip(l1, l2)]
 def list_or(l1, l2):  return [a or  b     for a, b in zip(l1, l2)]
 def list_nor(l1, l2): return [not(a or b) for a, b in zip(l1, l2)]
 def list_not(l1):     return [not a       for a    in     l1     ]
+
+def linea_de_separacion():
+    return '\n' + '-' * 25 + '\n\n'
+
+def diff_month(d1, d2):
+    return (d1.year - d2.year) * 12 + d1.month - d2.month
+
+def tabla_saldos(beneficiario, tabla):
+    saldo = 0.00
+    try:
+        saldo = float(tabla[tabla['Beneficiario'] == beneficiario]['Saldo'])
+    except:
+        pass
+    return saldo
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
@@ -238,8 +272,14 @@ def seleccionaRegistro(beneficiarios, categorías, montos):
     list_2 = list_and(categorías == 'Colaboración', isnull(montos))
     # Vecinos que no participan
     list_3 = categorías == 'No participa'
+    # Selecciona aquellos que tienen una cuenta con saldo a favor
+    df_saldos_gt_0 = df_saldos[df_saldos['Saldo'] > 0]
+    list_4 = [len(df_saldos_gt_0[df_saldos_gt_0['Beneficiario'] == b]) > 0 for b in beneficiarios]
+    # Selecciona aquellos que tienen una cuenta en dólares con saldo a favor
+    df_saldos_gt_0 = df_saldos_usd[df_saldos_usd['Saldo'] > 0]
+    list_5 = [len(df_saldos_gt_0[df_saldos_gt_0['Beneficiario'] == b]) > 0 for b in beneficiarios]
 
-    return list_or(list_1, list_or(list_2, list_3))
+    return list_or(list_1, list_or(list_2, list_or(list_3, list_or(list_4, list_5))))
 
 def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
     try:
@@ -259,7 +299,7 @@ def fecha_ultimo_pago(beneficiario, str_mes_año, fecha_real=True):
     else:
         return None
 
-# a_evaluar = ['Familia Scaletta Briceño', 'Familia Rodríguez Chiappeta', ]
+# a_evaluar = ['Familia Alonso Rojas', 'Familia Acosta Saravia', ]
 
 def no_participa_desde(r):
     """
@@ -308,7 +348,12 @@ def no_participa_desde(r):
         if (f_ultimo_pago == None) or (r['Categoría'] == 'Colaboración'):
             saldo_ultimo_mes = 0.00   # Probablemente es un vecino que nunca ha pagado
         else:
-            cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], f_ultimo_pago)
+            # ---------------------------------------------------------------------------------------
+            # La cuota a utilizar el la del mes a evaluar, y no la del mes en el cual se hizo el pago
+            # ---------------------------------------------------------------------------------------
+            # cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], f_ultimo_pago)
+            cuota_actual = cuotas_obj.cuota_vigente(r['Beneficiario'], columns[ultimo_mes_con_pagos])
+            # ---------------------------------------------------------------------------------------
             # if r['Beneficiario'] in a_evaluar: print(f"  (3): Beneficiario: {r['Beneficiario']}, cuota actual: {cuota_actual}, pago: {r[columns[ultimo_mes_con_pagos]]}")
             saldo_ultimo_mes = cuota_actual - r[columns[ultimo_mes_con_pagos]]
             # Si el monto cancelado no cubre la cuota del período, recalcula el saldo del ultimo mes en base
@@ -323,6 +368,15 @@ def no_participa_desde(r):
     # if r['Beneficiario'] in a_evaluar: print(f"  (8): Deuda: actual: Bs. {edita_número(deuda_actual, num_decimals=0)}, " + \
     #                                          f"Saldo último mes: Bs. {edita_número(saldo_ultimo_mes, num_decimals=0)}")
 
+    saldo_a_favor_VEB = tabla_saldos(r['Beneficiario'], df_saldos)
+    saldo_a_favor_USD = tabla_saldos(r['Beneficiario'], df_saldos_usd)
+    saldo_a_favor_USD_Bs = saldo_a_favor_USD * cuotas_obj.tasa_actual(datetime.today())
+    saldo_a_favor_Bs = saldo_a_favor_VEB + saldo_a_favor_USD_Bs
+    deuda_actual -= saldo_a_favor_Bs
+
+    if deuda_actual < epsilon:
+        deuda_actual = 0.00
+
     if saldo_ultimo_mes == 0.00 and ultimo_mes_con_pagos < last_col and fecha_txt != '2016':
         ultimo_mes_con_pagos += 1
         this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
@@ -332,19 +386,33 @@ def no_participa_desde(r):
     msg_pendiente_desde = ''
     msg_monto_pendiente = ''
     msg_último_pago = ''
-    if deuda_actual != 0.00:
-        if saldo_ultimo_mes != 0.00:
+    if deuda_actual > 0.00:
+        if saldo_ultimo_mes > 0.00 or saldo_a_favor_Bs > 0.00:
             if last_col - ultimo_mes_con_pagos == 1:
                 msg_pendiente_desde = f'. Tiene una diferencia pendiente en {this_col.strftime("%B")} ' + \
                                       f'y la cuota del mes de {fecha_referencia.strftime("%B %Y")}'
             else:
-                msg_pendiente_desde = '. Tiene una diferencia pendiente en ' + fecha_txt
-                if ultimo_mes_con_pagos != last_col:
-                    # if r['Beneficiario'] in a_evaluar: print(f" (9c): {fecha_txt = }, {ultimo_mes_con_pagos = }, {last_col = }")
-                    msg_pendiente_desde += ' y cuotas de meses subsiguientes'
+                if last_col - ultimo_mes_con_pagos + 1 == 2:
+                    mes_inicial = columns[ultimo_mes_con_pagos]
+                    mes_final = columns[last_col]
+                    formato_mes_inicial = "%b" if mes_inicial.year == mes_final.year else "%b %Y"
+                    msg_pendiente_desde = ' '.join([
+                            f'. Tiene una diferencia pendiente en {mes_inicial.strftime(formato_mes_inicial)}',
+                            f' y {mes_final.strftime("%b %Y")}'
+                        ])
+                else:
+                    msg_pendiente_desde = f'. Tiene una diferencia pendiente en ' + fecha_txt
+                    if ultimo_mes_con_pagos != last_col:
+                        msg_pendiente_desde += ' y cuotas de meses subsiguientes'
         else:
             if ultimo_mes_con_pagos == last_col:
                 msg_pendiente_desde = '. Tiene pendiente ' + fecha_txt
+            elif last_col - ultimo_mes_con_pagos + 1 == 2:
+                str_meses = ' '.join([
+                        columns[ultimo_mes_con_pagos].strftime("%b %Y"),
+                        columns[last_col].strftime("%b %Y")
+                    ])
+                msg_pendiente_desde = f". Tiene pendiente {reagrupa_meses(str_meses, mes_completo=True)}"
             else:
                 msg_pendiente_desde = f". Tiene {'colaboraciones' if r['Categoría'] == 'Colaboración' else 'cuotas'} " + \
                           f"pendientes desde {fecha_txt}"
@@ -352,7 +420,8 @@ def no_participa_desde(r):
         u_monto_pendiente = edita_número(deuda_actual, num_decimals=2).replace(',00', '')
         if r['Categoría'] == 'Cuota completa' and \
                 (muestra_pend_desde_c_completa or muestra_u_pago_c_completa):
-            msg_monto_pendiente = f" (Bs. {u_monto_pendiente})"
+            mas_de_un_mes = 'Total ' if last_col - ultimo_mes_con_pagos > 0 else ''
+            msg_monto_pendiente = f" ({mas_de_un_mes}Bs. {u_monto_pendiente})"
         else:
             msg_monto_pendiente = f". Saldo Bs. {u_monto_pendiente}"
 
@@ -462,7 +531,7 @@ def cartelera_comida_vigilantes(df_comida):
     texto_cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
     
     # Genera una linea de separación entre categorías
-    #cartelera += '\n' + '-' * 25 + '\n\n'
+    #cartelera += linea_de_separacion()
 
     return texto_cartelera
 
@@ -474,6 +543,10 @@ def cartelera_comida_vigilantes(df_comida):
 # Determina la fecha de elaboración del informe
 am_pm = 'pm' if datetime.now().hour > 12 else 'm' if datetime.now().hour == 12 else 'am'
 hoy = datetime.now()
+#-----------------------
+# Fija la fecha de elaboración del reporte al primero de mes
+# hoy = datetime(hoy.year, hoy.month, 1, hoy.hour, hoy.minute, hoy.second)
+#-----------------------
 
 # Determina el período anterior al actual, a fin de utilizarlo como opción por defecto
 período_anterior = (date.today() + relativedelta(months=-1)).strftime('%m-%Y')
@@ -502,6 +575,8 @@ muestra_pend_desde_no_participa = input_si_no('  - No participa:   ¿Muestra pen
 muestra_u_pago_no_participa = input_si_no('                    ¿Muestra último pago?', 'no', toma_opciones_por_defecto)
 # Selecciona si se muestran los saldos deudores o no
 muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos pendientes?', 'no', toma_opciones_por_defecto)
+# Selecciona si se muestra la cartelera de vecinos al día
+muestra_cartelera_vecinos_al_dia = input_si_no('  - Vecinos al día: ¿Muestra esta cartelera?', 'sí', toma_opciones_por_defecto)
 # Selecciona si se muestra la cartelera de comida
 muestra_cartelera_comida = input_si_no('  - Comida:         ¿Muestra esta cartelera?', 'no', toma_opciones_por_defecto)
 
@@ -580,17 +655,30 @@ df_pagos = df_pagos[df_pagos['Fecha'] <= f_ref_último_día]          # Ignora l
 meses_cancelados = df_pagos['Concepto'].apply(lambda x: separa_meses(x, as_string=True))
 df_pagos.insert(column='Meses', value=meses_cancelados, loc=df_pagos.shape[1])
 
+# Toma los saldos a favor de algunos vecinos para forzar su selección en el paso siguiente
+df_saldos = read_excel(excel_workbook, sheet_name=excel_saldos, skiprows=[0, 1])
+df_saldos = df_saldos[['Beneficiario', 'Dirección', 'Saldo']]
+df_saldos.dropna(subset=['Beneficiario'], inplace=True)
+df_saldos = df_saldos[df_saldos['Saldo'] > 0.0]
+
+df_saldos_usd = read_excel(excel_workbook, sheet_name=excel_saldos_usd, skiprows=[0, 1])
+df_saldos_usd = df_saldos_usd[['Beneficiario', 'Dirección', 'Saldo']]
+df_saldos_usd.dropna(subset=['Beneficiario'], inplace=True)
+df_saldos_usd = df_saldos_usd[df_saldos_usd['Saldo'] > 0.0]
+
 # Inserta la columna 'Pendiente' con la información de desde cuándo está pendiente
 # el pago de cada vecino
 pendientes_desde = df.apply(no_participa_desde, axis=1)
 df.insert(column='Pendiente', value=pendientes_desde, loc=df.shape[1])
+
 
 # Crea la cartelera virtual
 print(f"Creando Cartelera Virtual '{nombre_cartelera.format(f_ref_último_día)}'...")
 cartelera = ""
 
 # Genera la cartelera virtual con los vecinos al día
-cartelera_4 = cartelera_vecinos_al_día()
+if muestra_cartelera_vecinos_al_dia:
+    cartelera_4 = cartelera_vecinos_al_día()
 
 # Genera la cartelera con los vecinos que colaboran con la comida de los vigilantes
 # (selecciona aquellos registros donde la columna 'Comida' tenga UN espacio en blanco
@@ -681,15 +769,17 @@ for categoría in categorías:
         cartelera += pie_de_página.format(wa_italic, wa_italic, hoy, am_pm)
         
         # Genera una linea de separación entre categorías
-        cartelera += '\n' + '-' * 25 + '\n\n'
+        if seña != 3:
+            cartelera += linea_de_separacion()
 
 # Imprime la cartelera de pagos al 100%
-cartelera += cartelera_4
+if muestra_cartelera_vecinos_al_dia:
+    cartelera += linea_de_separacion()
+    cartelera += cartelera_4
 
+# Imprime la cartelera de la colaboración de comidas
 if muestra_cartelera_comida:
-    # Genera una linea de separación entre categorías
-    cartelera += '\n' + '-' * 25 + '\n\n'
-    # Imprime la cartelera de la colaboración de comidas
+    cartelera += linea_de_separacion()
     cartelera += cartelera_5
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)

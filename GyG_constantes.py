@@ -18,6 +18,7 @@ pagos_ws_vigilancia         = 'Vigilancia'
 pagos_ws_resumen            = 'RESUMEN VIGILANCIA'
 pagos_ws_resumen_reordenado = 'R.VIGILANCIA (reordenado)'
 pagos_ws_saldos             = 'Saldos'
+pagos_ws_saldos_USD         = 'Saldos (US$)'
 pagos_ws_cuotas             = 'CUOTAS'
 # pagos_ws_cobranzas          = 'Cobranzas'
 pagos_ws_otros              = 'RESUMEN OTROS'
@@ -55,9 +56,11 @@ txt_aporte_vigilantes       = "GyG Pagos Adicionales {:%Y-%m (%b)}.txt"
 txt_saldos_pendientes       = "GyG Saldos pendientes {:%Y-%m (%b)}.txt"
 tx_resumen_saldos           = "GyG Resumen de saldos a la fecha.txt"
 
-recibo_fmt                  = "{recibo:0Xd}".replace('X', str(long_num_archivo))
+fmt_recibo                  = "{recibo:0Xd}".replace('X', str(long_num_archivo))
 
 txt_relacion_ingresos       = "GyG Relación de Ingresos {:%Y-%m (%b)}"
+
+num_decimales               = 2    # 0 decimales, si los montos a desplegar son "grandes"; 2 decimales, en otro caso
 
 
 # RUTAS
@@ -122,7 +125,7 @@ plantilla_recibos           = os.path.join(rec_plantillas, 'plantilla_recibos.pn
      # Categorías usuales
 CATEGORIA_VIGILANCIA        = 'Vigilancia'
 CATEGORIA_APORTE_VIGILANTES = 'Aporte Vigilantes'
-     # Proyectos
+     # Proyectos a la fecha
      #   'Reparación Portón', 'Caseta Vigilancia',   'Reja CC',          'Reparación Portón 2',
      #   'Aporte caseta',     'Teléfono Vigilancia', 'Cesta de Navidad', 'Comida Vigilantes',
      # Otros Ingresos
