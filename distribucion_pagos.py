@@ -7,24 +7,18 @@
     PENDIENTE POR HACER
       - 
 
+
     NOTAS
-      - En los pagos por encima de la cuota se están reflejando los pagos de meses anteriores,
-        por lo que el "excedente" no es real: El pago de los Chan García corresponde a los meses
-        de junio y julio 2021, por lo que debe reflejarse como 2 x 9.600.000 en cuotas y 800.000
-        como excedente.
-         -> ¿Cómo debería mostrarse?
-
-            VECINOS CON PAGOS SUPERIORES A LA CUOTA
-
-            Vecino               | Dirección      |    Monto    |   Excedente
-            ------------------------------------------------------------------
-            Chan García          | Güigüe 89-106  |  20.000.000 |  10.400.000   <- junio y julio 2021
-            Triana González      | Guacara 90-61  |  10.000.000 |     400.000   √
-            ------------------------------------------------------------------
-            Subtotales           |        2 pagos |  30.000.000 |  10.800.000
+      - 
 
 
     HISTORICO
+      - Al indicar que no se emitiese el detalle de otros pagos se generaba un error indicando que la
+        variable 'niveles_de_pago' no estaba definida. Se ajustó el nombre de la lista de Otros Pagos,
+        de 'niveles_de_pago' a 'categorías' (20/11/2021)
+        que generaba un error cuando no se quería el detalle
+      - Se ajustaron las descripciones de las tablas de pagos superiores o inferiores a la cuota, así
+        como en el resumen de pagos, para aclarar su contenido (17/11/2021)
       - Se ajustó la descripción de los pagos con monto superior a la cuota en el resumen de
         vigilancia (27/06/2021)
       - Se incorporó una comparación del total de cuotas de vigilancia respecto al estimado de
@@ -95,6 +89,8 @@ tabla_separador_sin_sobrecuota  = "-" * 52 + "\n"
 tabla_detalle_sin_sobrecuota    = "{:<20} | {:<14} | {:>11}{}\n"
 
 LONG_BENEFICIARIO = 20
+
+num_decimales     = GyG_constantes.num_decimales
 
 
 #
@@ -210,9 +206,9 @@ def genera_resumen_vigilancia():
         mto_sobrecuotas = df_subset_nivel['Sobrecuota'].sum()
         mto_sobreumbral = df_subset_nivel['Sobreumbral'].sum()
         s = 's' if num_pagos != 1 else ''
-        str_pago = edita_número(mto_pagos, num_decimals=0)
-        str_sobrecuota = edita_número(mto_sobrecuotas, num_decimals=0)
-        str_sobreumbral = edita_número(mto_sobreumbral, num_decimals=0)
+        str_pago = edita_número(mto_pagos, num_decimals=num_decimales)
+        str_sobrecuota = edita_número(mto_sobrecuotas, num_decimals=num_decimales)
+        str_sobreumbral = edita_número(mto_sobreumbral, num_decimals=num_decimales)
         if muestra_detalle_vigilancia:
             análisis += wa_bold
             if umbral_de_aceptación > 0.00:
@@ -223,7 +219,11 @@ def genera_resumen_vigilancia():
                 else:
                     análisis += f"VECINOS CON PAGOS INFERIORES A LA CUOTA"
             else:
-               análisis += f"vecinos con pagos {nivel.lower()}es a la cuota".upper()
+                análisis += bloque_de_texto(''.join([
+                    f"vecinos con pagos {nivel.lower()}es a la cuota".upper(),
+                    " (cuotas del mes y atrasadas, anticipos y excedentes)" if nivel == "Superior" else "",
+                    " (anticipos, saldos y colaboraciones)" if nivel == "Inferior" else ""
+                ]), anchura=80, continuacion="", separa_palabras=True)
             análisis += wa_bold + '\n'
             if nivel == 'Superior':
                 análisis += wa_table + '\n' + tabla_encabezado + tabla_separador
@@ -231,8 +231,8 @@ def genera_resumen_vigilancia():
                     análisis += tabla_detalle.format(
                             trunca_texto(edita_beneficiario(r['Beneficiario']), LONG_BENEFICIARIO),
                             trunca_texto(edita_dirección(r['Dirección']), 14),
-                            edita_número(r['Monto'], num_decimals=0),
-                            edita_número(r['Sobreumbral'], num_decimals=0) if nivel == 'Superior' else '')
+                            edita_número(r['Monto'], num_decimals=num_decimales),
+                            edita_número(r['Sobreumbral'], num_decimals=num_decimales) if nivel == 'Superior' else '')
                 if num_pagos > 0:
                     análisis += tabla_separador
                 análisis += tabla_detalle.format(
@@ -247,7 +247,7 @@ def genera_resumen_vigilancia():
                     análisis += tabla_detalle_sin_sobrecuota.format(
                             trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
                             trunca_texto(edita_dirección(r['Dirección']), 14),
-                            edita_número(r['Monto'], num_decimals=0),
+                            edita_número(r['Monto'], num_decimals=num_decimales),
                             señala_renglón)
                 if num_pagos > 0:
                     análisis += tabla_separador_sin_sobrecuota
@@ -263,23 +263,24 @@ def genera_resumen_vigilancia():
                 elif categoría == 'Igual':
                     txt_descripción_categoría = f"entre la cuota y el {str_umbral_de_aceptación}% de la misma"
                 else:
-                    txt_descripción_categoría = "con monto inferior a la cuota"
+                    txt_descripción_categoría = "con monto inferior a la cuota (anticipos, saldos y colaboraciones)"
             else:
                 txt_descripción_categoría = f"con monto {nivel.lower()} a la cuota"
-            # txt_aporte_adicional = f"(de los cuales, Bs. {str_sobreumbral} corresponden a aportes adicionales,\n" + \
-            #                         "        entre cuotas atrasadas y excedentes a la misma)"
-            txt_aporte_adicional = bloque_de_texto(
-                ' '.join([
-                        f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=0)} en cuotas del mes',
-                        f'y atrasadas, más Bs. {str_sobreumbral} como excedentes a la misma)'
-                    ]),
-                anchura=72, margen=8, continuacion='', separa_palabras=True)
+            txt_aporte_adicional = ' '.join([
+                        f'(Bs. {edita_número(mto_pagos - mto_sobreumbral, num_decimals=num_decimales).replace(",00", "")}',
+                        f'en cuotas del mes y atrasadas, más Bs. {str_sobreumbral} como excedentes a la misma',
+                        f'y anticipo de meses subsiguientes)'
+                    ])
             if num_pagos > 0:
-                análisis += ''.join([
+                txt_aporte = ''.join([
                         '  - ',
                         f"{num_pagos:>3} pago{s} {txt_descripción_categoría} ",
+                        f"(anticipos, saldos y colaboraciones) " if nivel == "Inferior" else "",
                         f"por Bs. {str_pago}",
-                        f"\n       {txt_aporte_adicional}" if nivel == "Superior" else "",
+                        f" {txt_aporte_adicional}" if nivel == "Superior" else "",
+                    ])
+                análisis += ''.join([
+                        bloque_de_texto(txt_aporte, margen=6, separa_palabras=True),
                         '\n'
                     ])
             else:
@@ -293,7 +294,7 @@ def genera_resumen_vigilancia():
     s = 's' if num_pagos != 1 else ''
     análisis += bloque_de_texto(' '.join([
             f"Total: {num_pagos} pagos recibidos para un total de",
-            f"Bs. {edita_número(mto_pagos, num_decimals=0)}",
+            f"Bs. {edita_número(mto_pagos, num_decimals=num_decimales).replace(',00', '')}",
             f"({int(mto_pagos / estimado_de_gastos * 100)}% del estimado)"
         ]), anchura=80, margen=0, continuacion="", separa_palabras=True) + '\n'
 
@@ -306,14 +307,14 @@ def genera_resumen_vigilancia():
         análisis += ''.join([
             f"\n\nComparación del umbral de aceptación y el monto base:\n",
             f"  -  {alinea_texto('Montos mayores a la cuota:', 36, 'izquierda')}",
-            f" {'Bs. ' + edita_número(mto_sobrecuotas, num_decimals=0):>16}",
+            f" {'Bs. ' + edita_número(mto_sobrecuotas, num_decimals=num_decimales).replace(',00', ''):>16}",
             f"  ({edita_número(pct_sobrecuotas, 2):>6}%)\n",
             f"  -  {alinea_texto(f'Montos mayores al {str_umbral_de_aceptación}% de la cuota:', 36, 'izquierda')}",
-            f" {'Bs. ' + edita_número(mto_sobreumbral, num_decimals=0):>16}",
+            f" {'Bs. ' + edita_número(mto_sobreumbral, num_decimals=num_decimales).replace(',00', ''):>16}",
             f"  ({edita_número(pct_sobreumbral, 2):>6}%)\n",
             f"{espacios(42)}{espacios(28, '-')}\n",
             f"  -  {alinea_texto('Diferencia:', 36, 'izquierda')}",
-            f" {'Bs. ' + edita_número(mto_sobrecuotas - mto_sobreumbral, num_decimals=0):>16}",
+            f" {'Bs. ' + edita_número(mto_sobrecuotas - mto_sobreumbral, num_decimals=num_decimales).replace(',00', ''):>16}",
             f"  ({edita_número(pct_sobrecuotas - pct_sobreumbral, 2):>6}%)\n"
         ])
 
@@ -355,7 +356,7 @@ def genera_resumen_otros_pagos():
                     análisis += tabla_detalle_sin_sobrecuota.format(
                                     trunca_texto(edita_beneficiario(r['Beneficiario']), 20),
                                     trunca_texto(edita_dirección(r['Dirección']), 14),
-                                    edita_número(r['Monto'], num_decimals=0),
+                                    edita_número(r['Monto'], num_decimals=num_decimales),
                                     ''
                                 )
                 análisis += ''.join([
@@ -363,7 +364,7 @@ def genera_resumen_otros_pagos():
                                     tabla_detalle_sin_sobrecuota.format(
                                         'Subtotales',
                                         alinea_texto(f'{num_pagos} pago{s}', 14, 'derecha'),
-                                        edita_número(mto_pagos, num_decimals=0),
+                                        edita_número(mto_pagos, num_decimals=num_decimales),
                                         ''
                                     ),
                                     wa_table
@@ -371,18 +372,18 @@ def genera_resumen_otros_pagos():
             else:
                 lista_num_pagos.append(edita_número(num_pagos, num_decimals=0))
                 lista_txt_pagos.append(f"pago{s}")
-                lista_montos.append(edita_número(mto_pagos, num_decimals=0))
+                lista_montos.append(edita_número(mto_pagos, num_decimals=num_decimales))
                 total_num_pagos += num_pagos
                 total_mto_pagos += mto_pagos
         if not muestra_detalle_otros_pagos:
-            maxlen_niveles_de_pago = len(max(niveles_de_pago, key=len))
+            maxlen_categorías = len(max(categorías, key=len))
             maxlen_num_pagos = len(max(lista_num_pagos, key=len))
             maxlen_txt_pagos = len(max(lista_txt_pagos, key=len))
             maxlen_montos = len(max(lista_montos, key=len))
-            for categoría, num_pago, txt_pago, monto in zip(niveles_de_pago, lista_num_pagos, lista_txt_pagos, lista_montos):
+            for categoría, num_pago, txt_pago, monto in zip(categorías, lista_num_pagos, lista_txt_pagos, lista_montos):
                 análisis += ''.join([
                                     '  -  ',
-                                    alinea_texto(categoría + ':', maxlen_niveles_de_pago + 1, 'izquierda'),
+                                    alinea_texto(categoría + ':', maxlen_categorías + 1, 'izquierda'),
                                     '  ',
                                     alinea_texto(num_pago, maxlen_num_pagos, 'derecha'),
                                     ' ',
@@ -396,7 +397,7 @@ def genera_resumen_otros_pagos():
                 análisis += ''.join([
                                     '\n',
                                     f"Total: {total_num_pagos} pagos recibidos para un total de ",
-                                    f"Bs. {edita_número(total_mto_pagos, num_decimals=0)}\n"
+                                    f"Bs. {edita_número(total_mto_pagos, num_decimals=num_decimales)}\n"
                     ])
 
     return análisis
@@ -434,7 +435,7 @@ muestra_comparación = False
 
 # Selecciona si se muestran sólo los saldos deudores o no
 muestra_detalle_vigilancia = input_si_no('Muestra el detalle de los pagos de vigilancia', 'no', toma_opciones_por_defecto)
-muestra_detalle_otros_pagos = input_si_no('Muestra el detalle de los otros pagos', 'sí', toma_opciones_por_defecto)
+muestra_detalle_otros_pagos = input_si_no('Muestra el detalle de los otros pagos', 'no', toma_opciones_por_defecto)
 
 # Selecciona si se ordenan alfabéticamente los vecinos
 if muestra_detalle_vigilancia or muestra_detalle_otros_pagos:

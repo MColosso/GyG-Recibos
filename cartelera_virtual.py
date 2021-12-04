@@ -4,12 +4,11 @@
 
 """
     PENDIENTE POR HACER
-    √   El total de la deuda no contempla los saldos a favor:
-          - Wilson Escamilla, Güigüe 89-89. Tiene pendiente septiembre y octubre 2021 (Bs. 50,40)
-        debe decir:
-          - Wilson Escamilla, Güigüe 89-89. Tiene una diferencia pendiente en septiembre y la cuota
-            del mes de octubre 2021 (Bs. 42,00)
-        (07/10/2021)
+    -   Cartelera de Agua:
+          √ Ajustar pregunta: "***   - Comida:         ¿Muestra esta cartelera? [no]: s"
+          √ Ajustar encabezado
+          - Ajustar marcas en la hoja de cálculo
+
     -   Ajustar redacción: agregar 'Total' cuando el período deudor abarque más de un mes:
           - Jiménez Salvatierra, Güigüe 89-45. Tiene cuotas pendientes desde septiembre 2018 (Total
             Bs. 756,52)
@@ -37,6 +36,12 @@
                 forma...?
 
     HISTORICO
+    √   El total de la deuda no contempla los saldos a favor:
+          - Wilson Escamilla, Güigüe 89-89. Tiene pendiente septiembre y octubre 2021 (Bs. 50,40)
+        debe decir:
+          - Wilson Escamilla, Güigüe 89-89. Tiene una diferencia pendiente en septiembre y la cuota
+            del mes de octubre 2021 (Bs. 42,00)
+        (07/10/2021)
     -   Corregido el monto de la cuota a considerar: En el caso de anticipos, si el monto del mismo
         superaba el monto de la cuota en el mes en el cual se hizo el pago, se entendía que el mes
         anticipado ya se encontraba pago, aunque fuese inferior al monto de la cuota para dicho mes
@@ -181,22 +186,23 @@ encabezado = 'CARTELERA VIRTUAL\n   CUADRA SEGURA GyG ({})\n' + \
              'al {:%d de %B de %Y}{}\n\n'
 encabezado_colaboración   = ' '.join([
                                     '{}Familias que colaboran con un monto inferior a la cuota establecida',
-                                    'y tienen pendiente el pago.{}\n\n'
+                                    'y tienen pendiente el pago{}\n\n'
                                 ]).upper()
 encabezado_cuota_completa = ' '.join([
                                     '{}Familias que pagan el 100% de la cuota y tienen retrasos',
-                                    'en el pago{}.\n\n'
+                                    'en el pago{}\n\n'
                                 ]).upper()
 # encabezado_no_participa   = ' '.join([
 #                                     'Familias que se benefician del servicio de vigilancia gracias al aporte del',
-#                                     'resto de los vecinos que cancelan su cuota para la seguridad de la zona.\n\n'
-#                                 ])
+#                                     'resto de los vecinos que cancelan su cuota para la seguridad de la zona\n\n'
+#                                 ]).upper()
 encabezado_no_participa   = '{}Familias que no contribuyen con el pago del servicio de vigilancia.{}\n\n'.upper()
 encabezado_al_día         = ' '.join([
                                     '{}Familias que pagan el 100% de la cuota o colaboran con dicho pago y se',
-                                    'encuentran al día en el mantenimiento del servicio de vigilancia.{}\n\n'
+                                    'encuentran al día en el mantenimiento del servicio de vigilancia{}\n\n'
                                 ]).upper()
-encabezado_comida_vigilantes = '{}Familias que colaboran con almuerzos, cenas o agua para los vigilantes.{}\n\n'.upper()
+# encabezado_comida_vigilantes = '{}Familias que colaboran con almuerzos, cenas o agua para los vigilantes{}\n\n'.upper()
+encabezado_comida_vigilantes = '{}Familias que colaboran con agua para los vigilantes{}\n\n'.upper()
 pie_cuota_completa = '<< Generado automáticamente >>'
 pie_no_participa   = 'Los invitamos a que se sumen a este esfuerzo. Ello nos ayudará a mantener la seguridad ' + \
                      'que hemos alcanzado en el sector. Tu contribución es importante.\n\n'
@@ -204,6 +210,8 @@ pie_de_página      = '\n{}Equipo de cobranza, Cuadra Segura GyG{}\n\n' + \
                      'Cualquier comentario por Trivialidades.\n({:%d/%m/%Y %I:%M} {})\n'
 
 nMeses             =  5   # Se muestran los <nMeses> últimos meses en el resumen de cuotas
+
+num_decimales      = GyG_constantes.num_decimales
 
 epsilon            = 1.0e-6
 
@@ -221,16 +229,8 @@ if len(sys.argv) > 1:
 def get_filename(filename):
     return os.path.basename(filename)
 
-#def edita_número(number, num_decimals=2):
-#    return locale.format_string(f'%.{num_decimals}f', number, grouping=True, monetary=True)
-
 def is_numeric(valor):
     return isinstance(valor, numbers.Number)
-
-def list_and(l1, l2): return [a and b     for a, b in zip(l1, l2)]
-def list_or(l1, l2):  return [a or  b     for a, b in zip(l1, l2)]
-def list_nor(l1, l2): return [not(a or b) for a, b in zip(l1, l2)]
-def list_not(l1):     return [not a       for a    in     l1     ]
 
 def linea_de_separacion():
     return '\n' + '-' * 25 + '\n\n'
@@ -578,7 +578,8 @@ muestra_saldos_no_participa = input_si_no('                    ¿Muestra saldos 
 # Selecciona si se muestra la cartelera de vecinos al día
 muestra_cartelera_vecinos_al_dia = input_si_no('  - Vecinos al día: ¿Muestra esta cartelera?', 'sí', toma_opciones_por_defecto)
 # Selecciona si se muestra la cartelera de comida
-muestra_cartelera_comida = input_si_no('  - Comida:         ¿Muestra esta cartelera?', 'no', toma_opciones_por_defecto)
+# muestra_cartelera_comida = input_si_no('  - Comida:         ¿Muestra esta cartelera?', 'no', toma_opciones_por_defecto)
+muestra_cartelera_comida = input_si_no('  - Agua:           ¿Muestra esta cartelera?', 'no', toma_opciones_por_defecto)
 
 print('***')
 
@@ -694,8 +695,10 @@ if muestra_cartelera_comida:
 
 # Ajusta encabezado de cuota completa si el mes de referenicia coincide con el mes actual
 if fecha_referencia == datetime(hoy.year, hoy.month, 1):
-    encabezado_cuota_completa = '{}Familias que pagan el 100% de la cuota y tienen pendiente el mes en curso ' + \
-                                'o tienen retrasos en el pago.{}\n'
+    encabezado_cuota_completa = ' '.join([
+                                        '{}Familias que pagan el 100% de la cuota y tienen pendiente el mes',
+                                        'en curso o tienen retrasos en el pago{}.\n\n'
+                                    ]).upper()
 
 # Elimina los registros con pago en el mes seleccionado
 #df = df.loc[isnull(df[mes_año])]

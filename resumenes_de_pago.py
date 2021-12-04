@@ -6,18 +6,22 @@
 
 """
     PENDIENTE POR HACER
+    -
+
+    NOTAS
     -   Fijar como celda superior izquierda de la hoja de cálculo 'A solicitud' unas 5 filas
         antes del último grupo generado
          -> Verificar si "openpyxl" tiene ahora una opción para ello
-
-    x   Ajustar las fechas de inicio y final del período a reportar en base a las fechas del workbook
+    √   Ajustar las fechas de inicio y final del período a reportar en base a las fechas del workbook
         seleccionado (spDesdeAño y spHastaAño: from_=2017, to=2020; spDesdeMes y spHastaMes:
         values=nombreMeses √; spTxtHMes.set(nombreMeses[ahora.month - 1]); spIntHAño.set(ahora.year))
          -> Para hacer esto, debería leerse la hoja de cálculo 'Vigilancia' al momento de seleccionar
             el archivo a manejar, y determinar así las fechas máxima y mínima
-    -   
 
     HISTORICO
+    -   Agregar opción para seleccionar entre saldos en bolívares y en dólares, tomando en cuenta que
+        en la hoja de cálculo producto de la reconversión del 2018 no existe la hoja de saldos en
+        dólares (27/10/2021)
     -   En la rutina 'ckHistorico_Seleccion()', desplegar una ventana con una lista de archivos
         históricos para seleccionar uno (o ninguno)
          -> Se cambió el 'checkbox' para seleccionar el archivo histórico o el actual por un
@@ -101,9 +105,14 @@ excel_wb_historico = GyG_constantes.pagos_wb_historico   # '1.1. GyG Recibos - S
 excel_wb_estandar  = GyG_constantes.pagos_wb_estandar    # '1.1. GyG Recibos.xlsm'
 # excel_wb_estandar  = GyG_constantes.pagos_wb_estandar_N    # '1.1. GyG Recibos.xlsm'
 
-consulta_historico = False
-despliega_saldos   = False
+consulta_historico    = False
+despliega_saldos      = False
 cambio_archivo_origen = False
+layout_definido       = False
+
+# saldos_en_bolivares   = False
+# strMonto, strSaldo    = ('Monto (Bs.)', 'Saldo (Bs.)') if saldos_en_bolivares else ('Monto (US$)', 'Saldo (US$)')
+epsilon               = 1.0e-6
 
 cuotas_en_lista    = True   # Elige entre mostrar las cuotas en una lista o en un único párrafo
 
@@ -112,12 +121,14 @@ excel_vigilancia   = GyG_constantes.pagos_ws_vigilancia   # 'Vigilancia'
 excel_resumen      = GyG_constantes.pagos_ws_resumen      # 'RESUMEN VIGILANCIA'
                                                           # (anteriormente: 'R.VIGILANCIA (reordenado)')
 excel_saldos       = GyG_constantes.pagos_ws_saldos       # 'Saldos'
+excel_saldos_usd   = GyG_constantes.pagos_ws_saldos_USD   # 'Saldos (US$)'
 resumen_workbook   = GyG_constantes.resumen_workbook      # '4.2. GyG Resúmenes - Control resúmenes.xlsx'
 resumen_worksheet  = GyG_constantes.resumen_worksheet     # 'A solicitud'
 excel_cuotas       = GyG_constantes.pagos_ws_cuotas       # 'CUOTA'
 
-nombreMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+nombreMeses   = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+nombreMonedas = ['Bs.', 'US$']
 
 normal_cursor = ''
 busy_cursor   = '@C:/Windows/Cursors/aero_busy.ani'
@@ -187,6 +198,7 @@ def valida_parametros():
 def genera_resumenes():
     global hoja_resumen, ultimo_resumen
     global generados, enviados
+
 
     def último_correo_o_celular(beneficiario):
         df_test = df[df['Beneficiario'] == beneficiario]
@@ -274,14 +286,14 @@ def genera_resumenes():
             r = df.iloc[i]
             if r['Beneficiario'] != beneficiario_anterior:
                 genera_y_envia_resumen()
-                resumen = [['Fecha', 'Concepto', 'Monto', 'Saldo']]
+                resumen = [['Fecha', 'Concepto', strMonto, strSaldo]]
                 idx += 1
                 beneficiario_anterior = r['Beneficiario']
                 r_anterior = r
             resumen.append([r['Fecha'].strftime('%d/%m/%Y'),
                             r['Concepto'],
-                            '' if isnull(r['Monto']) else '{:,.02f}'.format(r['Monto']),
-                            '{:,.02f}'.format(r['Saldo'])])
+                            '' if isnull(r[strMonto]) else '{:,.02f}'.format(r[strMonto]),
+                            '{:,.02f}'.format(r[strSaldo])])
     else:
         for i in range(df.shape[0]):
             r = df.iloc[i]
@@ -318,23 +330,66 @@ def genera_resumenes():
     
     try:
         wb_resumen.save(resumen_workbook)
-        s  =  's' if generados != 1 else ''
-        resumen_es = 'resúmenes' if generados != 1 else 'resumen'
-        s2 =  's' if enviados != 1 else ''
-        actualiza_status(txStatus, f'\n\n<info> Proceso terminado: {generados} {resumen_es} generado{s}')
+        actualiza_status(txStatus, 
+            pluraliza("\n\n<info> Proceso terminado: {generados} [resumen|resúmenes] generado[s]", generados))
         vecinos_seleccionados = len(lbVecinos.curselection())
         if generados != vecinos_seleccionados:
             diferencia = vecinos_seleccionados - generados
-            s =  's' if diferencia != 1 else ''
-            actualiza_status(txStatus, f', {diferencia} vecino{s} seleccionado{s} sin pagos en el período')
+            actualiza_status(txStatus,
+                pluraliza(", {diferencia} vecino[s] seleccionado[s] sin pagos en el período", diferencia))
         if envia_correos:
-            actualiza_status(txStatus, f', {enviados} enviado{s2}')
+            actualiza_status(txStatus,
+                pluraliza(", {enviados} enviado[s]", enviados))
     except:
         error_msg  = str(sys.exc_info()[1])
         if sys.platform.startswith('win'):
             error_msg  = error_msg.replace('\\', '/')
         actualiza_status(txStatus, f'\n\n<stop> ERROR: {error_msg}')
 
+# -------------------------------------------------------
+import re
+import inspect
+def pluraliza(template: str, valor=None) -> str:
+    frame = inspect.currentframe()
+    previous_namespace = frame.f_back.f_locals
+    del frame
+
+    barre_corchetes = ''
+    # Separa el texto en grupos con corchetes
+    for s in re.split(r'(\[.+?\])', template):
+        # print(s)
+        if re.match(r'^\[.+\]$', s):
+            lista = s[1:-1].split('|')
+            if len(lista) == 1 and valor != 1:
+                texto = lista[0]
+            elif len(lista) > 1:
+                texto = lista[0] if valor == 1 else lista[1]
+            else:
+                texto = ''
+        else:
+            texto = s
+        barre_corchetes += texto
+
+    resultado = ''
+    # Separa el texto en grupos con llaves
+    for s in re.split(r'(\{.+?\})', barre_corchetes):
+        # print(s)
+        if re.match(r'^\{.+\}$', s):
+            match = s[1:-1]
+            if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", match):    # ¿Es una variable?
+                value = previous_namespace.get(match)
+                if value:
+                    resultado += str(value)
+                else:
+                    value = globals().get(match)
+                    resultado += str(value) if value else '«' + match + '»'
+            else:
+                resultado += '{' + match + '}'
+        else:
+            resultado += s
+
+    return resultado
+# -------------------------------------------------------
 
 def genera_pdf(r, tabla, idx):
     global rango_fechas
@@ -550,7 +605,6 @@ def busca_hojas_de_calculo():
     return lista_archivos
 
 
-
 def cbHojas_de_calculo_Seleccion(evento):
     global cambio_archivo_origen, consulta_historico, despliega_saldos, excel_workbook
 
@@ -565,6 +619,22 @@ def cbHojas_de_calculo_Seleccion(evento):
         consulta_historico = cbHojas_de_calculo.current() > 0
         despliega_saldos = False
         set_cursor_standard()
+        ckOrigen.set('Pagos')
+        cbMoneda.set('Bs.')
+
+
+def cambio_de_moneda(evento):
+    global df_vecinos_con_saldo, df_saldos, strMonto, strSaldo
+
+    saldos_en_bolivares   = cbMoneda.get() == 'Bs.'
+    if saldos_en_bolivares:
+        strMonto, strSaldo = ('Monto (Bs.)', 'Saldo (Bs.)')
+        df_vecinos_con_saldo, df_saldos = (df_vecinos_con_saldo_VEB, df_saldos_VEB)
+    else:
+        strMonto, strSaldo = ('Monto (US$)', 'Saldo (US$)')
+        df_vecinos_con_saldo, df_saldos = (df_vecinos_con_saldo_USD, df_saldos_USD)
+    if despliega_saldos:
+        carga_lista_de_vecinos_con_saldo()
 
 
 def onselect(evt):
@@ -588,8 +658,7 @@ def set_cursor_standard():
 
 def muestra_cantidad_de_vecinos():
     l = len(lbVecinos.curselection())
-    s = 's' if l > 1 else ''
-    tkNumVecinos.set(f"{l} vecino{s} seleccionado{s}" if l > 0 else '')
+    tkNumVecinos.set(pluraliza("{l} vecino[s] seleccionado[s]", l) if l > 0 else '')
     if l > 2:
         l = 2   # limita el índice a utilizar para el texto del botón Acepta
     btAcepta['state'] = tk.NORMAL if l > 0 else tk.DISABLED
@@ -691,7 +760,7 @@ def linea_de_separacion(num_linea):
 def genera_interfase():
     global ventana_ppal, ckSelTodo, lbVecinos, cbSelTodo, txStatus
     global spDesdeMes, spDesdeAño, spHastaMes, spHastaAño, ckOrigen, cbHojas_de_calculo, ckCuotas
-    global ckCorreo, ckSolicitado, btAcepta
+    global ckCorreo, ckSolicitado, btAcepta, cbMoneda, spIntHAño
     global imgCheck, imgWarn, imgError, imgInfo, imgStop, imgPdf, imgEmail
     global stDelimiters, stImages, stPattern
     global geometria
@@ -764,14 +833,15 @@ def genera_interfase():
     spIntHAño  = tk.IntVar()
     txtDesde   = tk.Label(frPeriodo, text='Desde:', bg=background)
     spDesdeMes = tk.Spinbox(frPeriodo, values=nombreMeses, wrap=True, width=12)
-    spDesdeAño = tk.Spinbox(frPeriodo, from_=2017, to=2020, wrap=True, width=5)
+    spDesdeAño = tk.Spinbox(frPeriodo, from_=2017, to=año_final, wrap=True, width=5)
     txtHasta   = tk.Label(frPeriodo, text='Hasta:', bg=background)
     spHastaMes = tk.Spinbox(frPeriodo, values=nombreMeses, wrap=True, width=12,
                                        textvariable=spTxtHMes)
-    spHastaAño = tk.Spinbox(frPeriodo, from_=2017, to=2020, wrap=True, width=5,
+    spHastaAño = tk.Spinbox(frPeriodo, from_=2017, to=año_final, wrap=True, width=5,
                                        textvariable=spIntHAño)
     spTxtHMes.set(nombreMeses[ahora.month - 1])
-    spIntHAño.set(ahora.year)
+    # spIntHAño.set(ahora.year)
+    spIntHAño.set(año_final)
     
     ckOrigen   = tk.StringVar()
     cbOrigen_P = tk.Radiobutton(frOrigen, text='Pagos recibidos', value='Pagos', bg=background, pady=0,
@@ -780,7 +850,11 @@ def genera_interfase():
                                           variable=ckOrigen, command=ckOrigen_Seleccion)
     ckOrigen.set('Pagos')
 
-    txBlank_3   = tk.Label(frOrigen, text='------------------------------', bg=background, height=0)
+    cbMoneda   = ttk.Combobox(frOrigen, values=nombreMonedas, width=3)
+    cbMoneda.bind("<<ComboboxSelected>>", cambio_de_moneda)
+    cbMoneda.set('Bs.')
+
+    txBlank_3  = tk.Label(frOrigen, text='------------------------------', bg=background, height=0)
     txBlank_3.config(font=("Courier", 2))
 
     cbHojas_de_calculo = tk.IntVar()
@@ -859,6 +933,7 @@ def genera_interfase():
     # FRAME frOrigen:
     cbOrigen_P.grid(row=2, column=0, sticky=tk.W)
     cbOrigen_S.grid(row=3, column=0, sticky=tk.W)
+    cbMoneda.grid(row=3, column=0, sticky=tk.E)
     txBlank_3.grid(row=1, column=0, sticky=tk.W)
     cbHojas_de_calculo.grid(row=0, column=0, sticky=tk.W)
 
@@ -899,13 +974,26 @@ def finaliza_app():
 def abre_hoja_de_recibos_de_pago():
     global df_resumen, df_cuotas, otros_inmuebles, cuotas_especiales
     global última_cuota, última_cuota_otros_inmuebles, última_cuota_cuotas_especiales
-    global cuotas_obj
+    global cuotas_obj, año_inicial, año_final
 
     print(f'Cargando hoja de cálculo "{excel_workbook}"...')
     df_resumen = read_excel(excel_workbook, sheet_name=excel_resumen)
 
     # Inicializa el handler para el manejo de las cuotas
     cuotas_obj = Cuota(excel_workbook)
+
+    # Determina fechas de inicio y final de pagos
+    carga_pagos_de_vigilancia()
+    año_inicial = df_pagos.iloc[0]['Fecha'].year
+    año_final   = df_pagos.iloc[-1]['Fecha'].year
+    # ------------------------------------------------------------------------
+    # spDesdeAño, spDesdeAño y spIntHAño se definen posteriormente al definir
+    # el layout de la aplicación
+    # ------------------------------------------------------------------------
+    if layout_definido:
+        # spDesdeAño['from_'] = spHastaAño['from_'] = año_inicial
+        spDesdeAño['to'] = spHastaAño['to'] = año_final
+        spIntHAño.set(año_final)
 
 
 # Carga la lista de vecinos en el ListBox
@@ -944,64 +1032,81 @@ def carga_pagos_de_vigilancia():
 
 
 def carga_saldos_de_cuentas():
-    global df_vecinos_con_saldo, df_saldos
-    # df_vecinos_con_saldo.columns = ['Beneficiario', 'Dirección', 'E-mail o celular']
-    # df_saldos.columns = ['Beneficiario', 'Concepto', 'Fecha', 'Monto', 'Saldo']
+    global df_vecinos_con_saldo, df_vecinos_con_saldo_VEB, df_vecinos_con_saldo_USD
+    global df_saldos, df_saldos_VEB, df_saldos_USD
+    global excel_saldos, excel_saldos_usd
 
-    # Lee la hoja de cálculo de saldos
-    df = read_excel(excel_workbook, sheet_name=excel_saldos)
+    def carga_saldos(excel_worksheet, strMonto, strSaldo):
+        # Lee la hoja de cálculo de saldos
+        try:
+            df = read_excel(excel_workbook, sheet_name=excel_worksheet)
+        except:
+            return None, None, False        # Worksheet not found
 
-    # Guarda los nombres de las columnas originales
-    cuentas = (df.columns).tolist()
-    cuentas = [col.partition(',')[0] for col in cuentas[4:] if not col.startswith('Unnamed: ')]
+        # Guarda los nombres de las columnas originales
+        cuentas = (df.columns).tolist()
+        cuentas = [col.partition(',')[0] for col in cuentas[4:] if not col.startswith('Unnamed: ')]
 
-    # Cambia los nombres de las columnas al estilo 'C'+<consecutivo>
-    columnas = [f'C{col}' for col in range(df.shape[1])]
-    df.columns = columnas
+        # Cambia los nombres de las columnas al estilo 'C'+<consecutivo>
+        columnas = [f'C{col}' for col in range(df.shape[1])]
+        df.columns = columnas
 
-    # Selecciona los nombres de los vecinos con cuentas
-    df_vecinos_con_saldo = df[['C0', 'C1', 'C2']]
-    df_vecinos_con_saldo.columns = ['Beneficiario', 'Dirección', 'E-mail o celular']
-    df_vecinos_con_saldo = df_vecinos_con_saldo.iloc[2:]
-    df_vecinos_con_saldo.dropna(subset=['Beneficiario'], inplace=True)
- #   df_vecinos_con_saldo.hide_index = True
+        # Selecciona los nombres de los vecinos con cuentas
+        df_vecinos_con_saldo = df[['C0', 'C1', 'C2']]
+        df_vecinos_con_saldo.columns = ['Beneficiario', 'Dirección', 'E-mail o celular']
+        df_vecinos_con_saldo = df_vecinos_con_saldo.iloc[2:]
+        # df_vecinos_con_saldo.dropna(subset=['Beneficiario'], inplace=True)
+        df_blank_bool = df_vecinos_con_saldo.iloc[:,1].isna()               # Verdadero si el beneficiario está vacío
+        df_blank_index = [i for i, x in enumerate(df_blank_bool) if x][0]   # Indice del primer NaN
+        df_vecinos_con_saldo = df_vecinos_con_saldo.iloc[:(df_blank_index)] # Elimina los registros posteriores
 
-    # Genera el dataframe "df_saldos" con Beneficiario, Fecha, Concepto, Monto, Saldo
-    offset = 4   # 5 columnas antes del primer grupo
-    ancho = 5    # Fecha (+1), Concepto (+2), Monto (+3), Saldo (+4), <columna en blanco> (+5)
+     #   df_vecinos_con_saldo.hide_index = True
 
-    idx = offset
-    beneficiarios = list()
-    direcciones = list()
-    correos = list()
-    vecinos = list()
-    fechas = list()
-    conceptos = list()
-    montos = list()
-    saldos = list()
-    for vecino in cuentas:
-        df_saldo = df[[f'C{idx + 1}', f'C{idx + 2}', f'C{idx + 3}', f'C{idx + 4}']]
-        df_saldo = df_saldo.iloc[2:]
-        df_saldo.dropna(subset=[f'C{idx + 2}'], inplace=True)
+        # Genera el dataframe "df_saldos" con Beneficiario, Fecha, Concepto, Monto, Saldo
+        offset = 4   # 5 columnas antes del primer grupo
+        ancho = 5    # Fecha (+1), Concepto (+2), Monto (+3), Saldo (+4), <columna en blanco> (+5)
 
-        r = df_vecinos_con_saldo[df_vecinos_con_saldo['Beneficiario'] == vecino]
-        beneficiarios += [vecino] * df_saldo.shape[0]
-        direcciones   += [r['Dirección'].to_string(index=False)] * df_saldo.shape[0]
-        correos       += [r['E-mail o celular'].to_string(index=False)] * df_saldo.shape[0]
-        fechas        += df_saldo[f'C{idx + 1}'].tolist()
-        conceptos     += df_saldo[f'C{idx + 2}'].tolist()
-        montos        += df_saldo[f'C{idx + 3}'].tolist()
-        saldos        += df_saldo[f'C{idx + 4}'].tolist()
+        idx = offset
+        beneficiarios = list()
+        direcciones = list()
+        correos = list()
+        vecinos = list()
+        fechas = list()
+        conceptos = list()
+        montos = list()
+        saldos = list()
+        for vecino in cuentas:
+            df_saldo = df[[f'C{idx + 1}', f'C{idx + 2}', f'C{idx + 3}', f'C{idx + 4}']]
+            df_saldo = df_saldo.iloc[2:]
+            df_saldo.dropna(subset=[f'C{idx + 2}'], inplace=True)
 
-        idx += ancho
+            r = df_vecinos_con_saldo[df_vecinos_con_saldo['Beneficiario'] == vecino]
+            beneficiarios += [vecino] * df_saldo.shape[0]
+            direcciones   += [r['Dirección'].to_string(index=False)] * df_saldo.shape[0]
+            correos       += [r['E-mail o celular'].to_string(index=False)] * df_saldo.shape[0]
+            fechas        += df_saldo[f'C{idx + 1}'].tolist()
+            conceptos     += df_saldo[f'C{idx + 2}'].tolist()
+            montos        += df_saldo[f'C{idx + 3}'].tolist()
+            saldos        += df_saldo[f'C{idx + 4}'].tolist()
 
-    df_saldos = DataFrame.from_dict({'Beneficiario': beneficiarios,
-                                     'Dirección':    direcciones,
-                                     'E-mail o celular': correos,
-                                     'Fecha':        fechas,
-                                     'Concepto':     conceptos,
-                                     'Monto':        montos,
-                                     'Saldo':        saldos})
+            idx += ancho
+
+        df_saldos = DataFrame.from_dict({'Beneficiario': beneficiarios,
+                                         'Dirección':    direcciones,
+                                         'E-mail o celular': correos,
+                                         'Fecha':        fechas,
+                                         'Concepto':     conceptos,
+                                         strMonto:       montos,
+                                         strSaldo:       saldos})
+
+        return df_vecinos_con_saldo, df_saldos, True
+
+    df_vecinos_con_saldo_VEB, df_saldos_VEB, ws_found = carga_saldos(excel_saldos, 'Monto (Bs.)', 'Saldo (Bs.)')
+    df_vecinos_con_saldo_USD, df_saldos_USD, ws_found = carga_saldos(excel_saldos_usd, 'Monto (US$)', 'Saldo (US$)')
+    cbMoneda['values'] = nombreMonedas if ws_found else nombreMonedas[:-1]
+    df_vecinos_con_saldo = df_vecinos_con_saldo_VEB
+    df_saldos = df_saldos_VEB
+
 
 def genera_display(lista):
     display = []
@@ -1023,6 +1128,7 @@ display_hojas_de_calculo = genera_display(lista_hojas_de_calculo)
 abre_hoja_de_recibos_de_pago()
 
 genera_interfase()
+layout_definido = True
 
 carga_lista_de_vecinos()
 carga_saldos_de_cuentas()

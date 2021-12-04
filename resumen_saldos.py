@@ -5,7 +5,7 @@
 
 """
     PENDIENTE POR HACER
-     √ß  Revisar:
+     √  Revisar:
             Vecino               | Dirección      | Categoría     |   Pendiente | Período
             -------------------------------------------------------------------------------------
             Wilson Escamilla     | Güigüe 89-89   | Cuota comp... |       42,00 | Desde sep.2021
@@ -117,10 +117,6 @@ def tabla_saldos(beneficiario, tabla):
 
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
-
-    def list_and(l1, l2): return [a and b for a, b in zip(l1, l2)]
-    def list_or(l1, l2):  return [a or  b for a, b in zip(l1, l2)]
-    def list_not(l1):     return [not a for a in l1]
 
     def list_lt_cuota(l1):
 #        l2 = [a if is_numeric(a) else cuotas_mensuales[last_col] for a in l1]

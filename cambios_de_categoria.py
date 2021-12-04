@@ -8,6 +8,8 @@
 
 
     HISTORICO
+      - Se ajusta la cantidad de meses a evaluar: 'nMeses' en lugar de todos desde el 1º de enero
+        del 2017 (10/10/2021)
       - Se añade la opción para generar las tablas de detalle en fuente monoespaciada para ser
         enviadas por WhatsApp (19/05/2921)
       - Se corrige el ordenamiento alfabético para ignorar los acentos (18/09/2020)
@@ -23,10 +25,6 @@
         xxxxxxxxxxxxxxxxxxxx | xxxxxxxxxxxxxx | xxxxxxxxxxxxxxxx | xxxxxxxxxxxxxxxx
                              | Último pago: anticipo jun/2020 (dd/mm/yyyy)
                              | --- No tiene pagos registrados
-
-#       Vecino               | Dirección      | Último pago        | Categoría act.| Propuesta
-#       -------------------------------------------------------------------------------------------
-#       xxxxxxxxxxxxxxxxxxxx | xxxxxxxxxxxxxx | xxxxxxxxxxxxxxxxxx | xxxxxxxxxxxxx | xxxxxxxxxxxxx
 
 """
 
@@ -169,10 +167,16 @@ cuotas_obj = Cuota(excel_workbook)
 if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee los pagos recibidos')
 df_vigilancia = read_excel(excel_workbook, sheet_name=excel_ws_vigilancia)
 
-# Selecciona los pagos de vigilancia entre la fecha de referencia y num_meses_cuotas_equivalentes atrás
+#############################
+# Selecciona los pagos de vigilancia entre la fecha de referencia y nMeses atrás
+# df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA)  & \
+#                               (df_vigilancia['Fecha'] <  mes_de_referencia) & \
+#                               (df_vigilancia['Fecha'] >= datetime(2017, 1, 1))]
+#############################
+# Selecciona los pagos de vigilancia entre la fecha de referencia y nMeses atrás
 df_vigilancia = df_vigilancia[(df_vigilancia['Categoría'] == GyG_constantes.CATEGORIA_VIGILANCIA)  & \
                               (df_vigilancia['Fecha'] <  mes_de_referencia) & \
-                              (df_vigilancia['Fecha'] >= datetime(2017, 1, 1))]
+                              (df_vigilancia['Fecha'] >= mes_de_referencia - relativedelta(months=nMeses))]
 df_vigilancia = df_vigilancia[['Beneficiario', 'Fecha', 'Monto', 'Concepto', 'Día', 'Mes']]
 
 if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Agrega la cuota vigente para la fecha de pago')
@@ -180,7 +184,6 @@ df_vigilancia['Cuota'] = df_vigilancia.apply(
                                 lambda r: cuotas_obj.cuota_vigente(r['Beneficiario'], r['Fecha']), axis=1)
 df_vigilancia['Num. Cuotas'] = df_vigilancia.apply(
                                 lambda r: float(r['Monto']) / float(r['Cuota']), axis=1)
-
 
 if VERBOSE: print(f'    . [{datetime.now().strftime("%H:%M:%S")}] Lee el resumen de pago reordenado')
 df_resumen_r = read_excel(excel_workbook, sheet_name=excel_ws_resumen_r)

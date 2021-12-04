@@ -185,10 +185,6 @@ def tabla_saldos(beneficiario, tabla):
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
 
-    def list_and(l1, l2): return [a and b for a, b in zip(l1, l2)]
-    def list_or(l1, l2):  return [a or  b for a, b in zip(l1, l2)]
-    def list_not(l1):     return [not a for a in l1]
-
     def list_lt_cuota(l1):
 #        l2 = [a if is_numeric(a) else cuotas_mensuales[last_col] for a in l1]
 #        return [a < cuotas_mensuales[last_col] for a in l2]
@@ -259,6 +255,7 @@ def fecha_ultimo_pago(beneficiario, str_mes_año):
     else:
         return None
 
+
 def no_participa_desde(r):
     """
         Busca a partir de qué fecha no se han recibido pagos
@@ -299,58 +296,45 @@ def no_participa_desde(r):
     if deuda < epsilon:
         deuda = 0.00
 
-    info_deuda = ''
-    if deuda == 0.00:
-        mensaje = 'no tiene saldos pendientes'
-    else:
-        if last_col - x <= 0:   # <<<=== anteriormente '1' en lugar de '0'
-            if notnull(r[datetime(año, mes, 1)]):
-                mensaje = 'tiene un saldo pendiente en ' + fecha_txt
-                saldo_pendiente = True
-            else:
-                mensaje = 'tiene pendiente ' + fecha_txt
-        else:
-            mensaje = 'tiene cuotas pendientes desde ' + fecha_txt
-            saldo_pendiente = True
-
     saldo_VEB = tabla_saldos(r['Beneficiario'], df_saldos)
     saldo_USD = tabla_saldos(r['Beneficiario'], df_saldos_usd)
     saldo_a_favor = saldo_VEB + saldo_USD * cuotas_obj.tasa_actual(datetime.today())
+    if saldo_a_favor < epsilon:
+        saldo_a_favor = 0.00
+    total_deuda = deuda - saldo_a_favor
 
-    if saldo_a_favor > epsilon:
-        es = '' if saldo_VEB == 1.00 else 'es'
-        txt_saldo_VEB = f'{edita_número(saldo_VEB, num_decimals=2).replace(",00", "")} bolívar{es}'
-        es = '' if saldo_USD == 1.00 else 'es'
-        txt_saldo_USD = f'{edita_número(saldo_USD, num_decimals=2).replace(",00", "")} dólar{es}'
-        info_saldo = ''.join([
+    info_deuda = ''
+    if deuda == 0.00:
+        info_deuda = 'no tiene saldos pendientes'
+    else:
+        if last_col - x <= 0:           # <<<=== anteriormente '1' en lugar de '0'
+            if notnull(r[datetime(año, mes, 1)]):
+                info_deuda = 'tiene un saldo pendiente en '
+                sep1, sep2 = ('de ', '')
+            else:
+                info_deuda = 'tiene pendiente '
+                sep1, sep2 = ('(', ')')
+        else:
+            info_deuda = 'tiene cuotas pendientes desde '
+            sep1, sep2 = ('por ', '')
+        info_deuda += fecha_txt + \
+                      f" {sep1}Bs. {edita_número(total_deuda, num_decimals=GyG_constantes.num_decimales).replace(',00', '')}{sep2}"
+
+    if saldo_a_favor:
+        bolívar_es = pluraliza("bolívar[es]", saldo_VEB)
+        txt_saldo_VEB = f'{edita_número(saldo_VEB, num_decimals=2).replace(",00", "")} {bolívar_es}'
+        dólar_es = pluraliza("dólar[es]", saldo_USD)
+        txt_saldo_USD = f'{edita_número(saldo_USD, num_decimals=2).replace(",00", "")} {dólar_es}'
+        info_deuda += ''.join([
                                 f". Dispone de un saldo a su favor de ",
                                 txt_saldo_VEB if saldo_VEB > epsilon else '',
                                 ' más ' if saldo_VEB > epsilon and saldo_USD > epsilon else '',
                                 txt_saldo_USD if saldo_USD > epsilon else '',
-                                ', ya descontados,' if deuda > saldo_a_favor else '',
+                                ', ya descontados' if deuda > saldo_a_favor else '',
                             ])
-    else:
-        info_saldo = ""
 
-    deuda -= saldo_a_favor
+    return info_deuda, total_deuda
 
-    if deuda < epsilon:
-        info_deuda = ""
-    else:
-        if saldo_pendiente:
-            sep1, sep2 = (' por ', '')
-            if x == last_col:
-                sep1 = ' de '
-        else:
-            sep1, sep2 = (' (', ')')
-        if saldo_a_favor:
-            sep1, sep2 = (' y un saldo deudor de ', '')   # muestra saldo a favor y saldo deudor
-        info_deuda = f"{sep1}Bs. {edita_número(deuda, num_decimals=GyG_constantes.num_decimales)}{sep2}"
-
-    # if r['Beneficiario'] in ['Familia Alonso Rojas', 'Familia Costermani Terrer', 'Familia Del Negro Palermo',
-    #                          'Familia Fermín Rivas', 'Wilson Escamilla']:
-    #     print(f"{r['Beneficiario']:30},", f'"{mensaje},"', f'"{info_saldo}"', f'"{info_deuda}"')
-    return mensaje, info_saldo, info_deuda
 
 def mas_de_un_mes(beneficiario):
     pagos_beneficiario = (df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']])['Concepto'].tolist()
@@ -364,8 +348,8 @@ def mas_de_un_mes(beneficiario):
     pct_pagos_multiples = int(round(pct_pagos_multiples * 20) / 20 * 100)
     if num_pagos_multiples > 0:
         if pct_pagos_multiples == 0:
-            s = '' if num_pagos == 1 else 's'
-            mensaje = f"En sólo {num_pagos_multiples} de {num_pagos} caso{s}"
+            # s = '' if num_pagos == 1 else 's'
+            mensaje = pluraliza("En sólo {num_pagos_multiples} de {num_pagos} caso[s]", num_pagos)
         else:
             mensaje = f"En el {pct_pagos_multiples}% de los casos ({num_pagos_multiples} de {num_pagos})"
         return f'\n  {bullet} {mensaje}, su pago correspondió a más de un mes'
@@ -745,6 +729,7 @@ def meses_último_pago(beneficiario, fecha):
 hoy = datetime.now()
 fecha_análisis = datetime(hoy.year, hoy.month, 1) - timedelta(days=1)
 mes_actual = fecha_análisis.strftime('%m-%Y')
+año_actual = hoy.year
 print()
 
 # Selecciona el mes y año a procesar
@@ -930,7 +915,7 @@ for index, r in df_resumen.iterrows():
             if notnull(v['WhatsApp']).bool():
                 tlf_wapp = ', WhatsApp: ' + v['WhatsApp'].to_string(index=False)
         telefonos = tlf_sms + tlf_wapp
-        info_pago, info_saldo, info_deuda = no_participa_desde(r)
+        info_deuda, monto_deuda = no_participa_desde(r)
         if (r['Categoría'] == 'Cuota completa'):
             tipo_pago = f"Paga {r['Categoría'].lower()}"
         else:
@@ -938,7 +923,11 @@ for index, r in df_resumen.iterrows():
             tipo_pago += "Colabora"
         max_fecha = max(df_pagos[df_pagos['Beneficiario'] == r['Beneficiario']]['Fecha'])
         meses_fecha = meses_último_pago(r['Beneficiario'], max_fecha)
-        último_pago = '{:%d de %B} ({})'.format(max_fecha, meses_fecha)
+        # último_pago = '{:%d de %B} ({})'.format(max_fecha, meses_fecha)
+        último_pago = ' '.join([
+                            f'{max_fecha.strftime("%d-%b-%Y" if max_fecha.year != año_actual else "%d de %B")}',
+                            f'({meses_fecha})'
+                        ])
         if not(solo_deudores and len(info_deuda) == 0):
             if dirección_anterior == None:
                 dirección_anterior = get_street(r['Dirección'])
@@ -953,7 +942,7 @@ for index, r in df_resumen.iterrows():
                             f"  {bullet} {tipo_pago} {estimado_de_pago}", "\n",
                             bloque_de_texto(''.join([
                                                 f"{bullet} Su último pago fue el {último_pago} ",
-                                                f"y {info_pago}{info_saldo}{info_deuda}",
+                                                f"y {info_deuda}",
                                             ]), anchura=95, margen=2, margen_1ra_linea=True,
                                                 continuacion="  ", separa_palabras=True),
                             # f"  Su último pago fue el {último_pago} y {info_pago}{info_saldo}{info_deuda}",
@@ -982,30 +971,18 @@ for index, r in df_resumen.iterrows():
         else:
             detalles_pago = ' y no se tienen pagos registrados'
 
-        info_pago, info_saldo, info_deuda = no_participa_desde(r)
+        info_deuda, monto_deuda = no_participa_desde(r)
         # # --- DEBUG ---------------------------------------------------------------
         # if r['Beneficiario'] in a_mostrar:
         #     print("\n-----------------------------------------------------")
         #     print(f"*** {r['Beneficiario'] = }")
         #     print(f"*** {r['Promedio'] = }, {r['Variación'] = }")
-        #     print(f"*** {info_pago = }, {info_saldo = }, {info_deuda = }")
+        #     print(f"*** {info_deuda = }, {monto_deuda = }")
         #     print("-----------------------------------------------------")
         # # --- END DEBUG -----------------------------------------------------------
-        try:
-            info_deuda = re.findall(r'([0-9]+(\.[0-9]+)*)', info_deuda)[0][0]
-        except IndexError:
-            pass
-        except:
-            print("\n-- DEBUG: Análisis de Pagos --------------------------------------")
-            print(f"-- {r['Beneficiario'] = }")
-            print(f"-- {info_pago  = }")
-            print(f"-- {info_deuda = }")
-            print(f"-- ERROR: {str(sys.exc_info()[0])}: {str(sys.exc_info()[1])}")
-            print("------------------------------------------------------------------\n")
-            sys.exit(1)            
-        if len(info_deuda) > 0:
-            detalles_pago += f"\n  {bullet} Tiene cuotas pendientes por Bs. {info_deuda}"
-        if not(solo_deudores and len(info_deuda) == 0):
+        if monto_deuda > 0.00:
+            detalles_pago += f"\n  {bullet} Tiene cuotas pendientes por Bs. {edita_número(monto_deuda, num_decimals=2)}"
+        if not(solo_deudores and monto_deuda == 0.00):
             if dirección_anterior == None:
                 dirección_anterior = get_street(r['Dirección'])
             if (get_street(r['Dirección']) != dirección_anterior) and not ordenado:

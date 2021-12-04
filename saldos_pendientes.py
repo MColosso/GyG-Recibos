@@ -16,6 +16,9 @@
 
 
     HISTORICO
+     -  Se ajustó la rutina no_participa_desde() para que en aquellos vecinos que no han cancelado
+        cuotas de vigilancia, se tome como fecha de inicio su fecha de ingreso al sector
+        (02/12/2021)
      -  En la rutina 'no_participa_desde()', se añadió código para descontar los saldos en dólares
         y en bolívares del saldo deudor y se reescribió el texto a desplegar (07/10/2021)
      -  Corregido el monto de la cuota a considerar: En el caso de anticipos, si el monto del mismo
@@ -79,6 +82,7 @@ excel_detalle     = GyG_constantes.pagos_ws_vigilancia      # 'Vigilancia'
 excel_cuotas      = GyG_constantes.pagos_ws_cuotas          # 'CUOTA'
 excel_saldos      = GyG_constantes.pagos_ws_saldos          # 'Saldos'
 excel_saldos_usd  = GyG_constantes.pagos_ws_saldos_USD      # 'Saldos (US$)'
+excel_vecinos     = GyG_constantes.pagos_ws_vecinos         # 'Vecinos'
 
 epsilon           = 1.0e-6
 
@@ -93,7 +97,29 @@ def esVigilancia(x):
 def get_filename(filename):
     return os.path.basename(filename)
 
+def edita_correo(beneficiario):
+    # - Familia Flores Montagne, Av. "M" 146-20, e-mail: 0414-530.0177 | oflormo@hotmail-
+    #   .com | martaflo...: No tiene cuotas pendientes
+    # Separa en componentes y reagrupa con barras verticales sólo aquellos que correspondan
+    # a correos electrónicos
+
+    # Revisar por qué unos correos electrónicos son de la forma:
+    #   DEBUG: "hectorhernandezarmas@gmail.com | rosilbe.alzur..."
+    # (49 caracteres, incluyendo los puntos suspensivos, en ambos casos)
+    
+    correo = df_vecinos[df_vecinos['Beneficiario'] == beneficiario]['E-mail']
+    correo = correo.to_string(header=False, index=False).strip()
+    if beneficiario == 'Familia Hernández Alzurutt':
+        print(f'DEBUG: "{correo}"')
+    correo = "sin correo electrónico" if correo == "NaN" else f"e-mail: {correo}"
+    # NaN -> "sin correo electrónico"; not NaN -> "e-mail: {correo}"
+    return f", {correo}"
+
 def edita_categoría(categoría):
+    # Cuota completa    -> 
+    # Colaboración      ->
+    # No participa      -> 
+    # OCULTO            ->
     return "" if categoría in ['Cuota completa', 'Colaboración'] else f" ({categoría})"
 
 def tabla_saldos(beneficiario, tabla):
@@ -106,10 +132,6 @@ def tabla_saldos(beneficiario, tabla):
 
 
 def seleccionaRegistro(beneficiarios, categorías, montos):
-
-    def list_and(l1, l2): return [a and b for a, b in zip(l1, l2)]
-    def list_or(l1, l2):  return [a or  b for a, b in zip(l1, l2)]
-    def list_not(l1):     return [not a for a in l1]
 
     def list_lt_cuota(l1):
 #        l2 = [a if is_numeric(a) else cuotas_mensuales[last_col] for a in l1]
@@ -187,12 +209,16 @@ def no_participa_desde(r):
             break
         x = idx
         cuotas_pendientes += cuotas_obj.cuota_actual(r['Beneficiario'], columns[idx], aplica_INPC=aplica_INPC) # cuotas[idx]
-    if ultimo_mes_con_pagos == None:
-        ultimo_mes_con_pagos = this_col = f_desde
-        fecha_txt = '2016'
-    else:
-        this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
-        fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
+    # if ultimo_mes_con_pagos == None:
+    #     ultimo_mes_con_pagos = this_col = f_desde
+    #     fecha_txt = '2016'
+    # else:
+    #     this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
+    #     fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
+    if ultimo_mes_con_pagos is None:
+        ultimo_mes_con_pagos = f_desde
+    this_col = columns[ultimo_mes_con_pagos] if isnull(r.iloc[last_col]) else columns[ultimo_mes_con_pagos]   # <<<=== anteriormente 'x+1' en lugar de 'x'
+    fecha_txt = '2016' if this_col == datetime(2016, 1, 1) else this_col.strftime('%B %Y')
     # if r['Beneficiario'] in a_evaluar: print(f"  (1a): cuotas_pendientes: {cuotas_pendientes:,.2f}, this_col: {this_col}, fecha_txt: {fecha_txt}")
 
     # Determina el saldo del último mes
@@ -322,6 +348,9 @@ mes_año = input_mes_y_año('Indique el mes y año a analizar', mes_actual, toma
 # Selecciona si se muestran sólo los saldos deudores o no
 solo_deudores = input_si_no('Sólo vecinos con saldos pendientes', 'sí', toma_opciones_por_defecto)
 
+# Selecciona si se muestran las colaboraciones pendientes
+colaboraciones_pendientes = input_si_no('Muestra colaboraciones pendientes', 'no', toma_opciones_por_defecto)
+
 # Selecciona si se ordenan alfabéticamente los vecinos
 ordenado = input_si_no('Ordenados alfabéticamente', 'sí', toma_opciones_por_defecto)
 
@@ -435,9 +464,10 @@ for index, r in df_resumen.iterrows():
             análisis += '\n'
             dirección_anterior = get_street(r['Dirección'])
         análisis += bloque_de_texto(mensaje.format(
-                        r['Beneficiario'], edita_dirección(r['Dirección']), edita_categoría(r['Categoría']),
-                        info_pago, info_deuda, info_saldo),
-                        anchura=90, continuacion=espacios(3), separa_palabras=True) + '\n'
+                        r['Beneficiario'], edita_dirección(r['Dirección']),
+                        edita_categoría(r['Categoría']),
+                        info_pago, '' if r['Categoría'] == 'Colaboración' else info_deuda, info_saldo),
+                        anchura=85, continuacion=espacios(3), separa_palabras=True) + '\n'
 
 # Graba los archivos de análisis (encoding para Windows y para macOS X)
 filename = os.path.join(attach_path, 'Apple', nombre_análisis.format(datetime(año, mes, 1)))

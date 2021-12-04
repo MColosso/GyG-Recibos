@@ -10,7 +10,27 @@
 
 """
     POR HACER
-    -   
+    -   Revisar:
+            2.4 GyG Gráficas
+            ----------------
+            Cargando librerías...
+            Traceback (most recent call last):
+              File "./graficas_GUI.py", line 1583, in <module>
+                df_vigilancia['_num. cuotas_'] = df_vigilancia.apply(
+              File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pandas/core/frame.py", line 6878, in apply
+                return op.get_result()
+              File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pandas/core/apply.py", line 186, in get_result
+                return self.apply_standard()
+              File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pandas/core/apply.py", line 313, in apply_standard
+                results, res_index = self.apply_series_generator()
+              File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pandas/core/apply.py", line 341, in apply_series_generator
+                results[i] = self.f(v)
+              File "./graficas_GUI.py", line 1584, in <lambda>
+                lambda r: float(r['Monto']) / float(r['_cuota_']), axis=1)
+            ZeroDivisionError: float division by zero
+
+            Proceso terminado . . . 
+
 
     HISTORICO
     -   Si se selecciona una fecha correspondiente a fin de mes, en las gráficas "Gestión de Cobranzas"
