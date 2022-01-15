@@ -64,7 +64,7 @@ nbformat==5.0.4
 notebook==6.0.3
 numba==0.49.1
 numexpr==2.7.1
-numpy==1.17.3
+numpy==1.21.0
 numpy-financial==1.0.0
 openpyxl==3.0.9
 packageurl-python==0.9.6
