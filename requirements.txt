@@ -53,7 +53,7 @@ lazy-object-proxy==1.4.3
 llvmlite==0.32.1
 locket==0.2.0
 lockfile==0.12.2
-lxml==4.6.3
+lxml==4.6.5
 MarkupSafe==2.0.1
 mccabe==0.6.1
 mistune==0.8.4
