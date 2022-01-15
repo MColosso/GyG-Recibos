@@ -321,10 +321,8 @@ def no_participa_desde(r):
                       f" {sep1}Bs. {edita_número(total_deuda, num_decimals=GyG_constantes.num_decimales).replace(',00', '')}{sep2}"
 
     if saldo_a_favor:
-        bolívar_es = pluraliza("bolívar[es]", saldo_VEB)
-        txt_saldo_VEB = f'{edita_número(saldo_VEB, num_decimals=2).replace(",00", "")} {bolívar_es}'
-        dólar_es = pluraliza("dólar[es]", saldo_USD)
-        txt_saldo_USD = f'{edita_número(saldo_USD, num_decimals=2).replace(",00", "")} {dólar_es}'
+        txt_saldo_VEB = pluraliza(f'{edita_número(saldo_VEB, num_decimals=2).replace(",00", "")} bolívar[es]', saldo_VEB)
+        txt_saldo_USD = pluraliza(f'{edita_número(saldo_USD, num_decimals=2).replace(",00", "")} dólar[es]', saldo_USD)
         info_deuda += ''.join([
                                 f". Dispone de un saldo a su favor de ",
                                 txt_saldo_VEB if saldo_VEB > epsilon else '',
@@ -348,8 +346,7 @@ def mas_de_un_mes(beneficiario):
     pct_pagos_multiples = int(round(pct_pagos_multiples * 20) / 20 * 100)
     if num_pagos_multiples > 0:
         if pct_pagos_multiples == 0:
-            # s = '' if num_pagos == 1 else 's'
-            mensaje = pluraliza("En sólo {num_pagos_multiples} de {num_pagos} caso[s]", num_pagos)
+            mensaje = pluraliza(f"En sólo {num_pagos_multiples} de {num_pagos} caso[s]", num_pagos)
         else:
             mensaje = f"En el {pct_pagos_multiples}% de los casos ({num_pagos_multiples} de {num_pagos})"
         return f'\n  {bullet} {mensaje}, su pago correspondió a más de un mes'

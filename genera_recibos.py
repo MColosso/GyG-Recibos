@@ -203,8 +203,9 @@ if selección_manual:
         if len(rangos_recibos) == 0 or len(t_invalid) == 0:
             break
         else:
-            un, s = ('un ', '') if len(t_invalid) == 1 else ('', 's')
-            print(f"    Hay {un}rango{s} inválido{s}: {', '.join(t_invalid)}")
+            # un, s = ('un ', '') if len(t_invalid) == 1 else ('', 's')
+            # print(f"    Hay {un}rango{s} inválido{s}: {', '.join(t_invalid)}")
+            print(pluraliza(f"    Hay [un |]rango[s] inválido[s]: {', '.join(t_invalid)}", len(t_invalid)))
     print()
 else:
     sella_recibos = True
@@ -233,10 +234,10 @@ if df.shape[0] == 0:
           f'{"seleccionados para" if selección_manual else "pendientes por"} generar\n')
     sys.exit()
 
-s = "s" if df.shape[0] != 1 else ""
+# s = "s" if df.shape[0] != 1 else ""
 if selección_manual:
     print()
-    print(f"Generando recibo{s} {muestra_rangos(t_recibos)}: ", end="")
+    print(pluraliza(f"Generando recibo[s] {muestra_rangos(t_recibos)}: ", df.shape[0]), end="")
 else:
     print('Generando recibos', end="")
 
@@ -248,5 +249,5 @@ for index, r in df.iterrows():
         recibos_convertidos += 1
 
 print()
-print('\n*** Proceso terminado: {} de {} recibo{} generado{}\n'.format(recibos_convertidos,
-                                                                       df.shape[0], s, s))
+print(pluraliza(f"\n*** Proceso terminado: {recibos_convertidos} de {df.shape[0]} recibo[s] generado[s]",
+                    recibos_convertidos))

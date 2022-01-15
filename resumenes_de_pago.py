@@ -331,15 +331,15 @@ def genera_resumenes():
     try:
         wb_resumen.save(resumen_workbook)
         actualiza_status(txStatus, 
-            pluraliza("\n\n<info> Proceso terminado: {generados} [resumen|resúmenes] generado[s]", generados))
+            pluraliza(f"\n\n<info> Proceso terminado: {generados} [resumen|resúmenes] generado[s]", generados))
         vecinos_seleccionados = len(lbVecinos.curselection())
         if generados != vecinos_seleccionados:
             diferencia = vecinos_seleccionados - generados
             actualiza_status(txStatus,
-                pluraliza(", {diferencia} vecino[s] seleccionado[s] sin pagos en el período", diferencia))
+                pluraliza(f", {diferencia} vecino[s] seleccionado[s] sin pagos en el período", diferencia))
         if envia_correos:
             actualiza_status(txStatus,
-                pluraliza(", {enviados} enviado[s]", enviados))
+                pluraliza(f", {enviados} enviado[s]", enviados))
     except:
         error_msg  = str(sys.exc_info()[1])
         if sys.platform.startswith('win'):
@@ -347,48 +347,48 @@ def genera_resumenes():
         actualiza_status(txStatus, f'\n\n<stop> ERROR: {error_msg}')
 
 # -------------------------------------------------------
-import re
-import inspect
-def pluraliza(template: str, valor=None) -> str:
-    frame = inspect.currentframe()
-    previous_namespace = frame.f_back.f_locals
-    del frame
+# import re
+# import inspect
+# def pluraliza(template: str, valor=None) -> str:
+#     frame = inspect.currentframe()
+#     previous_namespace = frame.f_back.f_locals
+#     del frame
 
-    barre_corchetes = ''
-    # Separa el texto en grupos con corchetes
-    for s in re.split(r'(\[.+?\])', template):
-        # print(s)
-        if re.match(r'^\[.+\]$', s):
-            lista = s[1:-1].split('|')
-            if len(lista) == 1 and valor != 1:
-                texto = lista[0]
-            elif len(lista) > 1:
-                texto = lista[0] if valor == 1 else lista[1]
-            else:
-                texto = ''
-        else:
-            texto = s
-        barre_corchetes += texto
+#     barre_corchetes = ''
+#     # Separa el texto en grupos con corchetes
+#     for s in re.split(r'(\[.+?\])', template):
+#         # print(s)
+#         if re.match(r'^\[.+\]$', s):
+#             lista = s[1:-1].split('|')
+#             if len(lista) == 1 and valor != 1:
+#                 texto = lista[0]
+#             elif len(lista) > 1:
+#                 texto = lista[0] if valor == 1 else lista[1]
+#             else:
+#                 texto = ''
+#         else:
+#             texto = s
+#         barre_corchetes += texto
 
-    resultado = ''
-    # Separa el texto en grupos con llaves
-    for s in re.split(r'(\{.+?\})', barre_corchetes):
-        # print(s)
-        if re.match(r'^\{.+\}$', s):
-            match = s[1:-1]
-            if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", match):    # ¿Es una variable?
-                value = previous_namespace.get(match)
-                if value:
-                    resultado += str(value)
-                else:
-                    value = globals().get(match)
-                    resultado += str(value) if value else '«' + match + '»'
-            else:
-                resultado += '{' + match + '}'
-        else:
-            resultado += s
+#     resultado = ''
+#     # Separa el texto en grupos con llaves
+#     for s in re.split(r'(\{.+?\})', barre_corchetes):
+#         # print(s)
+#         if re.match(r'^\{.+\}$', s):
+#             match = s[1:-1]
+#             if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", match):    # ¿Es una variable?
+#                 value = previous_namespace.get(match)
+#                 if value:
+#                     resultado += str(value)
+#                 else:
+#                     value = globals().get(match)
+#                     resultado += str(value) if value else '«' + match + '»'
+#             else:
+#                 resultado += '{' + match + '}'
+#         else:
+#             resultado += s
 
-    return resultado
+#     return resultado
 # -------------------------------------------------------
 
 def genera_pdf(r, tabla, idx):

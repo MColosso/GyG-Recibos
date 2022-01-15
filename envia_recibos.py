@@ -412,8 +412,9 @@ def envia_archivo(beneficiario, email_o_celular, sub_lista):
     anexos = re.sub(r'(.*), (.*)', r'\1 y \2', ', '.join(anexos))
 
     if email_o_celular == None:
-        logfile.write('-> Enviar recibo{} {} a {}\n'.format('s' if len(sub_lista) > 1 else '',
-                                                            anexos, beneficiario))
+        # logfile.write('-> Enviar recibo{} {} a {}\n'.format('s' if len(sub_lista) > 1 else '',
+        #                                                     anexos, beneficiario))
+        logfile.write(pluraliza(f'-> Enviar recibo[s] {anexos} a {beneficiario}\n', len(sub_lista)))
         if COPY_FILE:
             copia_archivos_a_Temporal(sub_lista)
         return
@@ -607,8 +608,9 @@ with open(filename, 'r', encoding='utf-8') as logfile:
     for cnt, line in enumerate(logfile):
         print(trunca_texto(line.strip(), max_width=78))
 
-s = 's' if df.shape[0] != 1 else ''
-print(f"\n*** Proceso terminado: {mensajes_enviados} de {df.shape[0]} recibo{s} enviado{s}\n")
+# s = 's' if df.shape[0] != 1 else ''
+print(pluraliza(f"\n*** Proceso terminado: {mensajes_enviados} de {df.shape[0]} recibo[s] enviado[s]\n",
+            df.shape[0]))
 
 if whatsapp_loaded:
     unloadWhatsAppWeb()

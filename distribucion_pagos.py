@@ -237,7 +237,7 @@ def genera_resumen_vigilancia():
                     análisis += tabla_separador
                 análisis += tabla_detalle.format(
                         'Subtotales',
-                        alinea_texto(f'{num_pagos} pago{s}', 14, 'derecha'),
+                        alinea_texto(pluraliza(f'{num_pagos} pago[s]', num_pagos), 14, 'derecha'),
                         str_pago,
                         str_sobreumbral)
             else:
@@ -253,7 +253,7 @@ def genera_resumen_vigilancia():
                     análisis += tabla_separador_sin_sobrecuota
                 análisis += tabla_detalle_sin_sobrecuota.format(
                         'Subtotales',
-                        alinea_texto(f'{num_pagos} pago{s}', 14, 'derecha'),
+                        alinea_texto(pluraliza(f'{num_pagos} pago[s]', num_pagos), 14, 'derecha'),
                         str_pago, '')
             análisis += wa_table + '\n\n'
         else:
@@ -274,7 +274,7 @@ def genera_resumen_vigilancia():
             if num_pagos > 0:
                 txt_aporte = ''.join([
                         '  - ',
-                        f"{num_pagos:>3} pago{s} {txt_descripción_categoría} ",
+                        pluraliza(f"{num_pagos:>3} pago[s] {txt_descripción_categoría} ", num_pagos),
                         f"(anticipos, saldos y colaboraciones) " if nivel == "Inferior" else "",
                         f"por Bs. {str_pago}",
                         f" {txt_aporte_adicional}" if nivel == "Superior" else "",
@@ -363,7 +363,7 @@ def genera_resumen_otros_pagos():
                                     tabla_separador_sin_sobrecuota,
                                     tabla_detalle_sin_sobrecuota.format(
                                         'Subtotales',
-                                        alinea_texto(f'{num_pagos} pago{s}', 14, 'derecha'),
+                                        alinea_texto(pluraliza(f'{num_pagos} pago[s]', num_pagos), 14, 'derecha'),
                                         edita_número(mto_pagos, num_decimals=num_decimales),
                                         ''
                                     ),
@@ -371,7 +371,7 @@ def genera_resumen_otros_pagos():
                                 ])
             else:
                 lista_num_pagos.append(edita_número(num_pagos, num_decimals=0))
-                lista_txt_pagos.append(f"pago{s}")
+                lista_txt_pagos.append(pluraliza("pago[s]", num_pagos))
                 lista_montos.append(edita_número(mto_pagos, num_decimals=num_decimales))
                 total_num_pagos += num_pagos
                 total_mto_pagos += mto_pagos

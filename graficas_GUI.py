@@ -31,6 +31,18 @@
 
             Proceso terminado . . . 
 
+    -   Revisar:
+            2.4 GyG Gráficas
+            ----------------
+            Cargando librerías...
+            Generando layout ...
+            Generando gráficas...
+              - Cuotas por oportunidad de pago...
+
+            *** ERROR: '01-2016' (Beneficiario: Familia Chávez Moncada, mes: 01-2016)
+
+        al tratar de generar la gráfica con 30 meses
+
 
     HISTORICO
     -   Si se selecciona una fecha correspondiente a fin de mes, en las gráficas "Gestión de Cobranzas"

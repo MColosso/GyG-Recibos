@@ -355,75 +355,132 @@ def remueve_acentos(texto: str) -> str:
 
 # ---------------------------------------------------------
 
+# def pluraliza(template: str, valor=None) -> str:
+#     """pluraliza(patrón, valor)
+#     Genera un string donde se muestra o no el contenido de diversos tags:
+#      - [texto]  Se muestra si 'valor' es diferente de 1 (como en el caso de
+#                 palabras en plural)
+#      - [texto1 | texto2]    'Texto1' se muestra si 'valor' es igual a 1, y
+#                 'Texto2' en caso contrario
+#      - {<variable>} La variable encerrada entre llaves se reemplaza por el
+#                 valor de dicha variable, siempre y cuando la misma haya sido
+#                 definida en la rutina desde la cual se hace la invocación.
+#                 No se evalúan las fórmulas y se muestran entre llaves.
+#                 Si una variable no se encuentra en el contexto actual, se
+#                 muestra encerrada entre "comillas angulares" («»)
+#     Ejemplos:
+#      - "La[s] casa[s] [es|son] azul[es] y blanca[s]"
+#          -> La casa es azul y blanca
+#          -> Las casas son azules y blancas
+#      - "[La|Todas las {num_casas}] casa[s] [es|son] azul[es] y blanca[s]"
+#          -> La casa es azul y blanca
+#          -> Todas las 17 casas son azules y blancas
+#      - "[La|Todas las {num_casas}] casa[s]. Probemos con [una |]variable[s] local[es]:
+#        {variable_local}, [una |]variable[s] global[es]: {variable_global} y [una |]fórmula[s]: {dummy * 3}"
+#          -> La casa. Probemos con una variable local: 'Local OK', una variable global:
+#             'Global OK' y una fórmula: {dummy * 3}
+#          -> Todas las «num_casas». Probemos con variables locales: 'Local OK', variables
+#             globales: 'Global OK' y fórmulas: {dummy * 3}
+#     """
+
+#     frame = inspect.currentframe()
+#     previous_namespace = frame.f_back.f_locals
+#     globals_namespace = frame.f_back.f_globals
+#     del frame
+
+#     plural_revisado = ''
+#     # Separa el texto en grupos con corchetes
+#     for s in re.split(r'(\[.+?\])', template):
+#         # print(s)
+#         if re.match(r'^\[.+\]$', s):
+#             lista = s[1:-1].split('|')
+#             # 'lista' es una lista con uno o dos elementos
+#             #   - si es de un solo elemento, sólo se mostrará si valor != 1
+#             #   - si es de dos elementos, el primero se mostrará si valor == 1,
+#             #     si no, se mostrará el segundo
+#             if len(lista) == 1 and valor != 1:
+#                 texto = lista[0]
+#             elif len(lista) > 1:
+#                 texto = lista[0] if valor == 1 else lista[1]
+#             else:
+#                 texto = ''
+#         else:
+#             texto = s
+#         plural_revisado += texto
+
+#     resultado = ''
+#     # Separa el texto en grupos con llaves
+#     for s in re.split(r'(\{.+?\})', plural_revisado):
+#         # print(s)
+#         if re.match(r'^\{.+\}$', s):
+#             match = s[1:-1]
+#             if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", match):    # ¿Es una variable?
+#                 value = previous_namespace.get(match)
+#                 if value:
+#                     resultado += str(value)
+#                 else:
+#                     # value = globals().get(match)  # <- Variables globales de GyG_utilitarios
+#                     value = globals_namespace.get(match)
+#                     resultado += str(value) if value else '«' + match + '»'
+#             else:
+#                 resultado += '{' + match + '}'
+#         else:
+#             resultado += s
+
+#     return resultado
+
 def pluraliza(template: str, valor=None) -> str:
     """pluraliza(patrón, valor)
     Genera un string donde se muestra o no el contenido de diversos tags:
      - [texto]  Se muestra si 'valor' es diferente de 1 (como en el caso de
                 palabras en plural)
-     - [texto1 | texto2]    'Texto1' se muestra si 'valor' es igual a 1, y
-                'Texto2' en caso contrario
-     - {<variable>} La variable encerrada entre llaves se reemplaza por el
-                valor de dicha variable, siempre y cuando la misma haya sido
-                definida en la rutina desde la cual se hace la invocación.
-                No se evalúan las fórmulas y se muestran entre llaves.
-                Si una variable no se encuentra en el contexto actual, se
-                muestra encerrada entre "comillas angulares" («»)
+     - [t_singular | t_plural | t_cero]    't_singular' se muestra si 'valor'
+                es igual a 1, 't_plural' en caso contrario
+
     Ejemplos:
      - "La[s] casa[s] [es|son] azul[es] y blanca[s]"
          -> La casa es azul y blanca
          -> Las casas son azules y blancas
-     - "[La|Todas las {num_casas}] casa[s] [es|son] azul[es] y blanca[s]"
+     - f"[La|Todas las {num_casas}|Ninguna] casa[s] [es|son] azul[es] y blanca[s]"
+         -> Ninguna casa es azul y blanca
          -> La casa es azul y blanca
          -> Todas las 17 casas son azules y blancas
-     - "[La|Todas las {num_casas}] casa[s]. Probemos con [una |]variable[s] local[es]:
-       {variable_local}, [una |]variable[s] global[es]: {variable_global} y [una |]fórmula[s]: {dummy * 3}"
-         -> La casa. Probemos con una variable local: 'Local OK', una variable global:
-            'Global OK' y una fórmula: {dummy * 3}
-         -> Todas las «num_casas». Probemos con variables locales: 'Local OK', variables
-            globales: 'Global OK' y fórmulas: {dummy * 3}
     """
 
-    frame = inspect.currentframe()
-    previous_namespace = frame.f_back.f_locals
-    globals_namespace = frame.f_back.f_globals
-    del frame
+    # Clasifica el 'valor' en cero, uno y otro
+    if isinstance(valor, int) and valor == 0:
+        v = 0
+    elif isinstance(valor, int) and abs(valor) == 1:
+        v = 1
+    else:
+        v = 2
 
-    plural_revisado = ''
-    # Separa el texto en grupos con corchetes
+    # Separa el patrón en grupos
+    grupos = []
+    maxlen = 0
     for s in re.split(r'(\[.+?\])', template):
-        # print(s)
         if re.match(r'^\[.+\]$', s):
             lista = s[1:-1].split('|')
-            # 'lista' es una lista con uno o dos elementos
-            #   - si es de un solo elemento, sólo se mostrará si valor != 1
-            #   - si es de dos elementos, el primero se mostrará si valor == 1,
-            #     si no, se mostrará el segundo
-            if len(lista) == 1 and valor != 1:
-                texto = lista[0]
-            elif len(lista) > 1:
-                texto = lista[0] if valor == 1 else lista[1]
-            else:
-                texto = ''
+            thislen = len(lista)
+            grupos.append(lista)
+            if thislen > maxlen:
+                maxlen = thislen
         else:
-            texto = s
-        plural_revisado += texto
+            grupos.append(s)
 
+    # Analiza cada grupo
     resultado = ''
-    # Separa el texto en grupos con llaves
-    for s in re.split(r'(\{.+?\})', plural_revisado):
-        # print(s)
-        if re.match(r'^\{.+\}$', s):
-            match = s[1:-1]
-            if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", match):    # ¿Es una variable?
-                value = previous_namespace.get(match)
-                if value:
-                    resultado += str(value)
+    for s in grupos:
+        if isinstance(s, list):
+            if len(s) == 1 and v != 1:     # plural
+                resultado += '' if maxlen >= 3 and v == 0 else s[0]
+            elif len(s) == 2:
+                if v == 0 and maxlen >= 3:
+                    resultado += s[0]
                 else:
-                    # value = globals().get(match)  # <- Variables globales de GyG_utilitarios
-                    value = globals_namespace.get(match)
-                    resultado += str(value) if value else '«' + match + '»'
-            else:
-                resultado += '{' + match + '}'
+                    resultado += s[0] if v == 1 else s[1]
+            elif len(s) >= 3:
+                resultado += s[2] if v == 0 else s[0] if v == 1 else s[1]
         else:
             resultado += s
 
