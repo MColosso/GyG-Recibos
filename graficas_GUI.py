@@ -1692,10 +1692,13 @@ else:
                          sg.Text("Gráficas al:"),
                          sg.InputText(key='_fecha_referencia_', size=(10,1),
                                       default_text=fecha_de_referencia.strftime("%d-%m-%Y")),
-                         sg.CalendarButton(button_text='Seleccione otra fecha',
+                         sg.CalendarButton(button_text='',               # button_text='Seleccione otra fecha'
                                            image_filename=CALENDAR_ICON, image_size=(16, 16), image_subsample=8,
+                                           border_width=0,
                                            default_date_m_d_y=(fecha_de_referencia.month, fecha_de_referencia.day, fecha_de_referencia.year),
                                            target='_fecha_referencia_', format='%d-%m-%Y',
+                                           title='Seleccione otra fecha', no_titlebar=True,
+                                           tooltip='Seleccione otra fecha',
                                            close_when_date_chosen=True)],
                         [sg.Radio("", size=(2, 1), 
                                   group_id='fechas', key='_fecha_mes_anterior_'),
@@ -1754,8 +1757,8 @@ else:
                                                        initial_value=str(num_meses_gestion_cobranzas), size=(3, 1)),
                          sg.Text("", size=(1, 1))],
                     ]
-    layout = [  [sg.Frame(" Fecha ",    fechas_layout,   size=(60, None))],
-                [sg.Frame(" Gráficas ", graficas_layout, size=(60, None))],
+    layout = [  [sg.Frame(" Fecha ",    fechas_layout,   size=(None, None))],     # size=(60, None)
+                [sg.Frame(" Gráficas ", graficas_layout, size=(None, None))],     # size=(60, None)
                 [sg.Button('Genera gráficas'), sg.Button('Finaliza')],
              ]
 
